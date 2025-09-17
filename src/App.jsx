@@ -65,7 +65,69 @@ const MENU_SORTED = byIds(ORDERED_IDS);
 
 function format(price) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
+}function HeroSlider() {
+  const IMAGES = [
+    { src: "/hero-tartare.jpg", alt: "Tartare de thon" },
+    { src: "/hero-wok-poulet.jpg", alt: "Wok poulet / nouilles" },
+    { src: "/hero-boeuf.jpg", alt: "Wok de bœuf et riz" },
+  ];
+
+  const [idx, setIdx] = React.useState(0);
+
+  // changement auto toutes les 4s
+  React.useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % IMAGES.length), 4000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="relative">
+      {/* pile d'images avec fade */}
+      <div className="relative max-h-96 rounded-3xl overflow-hidden border border-white/10">
+        {IMAGES.map((img, i) => (
+          <img
+            key={img.src}
+            src={img.src}
+            alt={img.alt}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === idx ? "opacity-100" : "opacity-0"}`}
+            draggable={false}
+          />
+        ))}
+        {/* fallback hauteur pour éviter le “saut” */}
+        <img src={IMAGES[0].src} alt="" className="opacity-0 w-full h-full object-cover select-none" />
+      </div>
+
+      {/* contrôles gauche/droite */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-2">
+        <button
+          onClick={() => setIdx(i => (i - 1 + IMAGES.length) % IMAGES.length)}
+          className="pointer-events-auto rounded-xl border border-white/20 bg-black/40 px-3 py-2 text-sm"
+        >
+          ◀
+        </button>
+        <button
+          onClick={() => setIdx(i => (i + 1) % IMAGES.length)}
+          className="pointer-events-auto rounded-xl border border-white/20 bg-black/40 px-3 py-2 text-sm"
+        >
+          ▶
+        </button>
+      </div>
+
+      {/* petits points d’état */}
+      <div className="mt-3 flex items-center gap-2">
+        {IMAGES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIdx(i)}
+            className={`h-2 w-2 rounded-full ${i === idx ? "bg-white" : "bg-white/30"}`}
+            aria-label={`Aller à l’image ${i+1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
+
 
 export default function KaiKaiApp() {
   const [cart, setCart] = useState({});
@@ -133,16 +195,13 @@ export default function KaiKaiApp() {
         </div>
       </div>
 
-      {/* Hero */}
+      
       <section className="mx-auto max-w-5xl px-4 py-10">
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
             {/* IMAGE AJOUTÉE ICI — rien d'autre n'a changé */}
-            <img
-              src="/hero-tartare.jpg"
-              alt="Tartare de thon"
-              className="w-full rounded-3xl object-cover max-h-96"
-            />
+            <HeroSlider />
+            
             <div className="mt-6 flex gap-3">
               <button onClick={() => setStep("menu")} className="rounded-2xl bg-white px-4 py-2 text-black">Voir le menu</button>
               <button onClick={() => setStep("checkout")} className="rounded-2xl border border-white/20 px-4 py-2">Commander</button>
