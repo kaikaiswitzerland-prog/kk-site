@@ -237,8 +237,8 @@ export default function KaiKaiApp() {
             {/* Entrées */}
 <h3 className="col-span-full mt-6 text-base font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
 
-            {SEC_ENTREES.map(item => (
-              <div key={item.id} className="rounded-3xl border border-white/10 p-5">
+            <h3 className="col-span-full mt-6 text-lg font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
+
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="text-lg font-medium">{item.name}</div>
