@@ -86,10 +86,7 @@ export default function KaiKaiApp() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* DEBUG BANNER */}
-      <div style={{background:'red', color:'white', padding:'8px', textAlign:'center', fontWeight:700}}>
-        DEBUG: VERSION SECTIONS ACTIVE
-      </div>
+     
 
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur">
