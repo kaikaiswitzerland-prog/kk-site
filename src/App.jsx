@@ -45,6 +45,35 @@ const MENU = [
   { id: "27", name: "Supplément Sirop", desc: "Grenadine, Menthe, Fraise, Pêche… (ajout)", price: 0.5 },
 ];
 
+// ---- Ajout: ordre + sections (sans casser le design) ----
+const ORDERED_IDS = [
+  // Entrées
+  11,12,13,14,15,16,
+  // Menus chauds
+  1,2,3,4,5,
+  // Menus froids
+  6,7,8,9,10,
+  // Desserts
+  17,18,19,20,
+  // Boissons
+  21,22,23,24,25,26,27
+];
+const byIds = ids => ids.map(id => MENU.find(m => m.id === String(id))).filter(Boolean);
+const MENU_SORTED = byIds(ORDERED_IDS);
+
+const IDS_ENTREES = [11,12,13,14,15,16];
+const IDS_CHAUD   = [1,2,3,4,5];
+const IDS_FROID   = [6,7,8,9,10];
+const IDS_DESSERT = [17,18,19,20];
+const IDS_BOISSON = [21,22,23,24,25,26,27];
+
+const SEC_ENTREES = byIds(IDS_ENTREES);
+const SEC_CHAUD   = byIds(IDS_CHAUD);
+const SEC_FROID   = byIds(IDS_FROID);
+const SEC_DESSERT = byIds(IDS_DESSERT);
+const SEC_BOISSON = byIds(IDS_BOISSON);
+// ---------------------------------------------------------
+
 function format(price) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
 }
@@ -56,7 +85,8 @@ export default function KaiKaiApp() {
   const [step, setStep] = useState("menu");
   const [logoVisible, setLogoVisible] = useState(true);
 
-  const items = useMemo(() => MENU.map(m => ({ ...m, qty: cart[m.id] || 0 })), [cart]);
+  // on calcule à partir de MENU_SORTED (ordre correct)
+  const items = useMemo(() => MENU_SORTED.map(m => ({ ...m, qty: cart[m.id] || 0 })), [cart]);
   const subtotal = useMemo(() => items.reduce((s, it) => s + it.price * it.qty, 0), [items]);
   const discount = useMemo(() => (couponApplied ? subtotal * 0.10 : 0), [couponApplied, subtotal]);
   const deliveryFee = useMemo(() => (mode === "delivery" && subtotal > 0 ? 4.9 : 0), [mode, subtotal]);
@@ -71,7 +101,6 @@ export default function KaiKaiApp() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="relative mx-auto flex max-w-5xl items-center justify-center px-4 py-4">
-          {/* Logo + accroche */}
           <div className="flex flex-col items-center">
             {logoVisible ? (
               <img src={LOGO_SRC} alt="Kai Kai" className="h-14 w-auto" onError={() => setLogoVisible(false)} />
@@ -82,8 +111,6 @@ export default function KaiKaiApp() {
               Votre restaurant tahitien en livraison sur Genève & Lausanne.
             </p>
           </div>
-
-          {/* Contrôles à gauche/droite */}
           <div className="absolute left-4 hidden items-center gap-2 sm:flex">
             <button
               onClick={() => setMode("delivery")}
@@ -122,7 +149,6 @@ export default function KaiKaiApp() {
       <section className="mx-auto max-w-5xl px-4 py-10">
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
-            {/* (paragraphe doublon retiré) */}
             <div className="mt-6 flex gap-3">
               <button onClick={() => setStep("menu")} className="rounded-2xl bg-white px-4 py-2 text-black">Voir le menu</button>
               <button onClick={() => setStep("checkout")} className="rounded-2xl border border-white/20 px-4 py-2">Commander</button>
@@ -130,7 +156,7 @@ export default function KaiKaiApp() {
           </div>
           <div className="rounded-3xl border border-white/10 p-6">
             <div className="grid grid-cols-3 gap-3">
-              {MENU.slice(0, 9).map(m => (
+              {MENU_SORTED.slice(0, 9).map(m => (
                 <div key={m.id} className="rounded-2xl border border-white/10 p-3">
                   <div className="text-sm font-medium">{m.name}</div>
                   <div className="mt-1 text-xs text-white/60">{format(m.price)}</div>
@@ -153,8 +179,12 @@ export default function KaiKaiApp() {
             <h2 className="text-2xl font-semibold">Menu</h2>
             <div className="text-sm text-white/70">Mode: {mode === "delivery" ? "Livraison" : "À emporter"}</div>
           </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
-            {MENU.map(item => (
+
+            {/* Entrées */}
+            <h3 className="col-span-full mt-6 text-sm font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
+            {SEC_ENTREES.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -170,6 +200,83 @@ export default function KaiKaiApp() {
                 </div>
               </div>
             ))}
+
+            {/* Plats chauds */}
+            <h3 className="col-span-full mt-8 text-sm font-semibold tracking-wide text-white/60">🔥 Plats chauds</h3>
+            {SEC_CHAUD.map(item => (
+              <div key={item.id} className="rounded-3xl border border-white/10 p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-lg font-medium">{item.name}</div>
+                    <div className="mt-1 text-sm text-white/60">{item.desc}</div>
+                    <div className="mt-2 text-white/90">{format(item.price)}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => remove(item.id)} className="rounded-2xl border border-white/20 p-2"><Minus className="h-4 w-4" /></button>
+                    <span className="w-6 text-center">{cart[item.id] || 0}</span>
+                    <button onClick={() => add(item.id)} className="rounded-2xl border border-white/20 p-2"><Plus className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Plats froids */}
+            <h3 className="col-span-full mt-8 text-sm font-semibold tracking-wide text-white/60">❄️ Plats froids</h3>
+            {SEC_FROID.map(item => (
+              <div key={item.id} className="rounded-3xl border border-white/10 p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-lg font-medium">{item.name}</div>
+                    <div className="mt-1 text-sm text-white/60">{item.desc}</div>
+                    <div className="mt-2 text-white/90">{format(item.price)}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => remove(item.id)} className="rounded-2xl border border-white/20 p-2"><Minus className="h-4 w-4" /></button>
+                    <span className="w-6 text-center">{cart[item.id] || 0}</span>
+                    <button onClick={() => add(item.id)} className="rounded-2xl border border-white/20 p-2"><Plus className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Desserts */}
+            <h3 className="col-span-full mt-8 text-sm font-semibold tracking-wide text-white/60">🍰 Desserts</h3>
+            {SEC_DESSERT.map(item => (
+              <div key={item.id} className="rounded-3xl border border-white/10 p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-lg font-medium">{item.name}</div>
+                    <div className="mt-1 text-sm text-white/60">{item.desc}</div>
+                    <div className="mt-2 text-white/90">{format(item.price)}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => remove(item.id)} className="rounded-2xl border border-white/20 p-2"><Minus className="h-4 w-4" /></button>
+                    <span className="w-6 text-center">{cart[item.id] || 0}</span>
+                    <button onClick={() => add(item.id)} className="rounded-2xl border border-white/20 p-2"><Plus className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Boissons */}
+            <h3 className="col-span-full mt-8 text-sm font-semibold tracking-wide text-white/60">🥤 Boissons</h3>
+            {SEC_BOISSON.map(item => (
+              <div key={item.id} className="rounded-3xl border border-white/10 p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-lg font-medium">{item.name}</div>
+                    <div className="mt-1 text-sm text-white/60">{item.desc}</div>
+                    <div className="mt-2 text-white/90">{format(item.price)}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => remove(item.id)} className="rounded-2xl border border-white/20 p-2"><Minus className="h-4 w-4" /></button>
+                    <span className="w-6 text-center">{cart[item.id] || 0}</span>
+                    <button onClick={() => add(item.id)} className="rounded-2xl border border-white/20 p-2"><Plus className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
           </div>
         </section>
       )}
