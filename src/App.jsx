@@ -65,16 +65,17 @@ const MENU_SORTED = byIds(ORDERED_IDS);
 
 function format(price) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
-}function HeroSlider() {
+}
+
+// Slider d’images du hero
+function HeroSlider() {
   const IMAGES = [
     { src: "/hero-tartare.jpg", alt: "Tartare de thon" },
     { src: "/hero-wok-poulet.jpg", alt: "Wok poulet / nouilles" },
     { src: "/hero-boeuf.jpg", alt: "Wok de bœuf et riz" },
   ];
-
   const [idx, setIdx] = React.useState(0);
 
-  // changement auto toutes les 4s
   React.useEffect(() => {
     const t = setInterval(() => setIdx(i => (i + 1) % IMAGES.length), 4000);
     return () => clearInterval(t);
@@ -82,7 +83,6 @@ function format(price) {
 
   return (
     <div className="relative">
-      {/* pile d'images avec fade */}
       <div className="relative max-h-96 rounded-3xl overflow-hidden border border-white/10">
         {IMAGES.map((img, i) => (
           <img
@@ -93,11 +93,9 @@ function format(price) {
             draggable={false}
           />
         ))}
-        {/* fallback hauteur pour éviter le “saut” */}
         <img src={IMAGES[0].src} alt="" className="opacity-0 w-full h-full object-cover select-none" />
       </div>
 
-      {/* contrôles gauche/droite */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-2">
         <button
           onClick={() => setIdx(i => (i - 1 + IMAGES.length) % IMAGES.length)}
@@ -113,7 +111,6 @@ function format(price) {
         </button>
       </div>
 
-      {/* petits points d’état */}
       <div className="mt-3 flex items-center gap-2">
         {IMAGES.map((_, i) => (
           <button
@@ -127,7 +124,6 @@ function format(price) {
     </div>
   );
 }
-
 
 export default function KaiKaiApp() {
   const [cart, setCart] = useState({});
@@ -195,13 +191,11 @@ export default function KaiKaiApp() {
         </div>
       </div>
 
-      
+      {/* Hero */}
       <section className="mx-auto max-w-5xl px-4 py-10">
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
-            {/* IMAGE AJOUTÉE ICI — rien d'autre n'a changé */}
             <HeroSlider />
-            
             <div className="mt-6 flex gap-3">
               <button onClick={() => setStep("menu")} className="rounded-2xl bg-white px-4 py-2 text-black">Voir le menu</button>
               <button onClick={() => setStep("checkout")} className="rounded-2xl border border-white/20 px-4 py-2">Commander</button>
@@ -235,10 +229,9 @@ export default function KaiKaiApp() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Entrées */}
-<h3 className="col-span-full mt-6 text-base font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
-
-            <h3 className="col-span-full mt-6 text-lg font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
-
+            <h3 className="col-span-full mt-6 text-2xl font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
+            {SEC_ENTREES.map(item => (
+              <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="text-lg font-medium">{item.name}</div>
@@ -255,7 +248,7 @@ export default function KaiKaiApp() {
             ))}
 
             {/* Plats chauds */}
-<h3 className="col-span-full mt-8 text-base font-semibold tracking-wide text-white/60">🔥 Plats chauds</h3>
+            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">♨️ Plats chauds</h3>
             {SEC_CHAUD.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -274,8 +267,7 @@ export default function KaiKaiApp() {
             ))}
 
             {/* Plats froids */}
-<h3 className="col-span-full mt-8 text-base font-semibold tracking-wide text-white/60">❄️ Plats froids</h3>
-
+            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧊 Plats froids</h3>
             {SEC_FROID.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -294,8 +286,7 @@ export default function KaiKaiApp() {
             ))}
 
             {/* Desserts */}
-<h3 className="col-span-full mt-8 text-base font-semibold tracking-wide text-white/60">🍰 Desserts</h3>
-
+            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍧 Desserts</h3>
             {SEC_DESSERT.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -314,7 +305,7 @@ export default function KaiKaiApp() {
             ))}
 
             {/* Boissons */}
-<h3 className="col-span-full mt-8 text-base font-semibold tracking-wide text-white/60">🥤 Boissons</h3>
+            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧉 Boissons</h3>
             {SEC_BOISSON.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -331,8 +322,7 @@ export default function KaiKaiApp() {
                 </div>
               </div>
             ))}
-
-          </div>
+          </div> {/* <- ferme le grid */}
         </section>
       )}
 
