@@ -235,7 +235,8 @@ export default function KaiKaiApp() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Entrées */}
-            <h3 className="col-span-full mt-6 text-sm font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
+<h3 className="col-span-full mt-6 text-base font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
+
             {SEC_ENTREES.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -254,7 +255,7 @@ export default function KaiKaiApp() {
             ))}
 
             {/* Plats chauds */}
-            <h3 className="col-span-full mt-8 text-sm font-semibold tracking-wide text-white/60">🔥 Plats chauds</h3>
+<h3 className="col-span-full mt-8 text-base font-semibold tracking-wide text-white/60">🔥 Plats chauds</h3>
             {SEC_CHAUD.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -273,7 +274,8 @@ export default function KaiKaiApp() {
             ))}
 
             {/* Plats froids */}
-            <h3 className="col-span-full mt-8 text-sm font-semibold tracking-wide text-white/60">❄️ Plats froids</h3>
+<h3 className="col-span-full mt-8 text-base font-semibold tracking-wide text-white/60">❄️ Plats froids</h3>
+
             {SEC_FROID.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -292,7 +294,8 @@ export default function KaiKaiApp() {
             ))}
 
             {/* Desserts */}
-            <h3 className="col-span-full mt-8 text-sm font-semibold tracking-wide text-white/60">🍰 Desserts</h3>
+<h3 className="col-span-full mt-8 text-base font-semibold tracking-wide text-white/60">🍰 Desserts</h3>
+
             {SEC_DESSERT.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -311,7 +314,7 @@ export default function KaiKaiApp() {
             ))}
 
             {/* Boissons */}
-            <h3 className="col-span-full mt-8 text-sm font-semibold tracking-wide text-white/60">🥤 Boissons</h3>
+<h3 className="col-span-full mt-8 text-base font-semibold tracking-wide text-white/60">🥤 Boissons</h3>
             {SEC_BOISSON.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
