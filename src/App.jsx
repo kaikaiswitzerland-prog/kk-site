@@ -45,34 +45,23 @@ const MENU = [
   { id: "27", name: "Supplément Sirop", desc: "Grenadine, Menthe, Fraise, Pêche… (ajout)", price: 0.5 },
 ];
 
-// ---- Ajout: ordre + sections (sans casser le design) ----
-const ORDERED_IDS = [
-  // Entrées
-  11,12,13,14,15,16,
-  // Menus chauds
-  1,2,3,4,5,
-  // Menus froids
-  6,7,8,9,10,
-  // Desserts
-  17,18,19,20,
-  // Boissons
-  21,22,23,24,25,26,27
-];
-const byIds = ids => ids.map(id => MENU.find(m => m.id === String(id))).filter(Boolean);
-const MENU_SORTED = byIds(ORDERED_IDS);
-
+// ---- Ordre + sections (sans casser le design) ----
 const IDS_ENTREES = [11,12,13,14,15,16];
 const IDS_CHAUD   = [1,2,3,4,5];
 const IDS_FROID   = [6,7,8,9,10];
 const IDS_DESSERT = [17,18,19,20];
 const IDS_BOISSON = [21,22,23,24,25,26,27];
 
+const byIds = (ids) => ids.map(id => MENU.find(m => m.id === String(id))).filter(Boolean);
 const SEC_ENTREES = byIds(IDS_ENTREES);
 const SEC_CHAUD   = byIds(IDS_CHAUD);
 const SEC_FROID   = byIds(IDS_FROID);
 const SEC_DESSERT = byIds(IDS_DESSERT);
 const SEC_BOISSON = byIds(IDS_BOISSON);
-// ---------------------------------------------------------
+
+const ORDERED_IDS = [...IDS_ENTREES, ...IDS_CHAUD, ...IDS_FROID, ...IDS_DESSERT, ...IDS_BOISSON];
+const MENU_SORTED = byIds(ORDERED_IDS);
+// --------------------------------------------------
 
 function format(price) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
@@ -85,7 +74,6 @@ export default function KaiKaiApp() {
   const [step, setStep] = useState("menu");
   const [logoVisible, setLogoVisible] = useState(true);
 
-  // on calcule à partir de MENU_SORTED (ordre correct)
   const items = useMemo(() => MENU_SORTED.map(m => ({ ...m, qty: cart[m.id] || 0 })), [cart]);
   const subtotal = useMemo(() => items.reduce((s, it) => s + it.price * it.qty, 0), [items]);
   const discount = useMemo(() => (couponApplied ? subtotal * 0.10 : 0), [couponApplied, subtotal]);
@@ -98,6 +86,11 @@ export default function KaiKaiApp() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* DEBUG BANNER */}
+      <div style={{background:'red', color:'white', padding:'8px', textAlign:'center', fontWeight:700}}>
+        DEBUG: VERSION SECTIONS ACTIVE
+      </div>
+
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="relative mx-auto flex max-w-5xl items-center justify-center px-4 py-4">
@@ -181,7 +174,6 @@ export default function KaiKaiApp() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-
             {/* Entrées */}
             <h3 className="col-span-full mt-6 text-sm font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
             {SEC_ENTREES.map(item => (
