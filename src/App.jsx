@@ -86,8 +86,6 @@ export default function KaiKaiApp() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-     
-
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="relative mx-auto flex max-w-5xl items-center justify-center px-4 py-4">
@@ -139,6 +137,12 @@ export default function KaiKaiApp() {
       <section className="mx-auto max-w-5xl px-4 py-10">
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
+            {/* IMAGE AJOUTÉE ICI — rien d'autre n'a changé */}
+            <img
+              src="/hero-tartare.jpg"
+              alt="Tartare de thon"
+              className="w-full rounded-3xl object-cover max-h-96"
+            />
             <div className="mt-6 flex gap-3">
               <button onClick={() => setStep("menu")} className="rounded-2xl bg-white px-4 py-2 text-black">Voir le menu</button>
               <button onClick={() => setStep("checkout")} className="rounded-2xl border border-white/20 px-4 py-2">Commander</button>
