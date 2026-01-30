@@ -1,65 +1,62 @@
-// src/App.jsx
+ // src/App.jsx
 import React, { useMemo, useState } from "react";
 import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Percent, Check } from "lucide-react";
 
 // chemin de ton logo placé dans /public
 const LOGO_SRC = "/logo.png";
 
-// --- Menu réel (CHF)
+// --- Menu réel (CHF) - Mis à jour selon le menu officiel
 const MENU = [
+  // ——— ENTRÉES ———
+  { id: "1",  name: "Velouté koko", desc: "Légumes de saison et crème coco", price: 4.90 },
+  { id: "2",  name: "Salade d'avocat", desc: "Salade, tomate, patate, concombre, guacamole maison, cacahuètes", price: 7.90 },
+  { id: "3",  name: "Salade de poulet", desc: "Salade, tomate, patate, concombre, poulet", price: 9.90 },
+  { id: "4",  name: "Tartare de thon rouge", desc: "Mariné au citron vert et gingembre avec 4 variantes possible : Tahitien, Haka, Mokaï, Kaikai", price: 12.90 },
+
   // ——— PLATS CHAUDS ———
-  { id: "1",  name: "Chao Men", desc: "Nouilles sautées, légumes de saison, wok de porc et poulet. Sauce crevettes et champignons.", price: 14.5 },
-  { id: "2",  name: "Kai Fan", desc: "Riz sauté, wok de porc et poulet. Sauce crevettes et champignons. Servi avec salade exotique.", price: 14.5 },
-  { id: "3",  name: "Porcelet Coco", desc: "Porcelet rôti au four. Sauce coco et citron vert. Accompagnement: patate douce/manioc ou lentilles corail/cacahuètes.", price: 17 },
-  { id: "4",  name: "Fricassée de Thon", desc: "Thon braisé, légumes de saison. Sauce citron vert, gingembre. Servi avec du riz et de la salade.", price: 19 },
-  { id: "5",  name: "Wok de Bœuf", desc: "Wok de bœuf, légumes de saison. Sauce sésame. Servi avec du riz et de la salade.", price: 28.5 },
+  { id: "5",  name: "Chao Men", desc: "Nouilles sautées, légumes de saison, wok de porc et/ou poulet, sauce crevette et champignons", price: 17.90 },
+  { id: "6",  name: "Kai Fan", desc: "Riz sauté, wok de porc et/ou poulet, sauce crevette et champignons, servi avec sa salade exotique", price: 17.90 },
+  { id: "7",  name: "Omelette Fu Young", desc: "Omelette aux légumes sautés de saison", price: 16.90 },
+  { id: "8",  name: "Wok de Bœuf", desc: "Wok de bœuf, légumes de saison, sauce sésame, servi avec du riz et de salade", price: 26.90 },
 
   // ——— PLATS FROIDS ———
-  { id: "6",  name: "Poisson Tahitien", desc: "Tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce coco. Servi avec du riz et de la salade.", price: 15.5 },
-  { id: "7",  name: "Poisson KaiKai", desc: "Tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce sésame, mangue et ananas. Servi avec du riz et de la salade.", price: 15.5 },
-  { id: "8",  name: "Poisson Haka", desc: "Tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce piment. Servi avec du riz et de la salade.", price: 16 },
-  { id: "9",  name: "Poisson Mokai", desc: "Tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce cacahuètes et avocat. Servi avec du riz et de la salade.", price: 17 },
-  { id: "10", name: "Trio de Poisson au Choix", desc: "3 tartares au choix. Servi avec du riz et de la salade.", price: 22 },
+  { id: "9",  name: "Tahitien", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce coco", price: 21.90 },
+  { id: "10", name: "Kaikai", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce sésame, mangue et ananas", price: 22.90 },
+  { id: "11", name: "Haka", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce piment maison", price: 22.90 },
+  { id: "12", name: "Mokaï", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce arachide et guacamole maison", price: 24.90 },
 
-  // ——— ENTRÉES ———
-  { id: "11", name: "Entrée Tahitienne", desc: "Entrée tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce coco.", price: 8.5 },
-  { id: "12", name: "Entrée KaiKai", desc: "Entrée tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce sésame, mangue et ananas.", price: 8.5 },
-  { id: "13", name: "Entrée Haka", desc: "Entrée tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce piment.", price: 8.5 },
-  { id: "14", name: "Entrée Mokai", desc: "Entrée tartare de thon mariné au citron vert et gingembre. Tomate, concombre et avocat. Sauce arachide, gingembre sucré.", price: 8.5 },
-  { id: "15", name: "Salade d'Avocat", desc: "Salade, tomates, patates, concombres, avocat, cacahuètes.", price: 8.5 },
-  { id: "16", name: "Salade de Poulet", desc: "Salade, tomates, patates, concombres, poulet.", price: 8.5 },
+  // ——— FORMULES ———
+  { id: "13", name: "Formule Découverte", desc: "Velouté + Plat + Boisson", price: 19.90 },
+  { id: "14", name: "Formule Voyage", desc: "2x Plats + 2x Boissons + 1x Dessert", price: 49.90 },
 
   // ——— DESSERTS ———
-  { id: "17", name: "Poe Banane", desc: "Compoté de banane à la perle du Japon, vanille et crème de coco.", price: 6.5 },
-  { id: "18", name: "Crème à la Mangue", desc: "Crème maison avec coulis de mangue frais.", price: 6.5 },
-  { id: "19", name: "Coulant au Chocolat", desc: "Coulant au chocolat.", price: 6.5 },
-  { id: "20", name: "Glace Pina Colada ou Coco-Choco", desc: "Glace au choix: pina colada ou coco-choco.", price: 6.5 },
+  { id: "15", name: "Coulant au chocolat", desc: "Gâteau au chocolat à la texture fondante", price: 9.90 },
+  { id: "16", name: "Crème Tropicale", desc: "Coulis mangue / fruit rouges maison", price: 9.90 },
+  { id: "17", name: "Cheesecake", desc: "Coulis fruit rouges maison", price: 12.90 },
 
   // ——— BOISSONS ———
-  { id: "21", name: "Soda", desc: "Coca-Cola, Orangina, Schweppes…", price: 3.5 },
-  { id: "22", name: "Suprême", desc: "Hibiscus-Framboise / Gingembre-Ananas / Baobab.", price: 5.5 },
-  { id: "23", name: "Jus de Fruits", desc: "Demandez nos parfums.", price: 3.5 },
-  { id: "24", name: "Abatilles 50cl", desc: "Eau pétillante ou minérale.", price: 3 },
-  { id: "25", name: "Abatilles 1L", desc: "Eau pétillante ou minérale.", price: 4.5 },
-  { id: "26", name: "Perrier 33cl", desc: "Eau gazeuse Perrier.", price: 4 },
-  { id: "27", name: "Supplément Sirop", desc: "Grenadine, Menthe, Fraise, Pêche… (ajout)", price: 0.5 },
+  { id: "18", name: "Jus exotiques", desc: "Pomme/kiwi, fraise/framboise, ananas/citron/gingembre, coktail ACE", price: 3.50 },
+  { id: "19", name: "Eau plate/gazeuse", desc: "Eau minérale ou gazeuse", price: 3.00 },
 ];
 
+
 // ---- Ordre + sections (sans casser le design) ----
-const IDS_ENTREES = [11,12,13,14,15,16];
-const IDS_CHAUD   = [1,2,3,4,5];
-const IDS_FROID   = [6,7,8,9,10];
-const IDS_DESSERT = [17,18,19,20];
-const IDS_BOISSON = [21,22,23,24,25,26,27];
+const IDS_ENTREES  = [1, 2, 3, 4];
+const IDS_CHAUD    = [5, 6, 7, 8];
+const IDS_FROID    = [9, 10, 11, 12];
+const IDS_FORMULES = [13, 14];
+const IDS_DESSERT  = [15, 16, 17];
+const IDS_BOISSON  = [18, 19];
 
 const byIds = (ids) => ids.map(id => MENU.find(m => m.id === String(id))).filter(Boolean);
-const SEC_ENTREES = byIds(IDS_ENTREES);
-const SEC_CHAUD   = byIds(IDS_CHAUD);
-const SEC_FROID   = byIds(IDS_FROID);
-const SEC_DESSERT = byIds(IDS_DESSERT);
-const SEC_BOISSON = byIds(IDS_BOISSON);
+const SEC_ENTREES  = byIds(IDS_ENTREES);
+const SEC_CHAUD    = byIds(IDS_CHAUD);
+const SEC_FROID    = byIds(IDS_FROID);
+const SEC_FORMULES = byIds(IDS_FORMULES);
+const SEC_DESSERT  = byIds(IDS_DESSERT);
+const SEC_BOISSON  = byIds(IDS_BOISSON);
 
-const ORDERED_IDS = [...IDS_ENTREES, ...IDS_CHAUD, ...IDS_FROID, ...IDS_DESSERT, ...IDS_BOISSON];
+const ORDERED_IDS = [...IDS_ENTREES, ...IDS_CHAUD, ...IDS_FROID, ...IDS_FORMULES, ...IDS_DESSERT, ...IDS_BOISSON];
 const MENU_SORTED = byIds(ORDERED_IDS);
 // --------------------------------------------------
 
@@ -67,7 +64,7 @@ function format(price) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
 }
 
-// Slider d’images du hero
+// Slider d'images du hero
 function HeroSlider() {
   const IMAGES = [
     { src: "/hero-tartare.jpg", alt: "Tartare de thon" },
@@ -117,7 +114,7 @@ function HeroSlider() {
             key={i}
             onClick={() => setIdx(i)}
             className={`h-2 w-2 rounded-full ${i === idx ? "bg-white" : "bg-white/30"}`}
-            aria-label={`Aller à l’image ${i+1}`}
+            aria-label={`Aller à l'image ${i+1}`}
           />
         ))}
       </div>
@@ -146,90 +143,43 @@ export default function KaiKaiApp() {
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur">
-        <div className="relative mx-auto flex max-w-5xl items-center justify-center px-4 py-4">
-          <div className="flex flex-col items-center">
-            {logoVisible ? (
-              <img src={LOGO_SRC} alt="Kai Kai" className="h-14 w-auto" onError={() => setLogoVisible(false)} />
-            ) : (
-              <span className="text-xl font-semibold tracking-wide">Kai Kai</span>
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            {logoVisible && <img src={LOGO_SRC} alt="Kai Kai" className="h-8 rounded" onError={() => setLogoVisible(false)} />}
+            <h1 className="text-xl font-semibold">Kai Kai</h1>
+          </div>
+          <button onClick={() => setStep("checkout")} className="relative rounded-2xl border border-white/20 p-2.5">
+            <ShoppingCart className="h-5 w-5" />
+            {Object.values(cart).reduce((s, q) => s + q, 0) > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs text-black">
+                {Object.values(cart).reduce((s, q) => s + q, 0)}
+              </span>
             )}
-            <p className="mt-2 text-sm text-white/70 text-center">
-              Votre restaurant tahitien en livraison sur Genève & Lausanne.
-            </p>
-          </div>
-          <div className="absolute left-4 hidden items-center gap-2 sm:flex">
-            <button
-              onClick={() => setMode("delivery")}
-              className={`flex items-center gap-2 rounded-2xl px-3 py-2 text-sm ${mode === "delivery" ? "bg-white text-black" : "border border-white/20"}`}
-            >
-              <Bike className="h-4 w-4" /> Livraison
-            </button>
-            <button
-              onClick={() => setMode("pickup")}
-              className={`flex items-center gap-2 rounded-2xl px-3 py-2 text-sm ${mode === "pickup" ? "bg-white text-black" : "border border-white/20"}`}
-            >
-              <MapPin className="h-4 w-4" /> À emporter
-            </button>
-          </div>
-          <div className="absolute right-4 flex items-center gap-3">
-            <span className="hidden text-sm text-white/70 sm:inline">{format(total)}</span>
-            <button
-              onClick={() => setStep("checkout")}
-              className="flex items-center gap-2 rounded-2xl border border-white/20 px-3 py-2 text-sm"
-            >
-              <ShoppingCart className="h-4 w-4" /> Panier
-            </button>
-          </div>
+          </button>
         </div>
       </header>
 
-      {/* Bannière -10% */}
-      <div className="border-b border-white/10 bg-white text-black">
-        <div className="mx-auto flex max-w-5xl items-center justify-center gap-2 px-4 py-2 text-sm font-medium">
-          <Percent className="h-4 w-4" />
-          <span>-10% sur toutes les commandes passées sur notre site — automatiquement appliqué.</span>
-        </div>
-      </div>
-
-      {/* Hero */}
-      <section className="mx-auto max-w-5xl px-4 py-10">
-        <div className="grid gap-6 sm:grid-cols-2">
-          <div>
-            <HeroSlider />
-            <div className="mt-6 flex gap-3">
-              <button onClick={() => setStep("menu")} className="rounded-2xl bg-white px-4 py-2 text-black">Voir le menu</button>
-              <button onClick={() => setStep("checkout")} className="rounded-2xl border border-white/20 px-4 py-2">Commander</button>
-            </div>
-          </div>
-          <div className="rounded-3xl border border-white/10 p-6">
-            <div className="grid grid-cols-3 gap-3">
-              {MENU_SORTED.slice(0, 9).map(m => (
-                <div key={m.id} className="rounded-2xl border border-white/10 p-3">
-                  <div className="text-sm font-medium">{m.name}</div>
-                  <div className="mt-1 text-xs text-white/60">{format(m.price)}</div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <button onClick={() => remove(m.id)} className="rounded-xl border border-white/20 p-1"><Minus className="h-4 w-4" /></button>
-                    <span>{cart[m.id] || 0}</span>
-                    <button onClick={() => add(m.id)} className="rounded-xl border border-white/20 p-1"><Plus className="h-4 w-4" /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section Menu */}
+      {/* Menu principal */}
       {step === "menu" && (
-        <section className="mx-auto max-w-5xl px-4 pb-24">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Menu</h2>
-            <div className="text-sm text-white/70">Mode: {mode === "delivery" ? "Livraison" : "À emporter"}</div>
+        <section className="mx-auto max-w-5xl px-4 py-10">
+          {/* Hero + Slider */}
+          <div className="mb-10 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-6">
+            <div className="mb-6 text-center">
+              <h2 className="mb-2 text-3xl font-bold">Bienvenue chez Kai Kai</h2>
+              <p className="text-white/70">Cuisine tahitienne authentique — Genève & Lausanne</p>
+            </div>
+            <HeroSlider />
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-white/60">
+              <div className="flex items-center gap-2"><MapPin className="h-4 w-4" />Rue du Marché 6, 1204 Genève</div>
+              <div className="flex items-center gap-2"><Bike className="h-4 w-4" />Livraison rapide</div>
+              <div className="flex items-center gap-2"><Percent className="h-4 w-4" />-10% sur votre première commande</div>
+            </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          {/* Grille de plats */}
+          <div className="grid gap-6 sm:grid-cols-2">
             {/* Entrées */}
-            <h3 className="col-span-full mt-6 text-2xl font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
+            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
             {SEC_ENTREES.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -247,8 +197,8 @@ export default function KaiKaiApp() {
               </div>
             ))}
 
-            {/* Plats chauds */}
-            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">♨️ Plats chauds</h3>
+            {/* Plats Chauds */}
+            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🔥 Plat Chaud</h3>
             {SEC_CHAUD.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -266,8 +216,8 @@ export default function KaiKaiApp() {
               </div>
             ))}
 
-            {/* Plats froids */}
-            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧊 Plats froids</h3>
+            {/* Plats Froids */}
+            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">❄️ Plat Froid</h3>
             {SEC_FROID.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -285,8 +235,27 @@ export default function KaiKaiApp() {
               </div>
             ))}
 
+            {/* Formules */}
+            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🎁 Formules</h3>
+            {SEC_FORMULES.map(item => (
+              <div key={item.id} className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-lg font-medium">{item.name}</div>
+                    <div className="mt-1 text-sm text-white/60">{item.desc}</div>
+                    <div className="mt-2 text-white/90">{format(item.price)}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => remove(item.id)} className="rounded-2xl border border-white/20 p-2"><Minus className="h-4 w-4" /></button>
+                    <span className="w-6 text-center">{cart[item.id] || 0}</span>
+                    <button onClick={() => add(item.id)} className="rounded-2xl border border-white/20 p-2"><Plus className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
             {/* Desserts */}
-            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍧 Desserts</h3>
+            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍰 Desserts & Boisson</h3>
             {SEC_DESSERT.map(item => (
               <div key={item.id} className="rounded-3xl border border-white/10 p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -323,6 +292,11 @@ export default function KaiKaiApp() {
               </div>
             ))}
           </div> {/* <- ferme le grid */}
+
+          {/* Note */}
+          <div className="mt-8 text-center text-sm text-white/50 italic">
+            Tout nos plats sont accompagnés de riz et de salade
+          </div>
         </section>
       )}
 
@@ -411,7 +385,7 @@ function Checkout({ items, subtotal, discount, deliveryFee, total, mode, setMode
           <input name="email" placeholder="E-mail (pour confirmation)" className="rounded-xl border border-white/20 bg-transparent px-3 py-2 outline-none" value={form.email} onChange={handleChange} />
           <label className="mt-1 flex items-center gap-2 text-sm text-white/70">
             <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-            J’accepte les conditions et la politique de confidentialité.
+            J'accepte les conditions et la politique de confidentialité.
           </label>
         </div>
 
