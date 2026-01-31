@@ -1,85 +1,111 @@
-// src/App.jsx - VERSION AMÉLIORÉE
+// src/App.jsx - VERSION AVEC MODIFICATIONS DEMANDÉES
 import React, { useMemo, useState, useEffect } from "react";
 import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Percent, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle } from "lucide-react";
 
-// chemin de ton logo placé dans /public
-const LOGO_SRC = "/logo.png";
+// MODIFICATION 1: Logo PNG au lieu du SVG
+const LOGO_SRC = "/logo_kaikai.png";
 
 // Informations du restaurant
 const RESTAURANT_INFO = {
-  name: "Kai Kai",
+  name: "KaïKaï",
   address: "Bd de la Tour 1, 1205 Genève",
   phone: "+41765197670",
   phoneDisplay: "+41 76 519 76 70",
   instagram: "https://www.instagram.com/kaikaiswitzerland",
-  facebook: "#", // Ajouter le lien Facebook si disponible
+  facebook: "#",
   email: "contact@kaikai.ch",
   
-  // Horaires (format 24h)
   hours: {
     lunch: { start: "11:30", end: "14:00" },
     dinner: { start: "18:00", end: "22:00" }
   },
   
-  // Zones de livraison (codes postaux Genève)
   deliveryZones: ["1200", "1201", "1202", "1203", "1204", "1205", "1206", "1207", "1208", "1209"],
-  deliveryTime: "30-45", // minutes
+  deliveryTime: "30-45",
   
-  // Coordonnées GPS pour Google Maps
   coordinates: {
     lat: 46.1983,
     lng: 6.1472
   }
 };
 
-// --- Menu réel (CHF) - Mis à jour selon le menu officiel
+// --- Menu réel (CHF)
 const MENU = [
-  // ——— ENTRÉES ———
+  // ENTRÉES
   { id: "1",  name: "Velouté koko", desc: "Légumes de saison et crème coco", price: 4.90, category: "entrees" },
   { id: "2",  name: "Salade d'avocat", desc: "Salade, tomate, patate, concombre, guacamole maison, cacahuètes", price: 7.90, category: "entrees" },
   { id: "3",  name: "Salade de poulet", desc: "Salade, tomate, patate, concombre, poulet", price: 9.90, category: "entrees" },
   { 
     id: "4",  
     name: "Tartare de thon rouge", 
-    desc: "Mariné au citron vert et gingembre avec 4 variantes possible : Tahitien, Haka, Mokaï, Kaikai", 
+    desc: "Mariné au citron vert et gingembre (4 variantes: Tahitien, Haka, Mokaï, KaïKaï)", 
     price: 12.90, 
     category: "entrees",
-    hasVariants: true,
+    hasVariants: true, // MODIFICATION 2: Support des variantes
     variants: [
       { id: "tahitien", name: "Tahitien", desc: "Sauce coco" },
       { id: "haka", name: "Haka", desc: "Sauce piment maison" },
       { id: "mokai", name: "Mokaï", desc: "Sauce arachide et guacamole" },
-      { id: "kaikai", name: "Kaikai", desc: "Sauce sésame, mangue et ananas" }
+      { id: "kaikai", name: "KaïKaï", desc: "Sauce sésame, mangue et ananas" }
     ]
   },
 
-  // ——— PLATS CHAUDS ———
+  // PLATS CHAUDS
   { id: "5",  name: "Chao Men", desc: "Nouilles sautées, légumes de saison, wok de porc et/ou poulet, sauce crevette et champignons", price: 17.90, category: "chaud" },
   { id: "6",  name: "Kai Fan", desc: "Riz sauté, wok de porc et/ou poulet, sauce crevette et champignons, servi avec sa salade exotique", price: 17.90, category: "chaud" },
   { id: "7",  name: "Omelette Fu Young", desc: "Omelette aux légumes sautés de saison", price: 16.90, category: "chaud" },
   { id: "8",  name: "Wok de Bœuf", desc: "Wok de bœuf, légumes de saison, sauce sésame, servi avec du riz et de salade", price: 26.90, category: "chaud" },
 
-  // ——— PLATS FROIDS ———
+  // PLATS FROIDS
   { id: "9",  name: "Tahitien", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce coco", price: 21.90, category: "froid" },
-  { id: "10", name: "Kaikai", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce sésame, mangue et ananas", price: 22.90, category: "froid" },
+  { id: "10", name: "KaïKaï", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce sésame, mangue et ananas", price: 22.90, category: "froid" },
   { id: "11", name: "Haka", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce piment maison", price: 22.90, category: "froid" },
   { id: "12", name: "Mokaï", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce arachide et guacamole maison", price: 24.90, category: "froid" },
 
-  // ——— FORMULES ———
-  { id: "13", name: "Formule Découverte", desc: "Velouté + Plat + Boisson", price: 19.90, category: "formules" },
-  { id: "14", name: "Formule Voyage", desc: "2x Plats + 2x Boissons + 1x Dessert", price: 49.90, category: "formules" },
+  // FORMULES - MODIFICATION 3: Support des formules avec sélection
+  { 
+    id: "13", 
+    name: "Formule Découverte", 
+    desc: "Velouté + Plat + Boisson", 
+    price: 19.90, 
+    category: "formules",
+    hasFormule: true,
+    formuleType: "decouverte"
+  },
+  { 
+    id: "14", 
+    name: "Formule Voyage", 
+    desc: "2x Plats + 2x Boissons + 1x Dessert", 
+    price: 49.90, 
+    category: "formules",
+    hasFormule: true,
+    formuleType: "voyage"
+  },
 
-  // ——— DESSERTS ———
+  // DESSERTS
   { id: "15", name: "Coulant au chocolat", desc: "Gâteau au chocolat à la texture fondante", price: 9.90, category: "desserts" },
   { id: "16", name: "Crème Tropicale", desc: "Coulis mangue / fruit rouges maison", price: 9.90, category: "desserts" },
   { id: "17", name: "Cheesecake", desc: "Coulis fruit rouges maison", price: 12.90, category: "desserts" },
 
-  // ——— BOISSONS ———
-  { id: "18", name: "Jus exotiques", desc: "Pomme/kiwi, fraise/framboise, ananas/citron/gingembre, coktail ACE", price: 3.50, category: "boissons" },
+  // BOISSONS - MODIFICATION 4: Support de la sélection de jus
+  { 
+    id: "18", 
+    name: "Jus exotiques", 
+    desc: "Pomme/kiwi, fraise/framboise, ananas/citron/gingembre, coktail ACE", 
+    price: 3.50, 
+    category: "boissons",
+    hasJusVariants: true,
+    jusVariants: [
+      { id: "pomme-kiwi", name: "🍏 Pomme/Kiwi", desc: "Frais et vitaminé" },
+      { id: "fraise-framboise", name: "🍓 Fraise/Framboise", desc: "Doux et fruité" },
+      { id: "ananas-citron", name: "🍍 Ananas/Citron/Gingembre", desc: "Tropical et piquant" },
+      { id: "ace", name: "🍊 Cocktail ACE", desc: "Vitaminé (A, C, E)" }
+    ]
+  },
   { id: "19", name: "Eau plate/gazeuse", desc: "Eau minérale ou gazeuse", price: 3.00, category: "boissons" },
 ];
 
-// ---- Ordre + sections ----
+// Ordre des sections
 const IDS_ENTREES  = [1, 2, 3, 4];
 const IDS_CHAUD    = [5, 6, 7, 8];
 const IDS_FROID    = [9, 10, 11, 12];
@@ -102,23 +128,21 @@ function format(price) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
 }
 
-// Vérifier si le restaurant est ouvert
 function isRestaurantOpen() {
   const now = new Date();
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
   const currentTime = currentHour * 60 + currentMinute;
   
-  const lunchStart = 11 * 60 + 30; // 11:30
-  const lunchEnd = 14 * 60; // 14:00
-  const dinnerStart = 18 * 60; // 18:00
-  const dinnerEnd = 22 * 60; // 22:00
+  const lunchStart = 11 * 60 + 30;
+  const lunchEnd = 14 * 60;
+  const dinnerStart = 18 * 60;
+  const dinnerEnd = 22 * 60;
   
   return (currentTime >= lunchStart && currentTime < lunchEnd) || 
          (currentTime >= dinnerStart && currentTime < dinnerEnd);
 }
 
-// Obtenir le prochain horaire d'ouverture
 function getNextOpeningTime() {
   const now = new Date();
   const currentHour = now.getHours();
@@ -137,7 +161,6 @@ function getNextOpeningTime() {
   }
 }
 
-// Slider d'images du hero
 function HeroSlider() {
   const IMAGES = [
     { src: "/hero-tartare.jpg", alt: "Tartare de thon" },
@@ -195,7 +218,6 @@ function HeroSlider() {
   );
 }
 
-// Composant Badge (Halal, Healthy Food)
 function Badge({ type }) {
   const badges = {
     halal: { icon: "🥩", text: "HALAL", color: "from-green-500/20 to-emerald-500/20 border-green-500/30" },
@@ -212,14 +234,13 @@ function Badge({ type }) {
   );
 }
 
-// Composant indicateur d'ouverture
 function OpenStatus() {
   const [isOpen, setIsOpen] = useState(isRestaurantOpen());
   
   useEffect(() => {
     const interval = setInterval(() => {
       setIsOpen(isRestaurantOpen());
-    }, 60000); // Vérifier toutes les minutes
+    }, 60000);
     
     return () => clearInterval(interval);
   }, []);
@@ -236,7 +257,7 @@ function OpenStatus() {
 
 export default function KaiKaiApp() {
   const [cart, setCart] = useState({});
-  const [cartVariants, setCartVariants] = useState({}); // Pour stocker les variantes choisies
+  const [cartVariants, setCartVariants] = useState({});
   const [mode, setMode] = useState("delivery");
   const [couponApplied] = useState(true);
   const [step, setStep] = useState("menu");
@@ -265,9 +286,10 @@ export default function KaiKaiApp() {
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            {logoVisible && <img src={LOGO_SRC} alt="Kai Kai" className="h-8 rounded" onError={() => setLogoVisible(false)} />}
+            {/* MODIFICATION 1: Logo PNG */}
+            {logoVisible && <img src={LOGO_SRC} alt="KaïKaï" className="h-8 rounded" onError={() => setLogoVisible(false)} />}
             <div>
-              <h1 className="text-xl font-semibold">Kai Kai</h1>
+              <h1 className="text-xl font-semibold">KaïKaï</h1>
               <OpenStatus />
             </div>
           </div>
@@ -298,22 +320,18 @@ export default function KaiKaiApp() {
         </div>
       </header>
 
-      {/* Modal À propos */}
-      {showAbout && (
-        <AboutModal onClose={() => setShowAbout(false)} />
-      )}
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
 
       {/* Menu principal */}
       {step === "menu" && (
         <section className="mx-auto max-w-5xl px-4 py-10">
-          {/* Hero + Slider */}
           <div className="mb-10 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-6">
             <div className="mb-6 text-center">
               <div className="flex flex-wrap items-center justify-center gap-3 mb-3">
                 <Badge type="halal" />
                 <Badge type="healthy" />
               </div>
-              <h2 className="mb-2 text-3xl font-bold">Bienvenue chez Kai Kai</h2>
+              <h2 className="mb-2 text-3xl font-bold">Bienvenue chez KaïKaï</h2>
               <p className="text-white/70">Cuisine tahitienne authentique — Genève</p>
             </div>
             <HeroSlider />
@@ -337,51 +355,43 @@ export default function KaiKaiApp() {
 
           {/* Grille de plats */}
           <div className="grid gap-6 sm:grid-cols-2">
-            {/* Entrées */}
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
             {SEC_ENTREES.map(item => (
               <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} />
             ))}
 
-            {/* Plats Chauds */}
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🔥 Plat Chaud</h3>
             {SEC_CHAUD.map(item => (
               <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} />
             ))}
 
-            {/* Plats Froids */}
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">❄️ Plat Froid</h3>
             {SEC_FROID.map(item => (
               <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} />
             ))}
 
-            {/* Formules */}
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🎁 Formules</h3>
             {SEC_FORMULES.map(item => (
               <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} isFormula />
             ))}
 
-            {/* Desserts */}
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍰 Desserts & Boisson</h3>
             {SEC_DESSERT.map(item => (
               <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} />
             ))}
 
-            {/* Boissons */}
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧉 Boissons</h3>
             {SEC_BOISSON.map(item => (
               <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} />
             ))}
           </div>
 
-          {/* Note */}
           <div className="mt-8 text-center text-sm text-white/50 italic">
             Tout nos plats sont accompagnés de riz et de salade
           </div>
         </section>
       )}
 
-      {/* Checkout */}
       {step === "checkout" && (
         <Checkout
           items={items}
@@ -398,7 +408,6 @@ export default function KaiKaiApp() {
         />
       )}
 
-      {/* Success */}
       {step === "success" && (
         <section className="mx-auto max-w-2xl px-4 py-16 text-center">
           <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-white text-black"><Check className="h-6 w-6" /></div>
@@ -419,23 +428,37 @@ export default function KaiKaiApp() {
               <Facebook className="h-6 w-6" />
             </a>
           </div>
-          <div>Kai Kai — restaurant tahitien · {RESTAURANT_INFO.address}</div>
+          <div>KaïKaï — restaurant tahitien · {RESTAURANT_INFO.address}</div>
           <div className="mt-1">📞 {RESTAURANT_INFO.phoneDisplay} · 🕐 {RESTAURANT_INFO.hours.lunch.start}-{RESTAURANT_INFO.hours.lunch.end} | {RESTAURANT_INFO.hours.dinner.start}-{RESTAURANT_INFO.hours.dinner.end}</div>
-          <div className="mt-2">© {new Date().getFullYear()} Kai Kai — Tous droits réservés.</div>
+          <div className="mt-2">© {new Date().getFullYear()} KaïKaï — Tous droits réservés.</div>
         </div>
       </footer>
     </div>
   );
 }
 
-// Composant item de menu avec animations
+// MODIFICATION 2-4: Composant MenuItem avec support des modals
 function MenuItem({ item, cart, add, remove, isFormula = false }) {
   const [showVariants, setShowVariants] = useState(false);
+  const [showJus, setShowJus] = useState(false);
+  const [showFormuleModal, setShowFormuleModal] = useState(false);
   
   const handleAdd = (variant = null) => {
     add(item.id, variant);
+    setShowVariants(false);
+    setShowJus(false);
+    setShowFormuleModal(false);
+  };
+  
+  const handlePlusClick = () => {
     if (item.hasVariants) {
-      setShowVariants(false);
+      setShowVariants(true);
+    } else if (item.hasJusVariants) {
+      setShowJus(true);
+    } else if (item.hasFormule) {
+      setShowFormuleModal(true);
+    } else {
+      handleAdd();
     }
   };
   
@@ -457,7 +480,7 @@ function MenuItem({ item, cart, add, remove, isFormula = false }) {
             </button>
             <span className="w-6 text-center font-medium">{cart[item.id] || 0}</span>
             <button 
-              onClick={() => item.hasVariants ? setShowVariants(true) : handleAdd()} 
+              onClick={handlePlusClick}
               className="rounded-2xl border border-white/20 p-2 hover:bg-white/10 transition-all active:scale-95"
             >
               <Plus className="h-4 w-4" />
@@ -466,7 +489,7 @@ function MenuItem({ item, cart, add, remove, isFormula = false }) {
         </div>
       </div>
       
-      {/* Modal de sélection de variante */}
+      {/* MODIFICATION 2: Modal variantes tartare */}
       {showVariants && item.hasVariants && (
         <VariantModal 
           item={item} 
@@ -474,11 +497,29 @@ function MenuItem({ item, cart, add, remove, isFormula = false }) {
           onClose={() => setShowVariants(false)} 
         />
       )}
+      
+      {/* MODIFICATION 4: Modal jus exotiques */}
+      {showJus && item.hasJusVariants && (
+        <JusModal 
+          item={item} 
+          onSelect={handleAdd} 
+          onClose={() => setShowJus(false)} 
+        />
+      )}
+      
+      {/* MODIFICATION 3: Modal formules */}
+      {showFormuleModal && item.hasFormule && (
+        <FormuleModal 
+          item={item} 
+          onConfirm={handleAdd} 
+          onClose={() => setShowFormuleModal(false)} 
+        />
+      )}
     </>
   );
 }
 
-// Modal de sélection de variante
+// MODIFICATION 2: Modal de sélection de variante tartare
 function VariantModal({ item, onSelect, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
@@ -507,13 +548,343 @@ function VariantModal({ item, onSelect, onClose }) {
   );
 }
 
-// Modal À propos
+// MODIFICATION 4: Modal de sélection de jus
+function JusModal({ item, onSelect, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold">Choisir votre jus exotique</h3>
+          <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <p className="text-sm text-white/60 mb-4">Jus exotiques maison</p>
+        <div className="space-y-3">
+          {item.jusVariants.map(jus => (
+            <button
+              key={jus.id}
+              onClick={() => onSelect(jus)}
+              className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
+            >
+              <div className="font-medium">{jus.name}</div>
+              <div className="text-sm text-white/60 mt-1">{jus.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// MODIFICATION 3: Modal de sélection formules COMPLET
+function FormuleModal({ item, onConfirm, onClose }) {
+  const [selectedPlat, setSelectedPlat] = useState(null);
+  const [selectedPlats, setSelectedPlats] = useState([]);
+  const [selectedBoissons, setSelectedBoissons] = useState([]);
+  const [selectedJusDecouverte, setSelectedJusDecouverte] = useState(null);
+  const [selectedJusVoyage, setSelectedJusVoyage] = useState([]);
+  const [selectedBoisson, setSelectedBoisson] = useState(null);
+  const [selectedDessert, setSelectedDessert] = useState(null);
+  const [showJusSelector, setShowJusSelector] = useState(false);
+  const [jusIndex, setJusIndex] = useState(0);
+  
+  // Bloquer le scroll de la page quand le modal est ouvert
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+  
+  const jusOptions = [
+    { id: 'pomme-kiwi', name: '🍏 Pomme/Kiwi' },
+    { id: 'fraise-framboise', name: '🍓 Fraise/Framboise' },
+    { id: 'ananas-citron', name: '🍍 Ananas/Citron/Gingembre' },
+    { id: 'ace', name: '🍊 Cocktail ACE' }
+  ];
+  
+  const handlePlatCheckbox = (plat) => {
+    if (selectedPlats.includes(plat)) {
+      setSelectedPlats(selectedPlats.filter(p => p !== plat));
+    } else {
+      if (selectedPlats.length < 2) {
+        setSelectedPlats([...selectedPlats, plat]);
+      }
+    }
+  };
+  
+  const handleBoissonCheckbox = (boisson) => {
+    const currentJusCount = selectedBoissons.filter(b => b === 'Jus exotique').length;
+    
+    if (selectedBoissons.includes(boisson) && boisson !== 'Jus exotique') {
+      // Si c'est de l'eau et qu'elle est déjà sélectionnée, la décocher
+      setSelectedBoissons(selectedBoissons.filter(b => b !== boisson));
+    } else if (boisson === 'Jus exotique' && currentJusCount < 2) {
+      // Si c'est un jus et qu'on a moins de 2 jus, ajouter
+      if (selectedBoissons.length < 2) {
+        setSelectedBoissons([...selectedBoissons, boisson]);
+        setJusIndex(currentJusCount);
+        setShowJusSelector(true);
+      }
+    } else if (boisson !== 'Jus exotique' && selectedBoissons.length < 2 && !selectedBoissons.includes(boisson)) {
+      // Si c'est de l'eau et qu'on a de la place
+      setSelectedBoissons([...selectedBoissons, boisson]);
+    }
+  };
+  
+  const handleJusSelection = (jus) => {
+    if (item.formuleType === "decouverte") {
+      setSelectedJusDecouverte(jus);
+    } else {
+      const newJus = [...selectedJusVoyage];
+      newJus[jusIndex] = jus;
+      setSelectedJusVoyage(newJus);
+    }
+    setShowJusSelector(false);
+  };
+  
+  const handleConfirm = () => {
+    if (item.formuleType === "decouverte") {
+      if (!selectedPlat || !selectedBoisson) {
+        alert('Veuillez sélectionner un plat et une boisson');
+        return;
+      }
+      if (selectedBoisson === 'Jus exotique' && !selectedJusDecouverte) {
+        alert('Veuillez choisir votre jus exotique');
+        return;
+      }
+    } else if (item.formuleType === "voyage") {
+      if (selectedPlats.length !== 2) {
+        alert('Veuillez sélectionner exactement 2 plats');
+        return;
+      }
+      if (selectedBoissons.length === 0 || selectedBoissons.length > 2) {
+        alert('Veuillez sélectionner 1 ou 2 boissons');
+        return;
+      }
+      if (!selectedDessert) {
+        alert('Veuillez sélectionner un dessert');
+        return;
+      }
+      const nbJus = selectedBoissons.filter(b => b === 'Jus exotique').length;
+      if (selectedJusVoyage.length < nbJus) {
+        alert('Veuillez choisir vos jus exotiques');
+        return;
+      }
+    }
+    onConfirm();
+  };
+  
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="min-h-screen flex items-center justify-center py-8">
+        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold">{item.name}</h3>
+            <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="text-sm text-white/60 mb-6">{item.desc}</p>
+        
+        {/* Modal Sélection Jus */}
+        {showJusSelector && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowJusSelector(false)}>
+            <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold">Choisir votre jus</h3>
+                <button onClick={() => setShowJusSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="space-y-3">
+                {jusOptions.map(jus => (
+                  <button
+                    key={jus.id}
+                    onClick={() => handleJusSelection(jus.name)}
+                    className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
+                  >
+                    <div className="font-medium">{jus.name}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {item.formuleType === "decouverte" && (
+          <div className="space-y-6">
+            {/* Choix du Plat */}
+            <div>
+              <h4 className="text-lg font-medium mb-3">1. Choisissez votre plat :</h4>
+              <div className="space-y-2">
+                {['Chao Men', 'Kai Fan', 'Omelette Fu Young', 'Tahitien', 'KaïKaï'].map(plat => (
+                  <label key={plat} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="formule-decouverte-plat" 
+                      checked={selectedPlat === plat}
+                      onChange={() => setSelectedPlat(plat)}
+                      className="w-4 h-4" 
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium">{plat}</div>
+                      <div className="text-sm text-white/60">
+                        {plat === 'Chao Men' && 'Nouilles sautées'}
+                        {plat === 'Kai Fan' && 'Riz sauté'}
+                        {plat === 'Omelette Fu Young' && 'Omelette aux légumes'}
+                        {plat === 'Tahitien' && 'Thon rouge, sauce coco'}
+                        {plat === 'KaïKaï' && 'Thon rouge, sauce sésame'}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Choix de la Boisson */}
+            <div>
+              <h4 className="text-lg font-medium mb-3">2. Choisissez votre boisson :</h4>
+              <div className="space-y-2">
+                {['Jus exotique', 'Eau'].map(boisson => (
+                  <label key={boisson} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="formule-decouverte-boisson" 
+                      checked={selectedBoisson === boisson}
+                      onChange={() => {
+                        setSelectedBoisson(boisson);
+                        if (boisson === 'Jus exotique') {
+                          setShowJusSelector(true);
+                        }
+                      }}
+                      className="w-4 h-4" 
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium">{boisson}</div>
+                      <div className="text-sm text-white/60">
+                        {boisson === 'Jus exotique' ? (selectedJusDecouverte || 'Au choix') : 'Plate ou gazeuse'}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {item.formuleType === "voyage" && (
+          <div className="space-y-6">
+            {/* Choix des 2 Plats */}
+            <div>
+              <h4 className="text-lg font-medium mb-3">1. Choisissez vos 2 plats :</h4>
+              <div className="space-y-2">
+                {['Chao Men', 'Kai Fan', 'Wok de Bœuf', 'Tahitien', 'KaïKaï', 'Haka', 'Mokaï'].map(plat => (
+                  <label key={plat} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedPlats.includes(plat)}
+                      onChange={() => handlePlatCheckbox(plat)}
+                      className="w-4 h-4" 
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium">{plat}</div>
+                      <div className="text-sm text-white/60">
+                        {plat === 'Chao Men' && 'Nouilles sautées'}
+                        {plat === 'Kai Fan' && 'Riz sauté'}
+                        {plat === 'Wok de Bœuf' && 'Wok de bœuf, sauce sésame'}
+                        {plat === 'Tahitien' && 'Thon rouge, sauce coco'}
+                        {plat === 'KaïKaï' && 'Thon rouge, sauce sésame'}
+                        {plat === 'Haka' && 'Thon rouge, sauce piment'}
+                        {plat === 'Mokaï' && 'Thon rouge, sauce arachide'}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-white/50 mt-2">Sélectionnez exactement 2 plats</p>
+            </div>
+
+            {/* Choix des 2 Boissons */}
+            <div>
+              <h4 className="text-lg font-medium mb-3">2. Choisissez vos 2 boissons :</h4>
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedBoissons.filter(b => b === 'Jus exotique').length > 0}
+                    onChange={() => handleBoissonCheckbox('Jus exotique')}
+                    className="w-4 h-4" 
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium">Jus exotique {selectedBoissons.filter(b => b === 'Jus exotique').length > 0 && `(${selectedBoissons.filter(b => b === 'Jus exotique').length})`}</div>
+                    <div className="text-sm text-white/60">
+                      {selectedJusVoyage.length > 0 ? selectedJusVoyage.join(', ') : 'Au choix - Cliquez plusieurs fois pour 2 jus'}
+                    </div>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedBoissons.includes('Eau')}
+                    onChange={() => handleBoissonCheckbox('Eau')}
+                    className="w-4 h-4" 
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium">Eau</div>
+                    <div className="text-sm text-white/60">Plate ou gazeuse</div>
+                  </div>
+                </label>
+              </div>
+              <p className="text-xs text-white/50 mt-2">Sélectionnez jusqu'à 2 boissons (cliquez 2x sur jus pour 2 jus)</p>
+            </div>
+
+            {/* Choix du Dessert */}
+            <div>
+              <h4 className="text-lg font-medium mb-3">3. Choisissez votre dessert :</h4>
+              <div className="space-y-2">
+                {['Coulant au chocolat', 'Crème Tropicale', 'Cheesecake'].map(dessert => (
+                  <label key={dessert} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
+                    <input 
+                      type="radio" 
+                      checked={selectedDessert === dessert}
+                      onChange={() => setSelectedDessert(dessert)}
+                      className="w-4 h-4" 
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium">{dessert}</div>
+                      <div className="text-sm text-white/60">
+                        {dessert === 'Coulant au chocolat' && 'Gâteau fondant'}
+                        {dessert === 'Crème Tropicale' && 'Coulis mangue/fruits rouges'}
+                        {dessert === 'Cheesecake' && 'Coulis fruits rouges'}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <button
+          onClick={handleConfirm}
+          className="mt-6 w-full rounded-2xl bg-white text-black px-4 py-3 font-medium hover:bg-white/90 transition-all"
+        >
+          Ajouter au panier - {format(item.price)}
+        </button>
+      </div>
+    </div>
+    </div>
+  );
+}
+
 function AboutModal({ onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold">À propos de Kai Kai</h2>
+          <h2 className="text-2xl font-semibold">À propos de KaïKaï</h2>
           <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
             <X className="h-4 w-4" />
           </button>
@@ -523,7 +894,7 @@ function AboutModal({ onClose }) {
           <div>
             <h3 className="text-lg font-semibold mb-2 text-white">🌴 Notre Histoire</h3>
             <p className="text-sm leading-relaxed">
-              Kai Kai est né de la passion pour la cuisine tahitienne authentique. Notre mission est de vous faire voyager 
+              KaïKaï est né de la passion pour la cuisine tahitienne authentique. Notre mission est de vous faire voyager 
               à travers les saveurs des îles du Pacifique, en utilisant des produits frais et de qualité.
             </p>
           </div>
@@ -609,7 +980,7 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
     address: "", 
     postalCode: "",
     email: "",
-    instructions: "" // Instructions spéciales
+    instructions: ""
   });
   const [agree, setAgree] = useState(false);
   const [deliveryError, setDeliveryError] = useState("");
@@ -619,7 +990,6 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
     
-    // Vérifier la zone de livraison
     if (name === "postalCode" && value.length === 4) {
       if (!RESTAURANT_INFO.deliveryZones.includes(value)) {
         setDeliveryError(`Désolé, nous ne livrons pas encore dans la zone ${value}. Essayez "À emporter" !`);
@@ -646,7 +1016,6 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           </button>
         </div>
 
-        {/* Temps de livraison estimé */}
         {mode === "delivery" && (
           <div className="mb-4 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-3 flex items-center gap-2 text-sm">
             <Bike className="h-4 w-4 text-blue-400" />
@@ -654,7 +1023,6 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           </div>
         )}
 
-        {/* Panier */}
         <div className="space-y-3">
           {items.filter(i => i.qty > 0).map(it => (
             <div key={it.id} className="flex items-center justify-between rounded-2xl border border-white/10 p-3">
@@ -671,7 +1039,6 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           {!hasItems && <div className="rounded-2xl border border-white/10 p-4 text-white/60">Votre panier est vide.</div>}
         </div>
 
-        {/* Mode */}
         <div className="mt-6 flex gap-2">
           <button 
             onClick={() => setMode("delivery")} 
@@ -687,7 +1054,6 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           </button>
         </div>
 
-        {/* Formulaire */}
         <div className="mt-6 grid gap-3">
           <div className="grid grid-cols-2 gap-3">
             <input 
@@ -767,7 +1133,6 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           </label>
         </div>
 
-        {/* Récap */}
         <div className="mt-6 space-y-2 rounded-2xl border border-white/10 p-4">
           <Line label="Sous-total" value={format(subtotal)} />
           <Line label="Réduction site (-10%)" value={`- ${format(discount)}`} />
