@@ -344,11 +344,36 @@ export default function KaiKaiApp() {
   const add = (id, variant = null) => {
     setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
     if (variant) {
-      setCartVariants(cv => ({ ...cv, [id]: variant }));
+      setCartVariants(cv => {
+        const currentVariants = cv[id] || [];
+        return { ...cv, [id]: [...currentVariants, variant] };
+      });
     }
   };
   
-  const remove = (id) => setCart(c => { const q = (c[id] || 0) - 1; const n = { ...c }; if (q <= 0) { delete n[id]; setCartVariants(cv => { const nv = {...cv}; delete nv[id]; return nv; }); } else n[id] = q; return n; });
+  const remove = (id) => setCart(c => { 
+    const q = (c[id] || 0) - 1; 
+    const n = { ...c }; 
+    if (q <= 0) { 
+      delete n[id]; 
+      setCartVariants(cv => { 
+        const nv = {...cv}; 
+        delete nv[id]; 
+        return nv; 
+      }); 
+    } else {
+      n[id] = q;
+      // Retirer la dernière variante ajoutée
+      setCartVariants(cv => {
+        const currentVariants = cv[id] || [];
+        if (currentVariants.length > 0) {
+          return { ...cv, [id]: currentVariants.slice(0, -1) };
+        }
+        return cv;
+      });
+    }
+    return n; 
+  });
   const clear = () => { setCart({}); setCartVariants({}); };
 
   return (
@@ -445,7 +470,7 @@ export default function KaiKaiApp() {
               <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} isFormula />
             ))}
 
-            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍰 Desserts & Boisson</h3>
+            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍰 Desserts</h3>
             {SEC_DESSERT.map(item => (
               <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} />
             ))}
@@ -906,22 +931,69 @@ function FormuleModal({ item, onConfirm, onClose }) {
     const currentJusCount = selectedBoissons.filter(b => b === 'Jus exotique').length;
     const currentEauCount = selectedBoissons.filter(b => b === 'Eau').length;
     
-    if (selectedBoissons.includes(boisson) && boisson !== 'Jus exotique' && boisson !== 'Eau') {
-      setSelectedBoissons(selectedBoissons.filter(b => b !== boisson));
-    } else if (boisson === 'Jus exotique' && currentJusCount < 2) {
-      if (selectedBoissons.length < 2) {
+    // Gérer Jus exotique
+    if (boisson === 'Jus exotique') {
+      if (currentJusCount === 0 && selectedBoissons.length < 2) {
+        // Ajouter le premier jus
         setSelectedBoissons([...selectedBoissons, boisson]);
-        setJusIndex(currentJusCount);
+        setJusIndex(0);
         setShowJusSelector(true);
-      }
-    } else if (boisson === 'Eau' && currentEauCount < 2) {
-      if (selectedBoissons.length < 2) {
+      } else if (currentJusCount === 1 && selectedBoissons.length < 2) {
+        // Ajouter le deuxième jus
         setSelectedBoissons([...selectedBoissons, boisson]);
-        setEauIndex(currentEauCount);
-        setShowEauSelector(true);
+        setJusIndex(1);
+        setShowJusSelector(true);
+      } else if (currentJusCount === 1) {
+        // Retirer le seul jus (pas de limite de 2 boissons atteinte)
+        const newBoissons = selectedBoissons.filter(b => b !== 'Jus exotique');
+        setSelectedBoissons(newBoissons);
+        setSelectedJusVoyage([]);
+      } else if (currentJusCount === 2) {
+        // Retirer un jus (on en a 2)
+        const newBoissons = [...selectedBoissons];
+        const index = newBoissons.lastIndexOf('Jus exotique');
+        newBoissons.splice(index, 1);
+        setSelectedBoissons(newBoissons);
+        const newJus = [...selectedJusVoyage];
+        newJus.pop();
+        setSelectedJusVoyage(newJus);
       }
-    } else if (boisson !== 'Jus exotique' && boisson !== 'Eau' && selectedBoissons.length < 2 && !selectedBoissons.includes(boisson)) {
-      setSelectedBoissons([...selectedBoissons, boisson]);
+    } 
+    // Gérer Eau
+    else if (boisson === 'Eau') {
+      if (currentEauCount === 0 && selectedBoissons.length < 2) {
+        // Ajouter la première eau
+        setSelectedBoissons([...selectedBoissons, boisson]);
+        setEauIndex(0);
+        setShowEauSelector(true);
+      } else if (currentEauCount === 1 && selectedBoissons.length < 2) {
+        // Ajouter la deuxième eau
+        setSelectedBoissons([...selectedBoissons, boisson]);
+        setEauIndex(1);
+        setShowEauSelector(true);
+      } else if (currentEauCount === 1) {
+        // Retirer la seule eau
+        const newBoissons = selectedBoissons.filter(b => b !== 'Eau');
+        setSelectedBoissons(newBoissons);
+        setSelectedEauVoyage([]);
+      } else if (currentEauCount === 2) {
+        // Retirer une eau (on en a 2)
+        const newBoissons = [...selectedBoissons];
+        const index = newBoissons.lastIndexOf('Eau');
+        newBoissons.splice(index, 1);
+        setSelectedBoissons(newBoissons);
+        const newEau = [...selectedEauVoyage];
+        newEau.pop();
+        setSelectedEauVoyage(newEau);
+      }
+    } 
+    // Gérer les autres boissons (si jamais il y en a)
+    else {
+      if (selectedBoissons.includes(boisson)) {
+        setSelectedBoissons(selectedBoissons.filter(b => b !== boisson));
+      } else if (selectedBoissons.length < 2) {
+        setSelectedBoissons([...selectedBoissons, boisson]);
+      }
     }
   };
   
@@ -1138,15 +1210,27 @@ function FormuleModal({ item, onConfirm, onClose }) {
                       type="radio" 
                       name="formule-decouverte-plat" 
                       checked={selectedPlat === plat}
-                      onChange={() => {
-                        setSelectedPlat(plat);
-                        // Si c'est Chao Men ou Kai Fan, ouvrir le sélecteur de protéine
-                        if (needsProteinChoice(plat)) {
-                          setProteinForPlat(plat);
-                          setIsMultiPlat(false);
-                          setShowProteinSelector(true);
+                      onClick={() => {
+                        // Permettre la désélection en cliquant à nouveau
+                        if (selectedPlat === plat) {
+                          setSelectedPlat(null);
+                          // Retirer aussi la protéine associée
+                          setSelectedProteins(prev => {
+                            const newProteins = { ...prev };
+                            delete newProteins[plat];
+                            return newProteins;
+                          });
+                        } else {
+                          setSelectedPlat(plat);
+                          // Si c'est Chao Men, Kai Fan ou Omelette Fu Young, ouvrir le sélecteur de protéine
+                          if (needsProteinChoice(plat)) {
+                            setProteinForPlat(plat);
+                            setIsMultiPlat(false);
+                            setShowProteinSelector(true);
+                          }
                         }
                       }}
+                      onChange={() => {}} // Nécessaire pour éviter les warnings React
                       className="w-4 h-4" 
                     />
                     <div className="flex-1">
@@ -1176,14 +1260,25 @@ function FormuleModal({ item, onConfirm, onClose }) {
                       type="radio" 
                       name="formule-decouverte-boisson" 
                       checked={selectedBoisson === boisson}
-                      onChange={() => {
-                        setSelectedBoisson(boisson);
-                        if (boisson === 'Jus exotique') {
-                          setShowJusSelector(true);
-                        } else if (boisson === 'Eau') {
-                          setShowEauSelector(true);
+                      onClick={() => {
+                        // Permettre la désélection en cliquant à nouveau
+                        if (selectedBoisson === boisson) {
+                          setSelectedBoisson(null);
+                          if (boisson === 'Jus exotique') {
+                            setSelectedJusDecouverte(null);
+                          } else if (boisson === 'Eau') {
+                            setSelectedEauDecouverte(null);
+                          }
+                        } else {
+                          setSelectedBoisson(boisson);
+                          if (boisson === 'Jus exotique') {
+                            setShowJusSelector(true);
+                          } else if (boisson === 'Eau') {
+                            setShowEauSelector(true);
+                          }
                         }
                       }}
+                      onChange={() => {}} // Nécessaire pour éviter les warnings React
                       className="w-4 h-4" 
                     />
                     <div className="flex-1">
@@ -1277,13 +1372,20 @@ function FormuleModal({ item, onConfirm, onClose }) {
                     <input 
                       type="radio" 
                       checked={selectedDessert === dessert}
-                      onChange={() => {
-                        setSelectedDessert(dessert);
-                        // Si c'est Crème Tropicale ou Cheesecake, ouvrir le sélecteur de coulis
-                        if (needsCoulisChoice(dessert)) {
-                          setShowCoulisSelector(true);
+                      onClick={() => {
+                        // Permettre la désélection en cliquant à nouveau
+                        if (selectedDessert === dessert) {
+                          setSelectedDessert(null);
+                          setSelectedCoulisDessert(null);
+                        } else {
+                          setSelectedDessert(dessert);
+                          // Si c'est Crème Tropicale ou Cheesecake, ouvrir le sélecteur de coulis
+                          if (needsCoulisChoice(dessert)) {
+                            setShowCoulisSelector(true);
+                          }
                         }
                       }}
+                      onChange={() => {}} // Nécessaire pour éviter les warnings React
                       className="w-4 h-4" 
                     />
                     <div className="flex-1">
@@ -1317,7 +1419,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
 function AboutModal({ onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold">À propos de KaïKaï</h2>
           <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
@@ -1367,7 +1469,7 @@ function AboutModal({ onClose }) {
             
             <div className="mt-4 rounded-2xl overflow-hidden border border-white/10">
               <iframe
-                src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2759.7!2d${RESTAURANT_INFO.coordinates.lng}!3d${RESTAURANT_INFO.coordinates.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDbCsDExJzUzLjkiTiA2wrAwOCc0OS45IkU!5e0!3m2!1sfr!2sch!4v1234567890`}
+                src="https://www.google.com/maps?q=Boulevard+de+la+Tour+1,+1205+Gen%C3%A8ve,+Switzerland&output=embed"
                 width="100%"
                 height="200"
                 style={{ border: 0 }}
@@ -1457,8 +1559,10 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
 
         <div className="space-y-3">
           {items.filter(i => i.qty > 0).map(it => {
-            const variant = cartVariants[it.id];
-            const isFormule = variant && variant.type;
+            const variants = cartVariants[it.id];
+            const isArray = Array.isArray(variants);
+            const firstVariant = isArray ? variants[0] : variants;
+            const isFormule = firstVariant && firstVariant.type;
             
             return (
               <div key={it.id} className="rounded-2xl border border-white/10 p-3">
@@ -1469,37 +1573,45 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                     {/* Affichage détaillé des formules */}
                     {isFormule && (
                       <div className="mt-2 space-y-1 text-xs text-white/60 pl-3 border-l-2 border-white/20">
-                        {variant.type === "decouverte" && (
+                        {firstVariant.type === "decouverte" && (
                           <>
-                            <div>• {variant.plat}{variant.proteins && variant.proteins[variant.plat] && ` (${variant.proteins[variant.plat]})`}</div>
-                            <div>• {variant.boisson === 'Jus exotique' ? variant.jus : variant.eau}</div>
+                            <div>• {firstVariant.plat}{firstVariant.proteins && firstVariant.proteins[firstVariant.plat] && ` (${firstVariant.proteins[firstVariant.plat]})`}</div>
+                            <div>• {firstVariant.boisson === 'Jus exotique' ? firstVariant.jus : firstVariant.eau}</div>
                           </>
                         )}
-                        {variant.type === "voyage" && (
+                        {firstVariant.type === "voyage" && (
                           <>
                             <div className="font-semibold text-white/70">Plats:</div>
-                            {variant.plats && variant.plats.map((plat, idx) => (
-                              <div key={idx}>• {plat}{variant.proteins && variant.proteins[plat] && ` (${variant.proteins[plat]})`}</div>
+                            {firstVariant.plats && firstVariant.plats.map((plat, idx) => (
+                              <div key={idx}>• {plat}{firstVariant.proteins && firstVariant.proteins[plat] && ` (${firstVariant.proteins[plat]})`}</div>
                             ))}
                             <div className="font-semibold text-white/70 mt-1">Boissons:</div>
-                            {variant.boissons && variant.boissons.map((boisson, idx) => {
-                              if (boisson === 'Jus exotique' && variant.jus && variant.jus[idx]) {
-                                return <div key={idx}>• {variant.jus[idx]}</div>;
-                              } else if (boisson === 'Eau' && variant.eau && variant.eau[idx]) {
-                                return <div key={idx}>• {variant.eau[idx]}</div>;
+                            {firstVariant.boissons && firstVariant.boissons.map((boisson, idx) => {
+                              if (boisson === 'Jus exotique' && firstVariant.jus && firstVariant.jus[idx]) {
+                                return <div key={idx}>• {firstVariant.jus[idx]}</div>;
+                              } else if (boisson === 'Eau' && firstVariant.eau && firstVariant.eau[idx]) {
+                                return <div key={idx}>• {firstVariant.eau[idx]}</div>;
                               }
                               return <div key={idx}>• {boisson}</div>;
                             })}
                             <div className="font-semibold text-white/70 mt-1">Dessert:</div>
-                            <div>• {variant.dessert}{variant.coulisDessert && ` (${variant.coulisDessert})`}</div>
+                            <div>• {firstVariant.dessert}{firstVariant.coulisDessert && ` (${firstVariant.coulisDessert})`}</div>
                           </>
                         )}
                       </div>
                     )}
                     
                     {/* Affichage simple des variantes non-formule */}
-                    {!isFormule && variant && variant.name && (
-                      <div className="text-xs text-white/50 mt-0.5">• {variant.name}</div>
+                    {!isFormule && variants && (
+                      <div className="mt-1 space-y-0.5">
+                        {isArray ? (
+                          variants.map((v, idx) => (
+                            <div key={idx} className="text-xs text-white/60">• {v.name}</div>
+                          ))
+                        ) : (
+                          variants.name && <div className="text-xs text-white/60">• {variants.name}</div>
+                        )}
+                      </div>
                     )}
                     
                     <div className="text-sm text-white/60 mt-1">{it.qty} × {format(it.price)}</div>
