@@ -828,6 +828,23 @@ function FormuleModal({ item, onConfirm, onClose }) {
     { id: 'veggie', name: 'Veggie', icon: '🥬' }
   ];
   
+  // NOUVEAU: Fonction pour obtenir les options de protéine selon le plat
+  const getProteinOptionsForPlat = (platName) => {
+    if (platName === 'Omelette Fu Young') {
+      return [
+        { id: 'veggie', name: 'Veggie' },
+        { id: 'poulet', name: 'Poulet' }
+      ];
+    }
+    // Pour Chao Men et Kai Fan
+    return [
+      { id: 'porc', name: 'Porc' },
+      { id: 'poulet', name: 'Poulet' },
+      { id: 'porc-poulet', name: 'Porc + Poulet' },
+      { id: 'veggie', name: 'Veggie' }
+    ];
+  };
+  
   const eauOptions = [
     { id: 'plate', name: '💧 Eau Plate' },
     { id: 'gazeuse', name: '🫧 Eau Gazeuse' }
@@ -1040,7 +1057,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
               </div>
               <p className="text-sm text-white/60 mb-4">{proteinForPlat}</p>
               <div className="space-y-3">
-                {proteinOptions.map(protein => (
+                {getProteinOptionsForPlat(proteinForPlat).map(protein => (
                   <button
                     key={protein.id}
                     onClick={() => handleProteinSelection(protein.name)}
