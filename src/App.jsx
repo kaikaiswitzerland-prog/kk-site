@@ -79,7 +79,18 @@ const MENU = [
       { id: "veggie", name: "Veggie", desc: "100% végétarien" }
     ]
   },
-  { id: "7",  name: "Omelette Fu Young", desc: "Omelette aux légumes sautés de saison", price: 16.90, category: "chaud" },
+  { 
+    id: "7",  
+    name: "Omelette Fu Young", 
+    desc: "Omelette aux légumes sautés de saison", 
+    price: 16.90, 
+    category: "chaud",
+    hasProteinVariants: true,
+    proteinVariants: [
+      { id: "veggie", name: "Veggie", desc: "100% végétarien" },
+      { id: "poulet", name: "Poulet", desc: "Avec poulet" }
+    ]
+  },
   { id: "8",  name: "Wok de Bœuf", desc: "Wok de bœuf, légumes de saison, sauce sésame, servi avec du riz et de salade", price: 26.90, category: "chaud" },
 
   // PLATS FROIDS
@@ -122,8 +133,9 @@ const MENU = [
       { id: "fruits-rouges", name: "Coulis Fruits Rouges", desc: "Frais et acidulé" }
     ]
   },
+  { id: "17", name: "Po'e Banane", desc: "Dessert traditionnel tahitien à base de banane", price: 9.90, category: "desserts" },
   { 
-    id: "17", 
+    id: "18", 
     name: "Cheesecake", 
     desc: "Coulis au choix", 
     price: 12.90, 
@@ -137,7 +149,7 @@ const MENU = [
 
   // BOISSONS
   { 
-    id: "18", 
+    id: "19", 
     name: "Jus exotiques", 
     desc: "Pomme/kiwi, fraise/framboise, ananas/citron/gingembre, coktail ACE", 
     price: 3.50, 
@@ -151,7 +163,7 @@ const MENU = [
     ]
   },
   { 
-    id: "19", 
+    id: "20", 
     name: "Eau plate/gazeuse", 
     desc: "Eau minérale ou gazeuse", 
     price: 3.00, 
@@ -169,8 +181,8 @@ const IDS_ENTREES  = [1, 2, 3, 4];
 const IDS_CHAUD    = [5, 6, 7, 8];
 const IDS_FROID    = [9, 10, 11, 12];
 const IDS_FORMULES = [13, 14];
-const IDS_DESSERT  = [15, 16, 17];
-const IDS_BOISSON  = [18, 19];
+const IDS_DESSERT  = [15, 16, 17, 18];
+const IDS_BOISSON  = [19, 20];
 
 const byIds = (ids) => ids.map(id => MENU.find(m => m.id === String(id))).filter(Boolean);
 const SEC_ENTREES  = byIds(IDS_ENTREES);
@@ -698,7 +710,7 @@ function ProteinModal({ item, onSelect, onClose }) {
               onClick={() => onSelect(protein)}
               className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
             >
-              <div className="font-medium">🥩 {protein.name}</div>
+              <div className="font-medium">{protein.id === 'veggie' ? '🥦' : ''} {protein.name}</div>
               <div className="text-sm text-white/60 mt-1">{protein.desc}</div>
             </button>
           ))}
@@ -727,7 +739,7 @@ function CoulisModal({ item, onSelect, onClose }) {
               onClick={() => onSelect(coulis)}
               className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
             >
-              <div className="font-medium">🍯 {coulis.name}</div>
+              <div className="font-medium">{coulis.id === 'mangue' ? '🥭' : '🍓'} {coulis.name}</div>
               <div className="text-sm text-white/60 mt-1">{coulis.desc}</div>
             </button>
           ))}
@@ -822,7 +834,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
   ];
   
   const needsProteinChoice = (platName) => {
-    return platName === 'Chao Men' || platName === 'Kai Fan';
+    return platName === 'Chao Men' || platName === 'Kai Fan' || platName === 'Omelette Fu Young';
   };
   
   const handleProteinSelection = (proteinName) => {
@@ -1034,7 +1046,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
                     onClick={() => handleProteinSelection(protein.name)}
                     className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
                   >
-                    <div className="font-medium">{protein.icon} {protein.name}</div>
+                    <div className="font-medium">{protein.id === 'veggie' ? '🥦' : ''} {protein.name}</div>
                   </button>
                 ))}
               </div>
@@ -1080,15 +1092,15 @@ function FormuleModal({ item, onConfirm, onClose }) {
               <p className="text-sm text-white/60 mb-4">{selectedDessert}</p>
               <div className="space-y-3">
                 {[
-                  { id: 'mangue', name: 'Coulis Mangue', desc: 'Doux et tropical' },
-                  { id: 'fruits-rouges', name: 'Coulis Fruits Rouges', desc: 'Frais et acidulé' }
+                  { id: 'mangue', name: 'Coulis Mangue', desc: 'Doux et tropical', emoji: '🥭' },
+                  { id: 'fruits-rouges', name: 'Coulis Fruits Rouges', desc: 'Frais et acidulé', emoji: '🍓' }
                 ].map(coulis => (
                   <button
                     key={coulis.id}
                     onClick={() => handleCoulisSelection(coulis.name)}
                     className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
                   >
-                    <div className="font-medium">🍯 {coulis.name}</div>
+                    <div className="font-medium">{coulis.emoji} {coulis.name}</div>
                     <div className="text-sm text-white/60 mt-1">{coulis.desc}</div>
                   </button>
                 ))}
@@ -1125,7 +1137,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
                       <div className="text-sm text-white/60">
                         {plat === 'Chao Men' && (selectedProteins[plat] ? `Nouilles sautées - ${selectedProteins[plat]}` : 'Nouilles sautées')}
                         {plat === 'Kai Fan' && (selectedProteins[plat] ? `Riz sauté - ${selectedProteins[plat]}` : 'Riz sauté')}
-                        {plat === 'Omelette Fu Young' && 'Omelette aux légumes'}
+                        {plat === 'Omelette Fu Young' && (selectedProteins[plat] ? `Omelette aux légumes - ${selectedProteins[plat]}` : 'Omelette aux légumes')}
                         {plat === 'Tahitien' && 'Thon rouge, sauce coco'}
                         {plat === 'KaïKaï' && 'Thon rouge, sauce sésame'}
                         {plat === 'Haka' && 'Thon rouge, sauce piment'}
@@ -1176,7 +1188,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
             <div>
               <h4 className="text-lg font-medium mb-3">1. Choisissez vos 2 plats :</h4>
               <div className="space-y-2">
-                {['Chao Men', 'Kai Fan', 'Wok de Bœuf', 'Tahitien', 'KaïKaï', 'Haka', 'Mokaï'].map(plat => (
+                {['Chao Men', 'Kai Fan', 'Omelette Fu Young', 'Wok de Bœuf', 'Tahitien', 'KaïKaï', 'Haka', 'Mokaï'].map(plat => (
                   <label key={plat} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
                     <input 
                       type="checkbox" 
@@ -1189,6 +1201,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
                       <div className="text-sm text-white/60">
                         {plat === 'Chao Men' && (selectedProteins[plat] ? `Nouilles sautées - ${selectedProteins[plat]}` : 'Nouilles sautées')}
                         {plat === 'Kai Fan' && (selectedProteins[plat] ? `Riz sauté - ${selectedProteins[plat]}` : 'Riz sauté')}
+                        {plat === 'Omelette Fu Young' && (selectedProteins[plat] ? `Omelette aux légumes - ${selectedProteins[plat]}` : 'Omelette aux légumes')}
                         {plat === 'Wok de Bœuf' && 'Wok de bœuf, sauce sésame'}
                         {plat === 'Tahitien' && 'Thon rouge, sauce coco'}
                         {plat === 'KaïKaï' && 'Thon rouge, sauce sésame'}
@@ -1242,7 +1255,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
             <div>
               <h4 className="text-lg font-medium mb-3">3. Choisissez votre dessert :</h4>
               <div className="space-y-2">
-                {['Coulant au chocolat', 'Crème Tropicale', 'Cheesecake'].map(dessert => (
+                {['Coulant au chocolat', 'Crème Tropicale', 'Po\'e Banane', 'Cheesecake'].map(dessert => (
                   <label key={dessert} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
                     <input 
                       type="radio" 
@@ -1262,6 +1275,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
                         {dessert === 'Coulant au chocolat' && 'Gâteau fondant'}
                         {dessert === 'Crème Tropicale' && (selectedCoulisDessert && selectedDessert === 'Crème Tropicale' ? selectedCoulisDessert : 'Coulis au choix')}
                         {dessert === 'Cheesecake' && (selectedCoulisDessert && selectedDessert === 'Cheesecake' ? selectedCoulisDessert : 'Coulis au choix')}
+                        {dessert === 'Po\'e Banane' && 'Dessert tahitien à la banane'}
                       </div>
                     </div>
                   </label>
