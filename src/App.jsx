@@ -839,6 +839,13 @@ function FormuleModal({ item, onConfirm, onClose }) {
     };
   }, []);
   
+  // Bloquer aussi le scroll quand les sous-modals sont ouverts
+  useEffect(() => {
+    if (showJusSelector || showProteinSelector || showEauSelector || showCoulisSelector) {
+      document.body.style.overflow = 'hidden';
+    }
+  }, [showJusSelector, showProteinSelector, showEauSelector, showCoulisSelector]);
+  
   const jusOptions = [
     { id: 'pomme-kiwi', name: '🍏 Pomme/Kiwi' },
     { id: 'fraise-framboise', name: '🍓 Fraise/Framboise' },
@@ -1094,7 +1101,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
         
         {/* Modal Sélection Jus */}
         {showJusSelector && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowJusSelector(false)}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowJusSelector(false)} style={{ position: 'fixed' }}>
             <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold">Choisir votre jus</h3>
@@ -1119,7 +1126,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
         
         {/* NOUVEAU: Modal Sélection Protéine pour Chao Men / Kai Fan */}
         {showProteinSelector && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowProteinSelector(false)}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowProteinSelector(false)} style={{ position: 'fixed' }}>
             <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold">Choisir votre option</h3>
@@ -1145,7 +1152,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
         
         {/* NOUVEAU: Modal Sélection Eau pour les formules */}
         {showEauSelector && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowEauSelector(false)}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowEauSelector(false)} style={{ position: 'fixed' }}>
             <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold">Choisir votre eau</h3>
@@ -1170,7 +1177,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
         
         {/* NOUVEAU: Modal Sélection Coulis pour les desserts dans les formules */}
         {showCoulisSelector && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowCoulisSelector(false)}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowCoulisSelector(false)} style={{ position: 'fixed' }}>
             <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold">Choisir votre coulis</h3>
@@ -1561,8 +1568,7 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           {items.filter(i => i.qty > 0).map(it => {
             const variants = cartVariants[it.id];
             const isArray = Array.isArray(variants);
-            const firstVariant = isArray ? variants[0] : variants;
-            const isFormule = firstVariant && firstVariant.type;
+            const variantsToDisplay = isArray ? variants : (variants ? [variants] : []);
             
             return (
               <div key={it.id} className="rounded-2xl border border-white/10 p-3">
@@ -1570,47 +1576,50 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                   <div className="flex-1">
                     <div className="font-medium">{it.name}</div>
                     
-                    {/* Affichage détaillé des formules */}
-                    {isFormule && (
-                      <div className="mt-2 space-y-1 text-xs text-white/60 pl-3 border-l-2 border-white/20">
-                        {firstVariant.type === "decouverte" && (
-                          <>
-                            <div>• {firstVariant.plat}{firstVariant.proteins && firstVariant.proteins[firstVariant.plat] && ` (${firstVariant.proteins[firstVariant.plat]})`}</div>
-                            <div>• {firstVariant.boisson === 'Jus exotique' ? firstVariant.jus : firstVariant.eau}</div>
-                          </>
-                        )}
-                        {firstVariant.type === "voyage" && (
-                          <>
-                            <div className="font-semibold text-white/70">Plats:</div>
-                            {firstVariant.plats && firstVariant.plats.map((plat, idx) => (
-                              <div key={idx}>• {plat}{firstVariant.proteins && firstVariant.proteins[plat] && ` (${firstVariant.proteins[plat]})`}</div>
-                            ))}
-                            <div className="font-semibold text-white/70 mt-1">Boissons:</div>
-                            {firstVariant.boissons && firstVariant.boissons.map((boisson, idx) => {
-                              if (boisson === 'Jus exotique' && firstVariant.jus && firstVariant.jus[idx]) {
-                                return <div key={idx}>• {firstVariant.jus[idx]}</div>;
-                              } else if (boisson === 'Eau' && firstVariant.eau && firstVariant.eau[idx]) {
-                                return <div key={idx}>• {firstVariant.eau[idx]}</div>;
-                              }
-                              return <div key={idx}>• {boisson}</div>;
-                            })}
-                            <div className="font-semibold text-white/70 mt-1">Dessert:</div>
-                            <div>• {firstVariant.dessert}{firstVariant.coulisDessert && ` (${firstVariant.coulisDessert})`}</div>
-                          </>
-                        )}
+                    {/* Affichage des formules - une par une si plusieurs */}
+                    {variantsToDisplay.length > 0 && variantsToDisplay[0]?.type && (
+                      <div className="mt-2 space-y-3">
+                        {variantsToDisplay.map((variant, formuleIdx) => (
+                          <div key={formuleIdx} className="text-xs text-white/60 pl-3 border-l-2 border-white/20">
+                            {variantsToDisplay.length > 1 && (
+                              <div className="font-semibold text-white/80 mb-1">Formule #{formuleIdx + 1}:</div>
+                            )}
+                            {variant.type === "decouverte" && (
+                              <>
+                                <div>• {variant.plat}{variant.proteins && variant.proteins[variant.plat] && ` (${variant.proteins[variant.plat]})`}</div>
+                                <div>• {variant.boisson === 'Jus exotique' ? variant.jus : variant.eau}</div>
+                              </>
+                            )}
+                            {variant.type === "voyage" && (
+                              <>
+                                <div className="font-semibold text-white/70">Plats:</div>
+                                {variant.plats && variant.plats.map((plat, idx) => (
+                                  <div key={idx}>• {plat}{variant.proteins && variant.proteins[plat] && ` (${variant.proteins[plat]})`}</div>
+                                ))}
+                                <div className="font-semibold text-white/70 mt-1">Boissons:</div>
+                                {variant.boissons && variant.boissons.map((boisson, idx) => {
+                                  if (boisson === 'Jus exotique' && variant.jus && variant.jus[idx]) {
+                                    return <div key={idx}>• {variant.jus[idx]}</div>;
+                                  } else if (boisson === 'Eau' && variant.eau && variant.eau[idx]) {
+                                    return <div key={idx}>• {variant.eau[idx]}</div>;
+                                  }
+                                  return <div key={idx}>• {boisson}</div>;
+                                })}
+                                <div className="font-semibold text-white/70 mt-1">Dessert:</div>
+                                <div>• {variant.dessert}{variant.coulisDessert && ` (${variant.coulisDessert})`}</div>
+                              </>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                     
                     {/* Affichage simple des variantes non-formule */}
-                    {!isFormule && variants && (
+                    {variantsToDisplay.length > 0 && !variantsToDisplay[0]?.type && (
                       <div className="mt-1 space-y-0.5">
-                        {isArray ? (
-                          variants.map((v, idx) => (
-                            <div key={idx} className="text-xs text-white/60">• {v.name}</div>
-                          ))
-                        ) : (
-                          variants.name && <div className="text-xs text-white/60">• {variants.name}</div>
-                        )}
+                        {variantsToDisplay.map((v, idx) => (
+                          <div key={idx} className="text-xs text-white/60">• {v.name}</div>
+                        ))}
                       </div>
                     )}
                     
