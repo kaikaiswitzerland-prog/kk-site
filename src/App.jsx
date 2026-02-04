@@ -839,10 +839,18 @@ function FormuleModal({ item, onConfirm, onClose }) {
     };
   }, []);
   
-  // Bloquer aussi le scroll quand les sous-modals sont ouverts
+  // Bloquer aussi le scroll du modal parent quand les sous-modals sont ouverts
   useEffect(() => {
+    const modalElement = document.querySelector('.formule-modal-content');
     if (showJusSelector || showProteinSelector || showEauSelector || showCoulisSelector) {
       document.body.style.overflow = 'hidden';
+      if (modalElement) {
+        modalElement.style.overflow = 'hidden';
+      }
+    } else {
+      if (modalElement) {
+        modalElement.style.overflow = 'auto';
+      }
     }
   }, [showJusSelector, showProteinSelector, showEauSelector, showCoulisSelector]);
   
@@ -1088,122 +1096,17 @@ function FormuleModal({ item, onConfirm, onClose }) {
   };
   
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="min-h-screen flex items-center justify-center py-8">
-        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold">{item.name}</h3>
-            <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <p className="text-sm text-white/60 mb-6">{item.desc}</p>
-        
-        {/* Modal Sélection Jus */}
-        {showJusSelector && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowJusSelector(false)} style={{ position: 'fixed' }}>
-            <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold">Choisir votre jus</h3>
-                <button onClick={() => setShowJusSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="space-y-3">
-                {jusOptions.map(jus => (
-                  <button
-                    key={jus.id}
-                    onClick={() => handleJusSelection(jus.name)}
-                    className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-                  >
-                    <div className="font-medium">{jus.name}</div>
-                  </button>
-                ))}
-              </div>
+    <>
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
+        <div className="min-h-screen flex items-center justify-center py-8">
+          <div className="formule-modal-content bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold">{item.name}</h3>
+              <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
+                <X className="h-4 w-4" />
+              </button>
             </div>
-          </div>
-        )}
-        
-        {/* NOUVEAU: Modal Sélection Protéine pour Chao Men / Kai Fan */}
-        {showProteinSelector && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowProteinSelector(false)} style={{ position: 'fixed' }}>
-            <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold">Choisir votre option</h3>
-                <button onClick={() => setShowProteinSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <p className="text-sm text-white/60 mb-4">{proteinForPlat}</p>
-              <div className="space-y-3">
-                {getProteinOptionsForPlat(proteinForPlat).map(protein => (
-                  <button
-                    key={protein.id}
-                    onClick={() => handleProteinSelection(protein.name)}
-                    className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-                  >
-                    <div className="font-medium">{protein.id === 'veggie' ? '🥦' : ''} {protein.name}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* NOUVEAU: Modal Sélection Eau pour les formules */}
-        {showEauSelector && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowEauSelector(false)} style={{ position: 'fixed' }}>
-            <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold">Choisir votre eau</h3>
-                <button onClick={() => setShowEauSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="space-y-3">
-                {eauOptions.map(eau => (
-                  <button
-                    key={eau.id}
-                    onClick={() => handleEauSelection(eau.name)}
-                    className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-                  >
-                    <div className="font-medium">{eau.name}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* NOUVEAU: Modal Sélection Coulis pour les desserts dans les formules */}
-        {showCoulisSelector && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowCoulisSelector(false)} style={{ position: 'fixed' }}>
-            <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold">Choisir votre coulis</h3>
-                <button onClick={() => setShowCoulisSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <p className="text-sm text-white/60 mb-4">{selectedDessert}</p>
-              <div className="space-y-3">
-                {[
-                  { id: 'mangue', name: 'Coulis Mangue', desc: 'Doux et tropical', emoji: '🥭' },
-                  { id: 'fruits-rouges', name: 'Coulis Fruits Rouges', desc: 'Frais et acidulé', emoji: '🍓' }
-                ].map(coulis => (
-                  <button
-                    key={coulis.id}
-                    onClick={() => handleCoulisSelection(coulis.name)}
-                    className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-                  >
-                    <div className="font-medium">{coulis.emoji} {coulis.name}</div>
-                    <div className="text-sm text-white/60 mt-1">{coulis.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+            <p className="text-sm text-white/60 mb-6">{item.desc}</p>
         
         {item.formuleType === "decouverte" && (
           <div className="space-y-6">
@@ -1420,6 +1323,110 @@ function FormuleModal({ item, onConfirm, onClose }) {
       </div>
     </div>
     </div>
+    
+    {/* Sous-modals rendus en dehors du conteneur principal */}
+    {showJusSelector && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowJusSelector(false)} style={{ position: 'fixed' }}>
+        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold">Choisir votre jus</h3>
+            <button onClick={() => setShowJusSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="space-y-3">
+            {jusOptions.map(jus => (
+              <button
+                key={jus.id}
+                onClick={() => handleJusSelection(jus.name)}
+                className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
+              >
+                <div className="font-medium">{jus.name}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+    
+    {showProteinSelector && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowProteinSelector(false)} style={{ position: 'fixed' }}>
+        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold">Choisir votre option</h3>
+            <button onClick={() => setShowProteinSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="text-sm text-white/60 mb-4">{proteinForPlat}</p>
+          <div className="space-y-3">
+            {getProteinOptionsForPlat(proteinForPlat).map(protein => (
+              <button
+                key={protein.id}
+                onClick={() => handleProteinSelection(protein.name)}
+                className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
+              >
+                <div className="font-medium">{protein.id === 'veggie' ? '🥦' : ''} {protein.name}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+    
+    {showEauSelector && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowEauSelector(false)} style={{ position: 'fixed' }}>
+        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold">Choisir votre eau</h3>
+            <button onClick={() => setShowEauSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="space-y-3">
+            {eauOptions.map(eau => (
+              <button
+                key={eau.id}
+                onClick={() => handleEauSelection(eau.name)}
+                className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
+              >
+                <div className="font-medium">{eau.name}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+    
+    {showCoulisSelector && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowCoulisSelector(false)} style={{ position: 'fixed' }}>
+        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold">Choisir votre coulis</h3>
+            <button onClick={() => setShowCoulisSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="text-sm text-white/60 mb-4">{selectedDessert}</p>
+          <div className="space-y-3">
+            {[
+              { id: 'mangue', name: 'Coulis Mangue', desc: 'Doux et tropical', emoji: '🥭' },
+              { id: 'fruits-rouges', name: 'Coulis Fruits Rouges', desc: 'Frais et acidulé', emoji: '🍓' }
+            ].map(coulis => (
+              <button
+                key={coulis.id}
+                onClick={() => handleCoulisSelection(coulis.name)}
+                className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
+              >
+                <div className="font-medium">{coulis.emoji} {coulis.name}</div>
+                <div className="text-sm text-white/60 mt-1">{coulis.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
