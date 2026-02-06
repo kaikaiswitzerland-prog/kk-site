@@ -1594,7 +1594,7 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                             {variant.type === "decouverte" && (
                               <>
                                 <div>• {variant.plat}{variant.proteins && variant.proteins[variant.plat] && ` (${variant.proteins[variant.plat]})`}</div>
-                                <div>• {variant.boisson === 'Jus exotique' ? variant.jus : variant.eau}</div>
+                                <div>• {variant.boisson === 'Jus exotique' ? variant.jus : (variant.boisson === 'Eau' ? variant.eau : variant.boisson)}</div>
                               </>
                             )}
                             {variant.type === "voyage" && (
