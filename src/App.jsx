@@ -55,7 +55,7 @@ const MENU = [
     id: "5",  
     name: "Chao Men", 
     desc: "Nouilles sautées, légumes de saison, wok de porc et/ou poulet, sauce crevette et champignons", 
-    price: 17.90, 
+    price: 18.90, 
     category: "chaud",
     hasProteinVariants: true,
     proteinVariants: [
@@ -69,7 +69,7 @@ const MENU = [
     id: "6",  
     name: "Kai Fan", 
     desc: "Riz sauté, wok de porc et/ou poulet, sauce crevette et champignons, servi avec sa salade exotique", 
-    price: 17.90, 
+    price: 18.90, 
     category: "chaud",
     hasProteinVariants: true,
     proteinVariants: [
@@ -83,7 +83,7 @@ const MENU = [
     id: "7",  
     name: "Omelette Fu Young", 
     desc: "Omelette aux légumes sautés de saison", 
-    price: 16.90, 
+    price: 17.90, 
     category: "chaud",
     hasProteinVariants: true,
     proteinVariants: [
@@ -94,7 +94,7 @@ const MENU = [
   { id: "8",  name: "Wok de Bœuf", desc: "Wok de bœuf, légumes de saison, sauce sésame, servi avec du riz et de salade", price: 26.90, category: "chaud" },
 
   // PLATS FROIDS
-  { id: "9",  name: "Tahitien", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce coco", price: 21.90, category: "froid" },
+  { id: "9",  name: "Tahitien", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce coco", price: 22.90, category: "froid" },
   { id: "10", name: "KaïKaï", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce sésame, mangue et ananas", price: 22.90, category: "froid" },
   { id: "11", name: "Haka", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce piment maison", price: 22.90, category: "froid" },
   { id: "12", name: "Mokaï", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce arachide et guacamole maison", price: 24.90, category: "froid" },
@@ -1114,7 +1114,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
             <div>
               <h4 className="text-lg font-medium mb-3">1. Choisissez votre plat :</h4>
               <div className="space-y-2">
-                {['Chao Men', 'Kai Fan', 'Omelette Fu Young', 'Tahitien', 'KaïKaï', 'Haka', 'Mokaï'].map(plat => (
+                {['Chao Men', 'Kai Fan', 'Omelette Fu Young', 'Tahitien', 'KaïKaï', 'Haka'].map(plat => (
                   <label key={plat} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
                     <input 
                       type="radio" 
@@ -1152,7 +1152,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
                         {plat === 'Tahitien' && 'Thon rouge, sauce coco'}
                         {plat === 'KaïKaï' && 'Thon rouge, sauce sésame'}
                         {plat === 'Haka' && 'Thon rouge, sauce piment'}
-                        {plat === 'Mokaï' && 'Thon rouge, sauce arachide'}
                       </div>
                     </div>
                   </label>
@@ -1210,7 +1209,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
             <div>
               <h4 className="text-lg font-medium mb-3">1. Choisissez vos 2 plats :</h4>
               <div className="space-y-2">
-                {['Chao Men', 'Kai Fan', 'Omelette Fu Young', 'Wok de Bœuf', 'Tahitien', 'KaïKaï', 'Haka', 'Mokaï'].map(plat => (
+                {['Chao Men', 'Kai Fan', 'Omelette Fu Young', 'Wok de Bœuf', 'Tahitien', 'KaïKaï', 'Haka'].map(plat => (
                   <label key={plat} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
                     <input 
                       type="checkbox" 
@@ -1228,7 +1227,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
                         {plat === 'Tahitien' && 'Thon rouge, sauce coco'}
                         {plat === 'KaïKaï' && 'Thon rouge, sauce sésame'}
                         {plat === 'Haka' && 'Thon rouge, sauce piment'}
-                        {plat === 'Mokaï' && 'Thon rouge, sauce arachide'}
                       </div>
                     </div>
                   </label>
