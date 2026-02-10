@@ -1534,6 +1534,9 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
   });
   const [deliveryError, setDeliveryError] = useState("");
   
+  const MINIMUM_DELIVERY = 19.90;
+  const canDelivery = subtotal >= MINIMUM_DELIVERY;
+  
   const hasItems = items.some(i => i.qty > 0);
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -1553,6 +1556,13 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                     form.lastName && 
                     form.phone && 
                     (mode === "pickup" || (form.address && form.postalCode && !deliveryError));
+  
+  // Forcer le mode pickup si le montant minimum de livraison n'est pas atteint
+  useEffect(() => {
+    if (!canDelivery && mode === "delivery") {
+      setMode("pickup");
+    }
+  }, [canDelivery, mode, setMode]);
 
   return (
     <section className="fixed inset-0 z-50 flex items-start justify-end bg-black/60 backdrop-blur-sm">
@@ -1640,19 +1650,38 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           {!hasItems && <div className="rounded-2xl border border-white/10 p-4 text-white/60">Votre panier est vide.</div>}
         </div>
 
-        <div className="mt-6 flex gap-2">
-          <button 
-            onClick={() => setMode("delivery")} 
-            className={`flex-1 rounded-2xl px-3 py-2 text-sm transition-all ${mode === "delivery" ? "bg-white text-black" : "border border-white/20 hover:bg-white/10"}`}
-          >
-            Livraison
-          </button>
-          <button 
-            onClick={() => setMode("pickup")} 
-            className={`flex-1 rounded-2xl px-3 py-2 text-sm transition-all ${mode === "pickup" ? "bg-white text-black" : "border border-white/20 hover:bg-white/10"}`}
-          >
-            À emporter
-          </button>
+        <div className="mt-6 flex flex-col gap-3">
+          {!canDelivery && (
+            <div className="flex items-start gap-2 text-xs text-orange-400 bg-orange-500/10 border border-orange-500/30 rounded-xl p-3">
+              <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <span>Livraison disponible à partir de {format(MINIMUM_DELIVERY)} de commande. Actuellement : {format(subtotal)}</span>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button 
+              onClick={() => {
+                if (canDelivery) {
+                  setMode("delivery");
+                }
+              }}
+              disabled={!canDelivery}
+              className={`flex-1 rounded-2xl px-3 py-2 text-sm transition-all ${
+                mode === "delivery" 
+                  ? "bg-white text-black" 
+                  : !canDelivery 
+                    ? "border border-white/10 text-white/30 cursor-not-allowed" 
+                    : "border border-white/20 hover:bg-white/10"
+              }`}
+            >
+              Livraison
+            </button>
+            <button 
+              onClick={() => setMode("pickup")} 
+              className={`flex-1 rounded-2xl px-3 py-2 text-sm transition-all ${mode === "pickup" ? "bg-white text-black" : "border border-white/20 hover:bg-white/10"}`}
+            >
+              À emporter
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 grid gap-3">
