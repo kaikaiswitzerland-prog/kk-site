@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <radialGradient id="bowlGrad" cx="50%" cy="45%" r="40%">
+      <stop offset="0%" stop-color="#e8c878"/>
+      <stop offset="60%" stop-color="#d4a843"/>
+      <stop offset="100%" stop-color="#b8862d"/>
+    </radialGradient>
+    <radialGradient id="soupGrad" cx="50%" cy="50%" r="45%">
+      <stop offset="0%" stop-color="#f5deb3"/>
+      <stop offset="40%" stop-color="#e8c878"/>
+      <stop offset="100%" stop-color="#d4a843"/>
+    </radialGradient>
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </radialGradient>
+    <radialGradient id="creamSwirl" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fffef5"/>
+      <stop offset="100%" stop-color="#f0e6c8" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="600" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle surface texture -->
+  <ellipse cx="400" cy="520" rx="350" ry="30" fill="#111" opacity="0.5"/>
+
+  <!-- Bowl shadow -->
+  <ellipse cx="400" cy="380" rx="200" ry="40" fill="#000" opacity="0.4" filter="url(#shadow)"/>
+
+  <!-- Bowl outer -->
+  <ellipse cx="400" cy="300" rx="220" ry="160" fill="#2a2a2a" filter="url(#shadow)"/>
+  <ellipse cx="400" cy="300" rx="210" ry="150" fill="#3a3535"/>
+  <ellipse cx="400" cy="295" rx="205" ry="145" fill="#4a4040"/>
+
+  <!-- Bowl inner rim -->
+  <ellipse cx="400" cy="285" rx="190" ry="130" fill="#3a3030"/>
+
+  <!-- Soup surface -->
+  <ellipse cx="400" cy="280" rx="180" ry="120" fill="url(#soupGrad)"/>
+
+  <!-- Cream swirl -->
+  <path d="M 400 250 Q 430 260 420 280 Q 410 300 440 310 Q 460 315 450 295 Q 440 275 460 265 Q 475 258 455 250 Q 435 242 420 255 Q 410 265 400 250 Z" fill="#fffef0" opacity="0.7"/>
+  <path d="M 380 270 Q 370 285 385 295 Q 400 305 390 290 Q 380 280 385 270 Z" fill="#fffef0" opacity="0.5"/>
+  
+  <!-- Cream dots -->
+  <circle cx="370" cy="260" r="4" fill="#fffef5" opacity="0.6"/>
+  <circle cx="430" cy="290" r="3" fill="#fffef5" opacity="0.5"/>
+  <circle cx="355" cy="285" r="2.5" fill="#fffef5" opacity="0.4"/>
+
+  <!-- Herb garnish - small leaves -->
+  <g transform="translate(360, 240) rotate(-20)">
+    <path d="M 0 0 Q 5 -8 12 -5 Q 8 0 12 5 Q 5 8 0 0 Z" fill="#4a7a3a" opacity="0.9"/>
+    <line x1="0" y1="0" x2="6" y2="0" stroke="#3a6a2a" stroke-width="0.5"/>
+  </g>
+  <g transform="translate(365, 238) rotate(15)">
+    <path d="M 0 0 Q 4 -6 10 -4 Q 7 0 10 4 Q 4 6 0 0 Z" fill="#5a8a4a" opacity="0.85"/>
+    <line x1="0" y1="0" x2="5" y2="0" stroke="#4a7a3a" stroke-width="0.5"/>
+  </g>
+  <g transform="translate(358, 244) rotate(-45)">
+    <path d="M 0 0 Q 3 -5 8 -3 Q 6 0 8 3 Q 3 5 0 0 Z" fill="#4a7a3a" opacity="0.8"/>
+  </g>
+
+  <!-- Sesame seeds -->
+  <ellipse cx="415" cy="255" rx="3" ry="1.5" fill="#f5e6c0" opacity="0.7" transform="rotate(30, 415, 255)"/>
+  <ellipse cx="390" cy="300" rx="2.5" ry="1.2" fill="#f5e6c0" opacity="0.6" transform="rotate(-15, 390, 300)"/>
+  <ellipse cx="440" cy="275" rx="2.8" ry="1.3" fill="#f0ddb0" opacity="0.65" transform="rotate(50, 440, 275)"/>
+  <ellipse cx="370" cy="275" rx="2.5" ry="1.2" fill="#f5e6c0" opacity="0.5" transform="rotate(10, 370, 275)"/>
+
+  <!-- Small vegetable pieces visible in soup -->
+  <rect x="345" y="290" width="8" height="6" rx="1" fill="#d4884a" opacity="0.5" transform="rotate(20, 349, 293)"/>
+  <rect x="425" cy="265" width="6" height="5" rx="1" fill="#8aaa5a" opacity="0.4" transform="rotate(-10, 428, 267)"/>
+  <circle cx="450" cy="285" r="3" fill="#d4884a" opacity="0.35"/>
+
+  <!-- Bowl rim highlight -->
+  <ellipse cx="400" cy="280" rx="182" ry="122" fill="none" stroke="#5a5050" stroke-width="1.5" opacity="0.4"/>
+  
+  <!-- Light reflection on bowl -->
+  <path d="M 250 250 Q 300 200 350 230" fill="none" stroke="#6a6060" stroke-width="2" opacity="0.3"/>
+
+  <!-- Subtle steam lines -->
+  <path d="M 370 200 Q 365 180 370 160" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.08"/>
+  <path d="M 400 195 Q 395 170 400 150" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.1"/>
+  <path d="M 430 200 Q 425 175 430 155" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.07"/>
+</svg>
