@@ -14,6 +14,12 @@ const globalStyles = `
   * {
     box-sizing: border-box;
   }
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 `;
 
 // Informations du restaurant
@@ -589,24 +595,24 @@ function MenuItem({ item, cart, add, remove, isFormula = false }) {
   
   return (
     <>
-      <div className={`rounded-3xl border border-white/10 p-5 transition-all hover:border-white/20 hover:shadow-lg hover:shadow-white/5 ${isFormula ? 'bg-gradient-to-br from-white/5 to-transparent' : ''}`}>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="text-lg font-medium">{item.name}</div>
-            <div className="mt-1 text-sm text-white/60 break-words">{item.desc}</div>
-            <div className="mt-2 text-white/90">{format(item.price)}</div>
+      <div className={`rounded-3xl border border-white/10 p-4 transition-all hover:border-white/20 hover:shadow-lg hover:shadow-white/5 ${isFormula ? 'bg-gradient-to-br from-white/5 to-transparent' : ''}`}>
+        <div className="flex items-start gap-3">
+          <div className="flex-1 overflow-hidden pr-2">
+            <div className="text-base font-medium truncate">{item.name}</div>
+            <div className="mt-1 text-xs text-white/60 line-clamp-2">{item.desc}</div>
+            <div className="mt-2 text-sm font-semibold text-white/90">{format(item.price)}</div>
           </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button 
               onClick={() => remove(item.id)} 
-              className="rounded-2xl border border-white/20 p-2 hover:bg-white/10 transition-all active:scale-95"
+              className="rounded-xl border border-white/20 p-1.5 hover:bg-white/10 transition-all active:scale-95"
             >
               <Minus className="h-4 w-4" />
             </button>
-            <span className="w-6 text-center font-medium">{cart[item.id] || 0}</span>
+            <span className="w-5 text-center text-sm font-medium">{cart[item.id] || 0}</span>
             <button 
               onClick={handlePlusClick}
-              className="rounded-2xl border border-white/20 p-2 hover:bg-white/10 transition-all active:scale-95"
+              className="rounded-xl border border-white/20 p-1.5 hover:bg-white/10 transition-all active:scale-95"
             >
               <Plus className="h-4 w-4" />
             </button>
