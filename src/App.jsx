@@ -291,8 +291,8 @@ function HeroSlider() {
 
 function Badge({ type }) {
   const badges = {
-    halal: { icon: "🥩", text: "HALAL", color: "from-green-500/20 to-emerald-500/20 border-green-500/30" },
-    healthy: { icon: "🥗", text: "HEALTHY FOOD", color: "from-blue-500/20 to-cyan-500/20 border-blue-500/30" }
+    halal: { icon: "", text: "HALAL", color: "from-green-500/20 to-emerald-500/20 border-green-500/30" },
+    healthy: { icon: "", text: "HEALTHY FOOD", color: "from-blue-500/20 to-cyan-500/20 border-blue-500/30" }
   };
   const badge = badges[type];
   return (
