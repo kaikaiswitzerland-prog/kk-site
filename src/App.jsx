@@ -291,15 +291,14 @@ function HeroSlider() {
 
 function Badge({ type }) {
   const badges = {
-    halal: { icon: "🥩", text: "HALAL", color: "from-green-500/20 to-emerald-500/20 border-green-500/30" },
-    healthy: { icon: "🥗", text: "HEALTHY FOOD", color: "from-blue-500/20 to-cyan-500/20 border-blue-500/30" }
+    halal: { text: "HALAL" },
+    healthy: { text: "HEALTHY FOOD" }
   };
   
   const badge = badges[type];
   
   return (
-    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-gradient-to-r ${badge.color} text-xs font-semibold`}>
-      <span>{badge.icon}</span>
+    <div className="inline-flex items-center px-3 py-1.5 rounded-full border border-white/20 text-xs font-semibold text-white">
       <span>{badge.text}</span>
     </div>
   );
@@ -443,7 +442,7 @@ export default function KaiKaiApp() {
                 <Bike className="h-4 w-4" />Livraison en {RESTAURANT_INFO.deliveryTime} min
               </div>
               <div className="flex items-center gap-2">
-                <Percent className="h-4 w-4" />-10% sur votre commande
+                <Percent className="h-4 w-4" />-10% sur votre première commande
               </div>
             </div>
           </div>
