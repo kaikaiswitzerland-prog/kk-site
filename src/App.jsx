@@ -591,12 +591,12 @@ function MenuItem({ item, cart, add, remove, isFormula = false }) {
     <>
       <div className={`rounded-3xl border border-white/10 p-5 transition-all hover:border-white/20 hover:shadow-lg hover:shadow-white/5 ${isFormula ? 'bg-gradient-to-br from-white/5 to-transparent' : ''}`}>
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="flex-1 min-w-0">
             <div className="text-lg font-medium">{item.name}</div>
-            <div className="mt-1 text-sm text-white/60">{item.desc}</div>
+            <div className="mt-1 text-sm text-white/60 break-words">{item.desc}</div>
             <div className="mt-2 text-white/90">{format(item.price)}</div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <button 
               onClick={() => remove(item.id)} 
               className="rounded-2xl border border-white/20 p-2 hover:bg-white/10 transition-all active:scale-95"
