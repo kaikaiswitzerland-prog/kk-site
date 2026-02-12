@@ -5,17 +5,6 @@ import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Percent, Check, Phone, Inst
 // MODIFICATION 1: Logo PNG au lieu du SVG
 const LOGO_SRC = "/logo_kaikai.png";
 
-// Style global pour empêcher le scroll horizontal
-const globalStyles = `
-  html, body {
-    overflow-x: hidden;
-    max-width: 100vw;
-  }
-  * {
-    box-sizing: border-box;
-  }
-`;
-
 // Informations du restaurant
 const RESTAURANT_INFO = {
   name: "KaïKaï",
@@ -387,9 +376,7 @@ export default function KaiKaiApp() {
   const clear = () => { setCart({}); setCartVariants({}); };
 
   return (
-    <>
-      <style>{globalStyles}</style>
-      <div className="min-h-screen bg-black text-white overflow-x-hidden">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
@@ -541,7 +528,6 @@ export default function KaiKaiApp() {
         </div>
       </footer>
     </div>
-    </>
   );
 }
 
