@@ -455,7 +455,7 @@ export default function KaiKaiApp() {
                 <Bike className="h-4 w-4" />Livraison en {RESTAURANT_INFO.deliveryTime} min
               </div>
               <div className="flex items-center gap-2">
-                <Percent className="h-4 w-4" />-10% sur votre première commande
+                <Percent className="h-4 w-4" />-10% sur votre commande
               </div>
             </div>
           </div>
@@ -494,7 +494,7 @@ export default function KaiKaiApp() {
           </div>
 
           <div className="mt-8 text-center text-sm text-white/50 italic">
-            Tout nos plats sont accompagnés de riz et de salade
+            Tous nos plats sont accompagnés de riz et de salade
           </div>
         </section>
       )}
