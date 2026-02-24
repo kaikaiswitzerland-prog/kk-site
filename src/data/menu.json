@@ -1,0 +1,32 @@
+[
+  { "id": "11", "name": "Entrée Tahitienne", "desc": "Entrée tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce coco.", "price": 8.5, "category": "entrée" },
+  { "id": "12", "name": "Entrée KaiKai", "desc": "Entrée tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce sésame, mangue et ananas.", "price": 8.5, "category": "entrée" },
+  { "id": "13", "name": "Entrée Haka", "desc": "Entrée tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce piment.", "price": 8.5, "category": "entrée" },
+  { "id": "14", "name": "Entrée Mokai", "desc": "Entrée tartare de thon mariné au citron vert et gingembre. Tomate, concombre et avocat. Sauce arachide, gingembre sucré.", "price": 8.5, "category": "entrée" },
+  { "id": "15", "name": "Salade d'Avocat", "desc": "Salade, tomates, patates, concombres, avocat, cacahuètes.", "price": 8.5, "category": "entrée" },
+  { "id": "16", "name": "Salade de Poulet", "desc": "Salade, tomates, patates, concombres, poulet.", "price": 8.5, "category": "entrée" },
+
+  { "id": "1",  "name": "Chao Men", "desc": "Nouilles sautées, légumes de saison, wok de porc et poulet. Sauce crevettes et champignons.", "price": 14.5, "category": "plat_chaud" },
+  { "id": "2",  "name": "Kai Fan", "desc": "Riz sauté, wok de porc et poulet. Sauce crevettes et champignons. Servi avec salade exotique.", "price": 14.5, "category": "plat_chaud" },
+  { "id": "3",  "name": "Porcelet Coco", "desc": "Porcelet rôti au four. Sauce coco et citron vert. Accompagnement: patate douce/manioc ou lentilles corail/cacahuètes.", "price": 17, "category": "plat_chaud" },
+  { "id": "4",  "name": "Fricassée de Thon", "desc": "Thon braisé, légumes de saison. Sauce citron vert, gingembre. Servi avec du riz et de la salade.", "price": 19, "category": "plat_chaud" },
+  { "id": "5",  "name": "Wok de Bœuf", "desc": "Wok de bœuf, légumes de saison. Sauce sésame. Servi avec du riz et de la salade.", "price": 28.5, "category": "plat_chaud" },
+
+  { "id": "6",  "name": "Poisson Tahitien", "desc": "Tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce coco. Servi avec du riz et de la salade.", "price": 15.5, "category": "plat_froid" },
+  { "id": "7",  "name": "Poisson KaiKai", "desc": "Tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce sésame, mangue et ananas. Servi avec du riz et de la salade.", "price": 15.5, "category": "plat_froid" },
+  { "id": "8",  "name": "Poisson Haka", "desc": "Tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce piment. Servi avec du riz et de la salade.", "price": 16, "category": "plat_froid" },
+  { "id": "9",  "name": "Poisson Mokai", "desc": "Tartare de thon mariné au citron vert et gingembre. Tomate, concombre. Sauce cacahuètes et avocat. Servi avec du riz et de la salade.", "price": 17, "category": "plat_froid" },
+  { "id": "10", "name": "Trio de Poisson au Choix", "desc": "3 tartares au choix. Servi avec du riz et de la salade.", "price": 22, "category": "plat_froid" },
+
+  { "id": "21", "name": "Soda", "desc": "Coca-Cola, Orangina, Schweppes…", "price": 3.5, "category": "boisson" },
+  { "id": "22", "name": "Suprême", "desc": "Hibiscus-Framboise / Gingembre-Ananas / Baobab.", "price": 5.5, "category": "boisson" },
+  { "id": "23", "name": "Jus de Fruits", "desc": "Demandez nos parfums.", "price": 3.5, "category": "boisson" },
+  { "id": "24", "name": "Abatilles 50cl", "desc": "Eau pétillante ou minérale.", "price": 3, "category": "boisson" },
+  { "id": "25", "name": "Abatilles 1L", "desc": "Eau pétillante ou minérale.", "price": 4.5, "category": "boisson" },
+  { "id": "26", "name": "Perrier 33cl", "desc": "Eau gazeuse Perrier.", "price": 4, "category": "boisson" },
+
+  { "id": "17", "name": "Poe Banane", "desc": "Compoté de banane à la perle du Japon, vanille et crème de coco.", "price": 6.5, "category": "dessert" },
+  { "id": "18", "name": "Crème à la Mangue", "desc": "Crème maison avec coulis de mangue frais.", "price": 6.5, "category": "dessert" },
+  { "id": "19", "name": "Coulant au Chocolat", "desc": "Coulant au chocolat.", "price": 6.5, "category": "dessert" },
+  { "id": "20", "name": "Glace Pina Colada ou Coco-Choco", "desc": "Glace au choix: pina colada ou coco-choco.", "price": 6.5, "category": "dessert" }
+]
