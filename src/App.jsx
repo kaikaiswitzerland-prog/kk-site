@@ -267,6 +267,15 @@ const DESSERT_PHOTO_POS = {
   "18": "center 52%",
 };
 
+const BOISSON_PHOTOS = {
+  "19": "/boisson-jus.jpg",
+  "20": "/boisson-eau.jpg",
+};
+const BOISSON_PHOTO_POS = {
+  "19": "center 50%",
+  "20": "center 45%",
+};
+
 function format(price) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
 }
@@ -555,7 +564,8 @@ export default function KaiKaiApp() {
 
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧉 Boissons</h3>
             {SEC_BOISSON.map(item => (
-              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} />
+              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                photo={BOISSON_PHOTOS[item.id]} photoPos={BOISSON_PHOTO_POS[item.id]} />
             ))}
           </div>
 
