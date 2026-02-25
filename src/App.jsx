@@ -219,6 +219,19 @@ const ENTREE_PHOTO_POS = {
   "4": "center 40%",
 };
 
+const CHAUD_PHOTOS = {
+  "5": "/chaud-chaomen.jpg",
+  "6": "/chaud-kaifan.jpg",
+  "7": "/chaud-omelette.jpg",
+  "8": "/chaud-boeuf.jpg",
+};
+const CHAUD_PHOTO_POS = {
+  "5": "center 50%",
+  "6": "center 50%",
+  "7": "center 40%",
+  "8": "center 45%",
+};
+
 function format(price) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
 }
@@ -483,7 +496,8 @@ export default function KaiKaiApp() {
 
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🔥 Plat Chaud</h3>
             {SEC_CHAUD.map(item => (
-              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} />
+              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                photo={CHAUD_PHOTOS[item.id]} photoPos={CHAUD_PHOTO_POS[item.id]} />
             ))}
 
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">❄️ Plat Froid</h3>
