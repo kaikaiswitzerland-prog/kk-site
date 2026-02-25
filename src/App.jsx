@@ -254,6 +254,19 @@ const FORMULE_PHOTO_POS = {
   "14": "center 45%",
 };
 
+const DESSERT_PHOTOS = {
+  "15": "/dessert-coulant.jpg",
+  "16": "/dessert-creme.jpg",
+  "17": "/dessert-poe.jpg",
+  "18": "/dessert-cheesecake.jpg",
+};
+const DESSERT_PHOTO_POS = {
+  "15": "center 58%",
+  "16": "center 60%",
+  "17": "center 62%",
+  "18": "center 52%",
+};
+
 function format(price) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
 }
@@ -536,7 +549,8 @@ export default function KaiKaiApp() {
 
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍰 Desserts</h3>
             {SEC_DESSERT.map(item => (
-              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} />
+              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                photo={DESSERT_PHOTOS[item.id]} photoPos={DESSERT_PHOTO_POS[item.id]} />
             ))}
 
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧉 Boissons</h3>
