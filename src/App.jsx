@@ -315,9 +315,9 @@ function getNextOpeningTime() {
 
 function HeroSlider() {
   const IMAGES = [
-    { src: "/hero-tartare.jpg", alt: "Tartare de thon" },
-    { src: "/hero-wok-poulet.jpg", alt: "Wok poulet / nouilles" },
-    { src: "/hero-boeuf.jpg", alt: "Wok de bœuf et riz" },
+    { src: "/hero-tartare.jpg", alt: "Tartare de thon", pos: "center center" },
+    { src: "/hero-wok-poulet.jpg", alt: "Wok poulet / nouilles", pos: "center center" },
+    { src: "/hero-boeuf.jpg", alt: "Wok de bœuf et riz", pos: "center 35%" },
   ];
   const [idx, setIdx] = React.useState(0);
 
@@ -335,6 +335,7 @@ function HeroSlider() {
             src={img.src}
             alt={img.alt}
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === idx ? "opacity-100" : "opacity-0"}`}
+            style={{ objectPosition: img.pos }}
             draggable={false}
           />
         ))}
