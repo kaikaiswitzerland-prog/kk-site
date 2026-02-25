@@ -245,6 +245,15 @@ const FROID_PHOTO_POS = {
   "12": "center 58%",
 };
 
+const FORMULE_PHOTOS = {
+  "13": "/formule-decouverte.jpg",
+  "14": "/formule-voyage.jpg",
+};
+const FORMULE_PHOTO_POS = {
+  "13": "center 45%",
+  "14": "center 45%",
+};
+
 function format(price) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
 }
@@ -521,7 +530,8 @@ export default function KaiKaiApp() {
 
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🎁 Formules</h3>
             {SEC_FORMULES.map(item => (
-              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} isFormula />
+              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} isFormula
+                photo={FORMULE_PHOTOS[item.id]} photoPos={FORMULE_PHOTO_POS[item.id]} photoHeight="h-64" />
             ))}
 
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍰 Desserts</h3>
@@ -588,7 +598,7 @@ export default function KaiKaiApp() {
 }
 
 // Composant MenuItem avec support de TOUS les modals
-function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, photoPos = "center" }) {
+function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, photoPos = "center", photoHeight = "h-48" }) {
   const [showVariants, setShowVariants] = useState(false);
   const [showJus, setShowJus] = useState(false);
   const [showFormuleModal, setShowFormuleModal] = useState(false);
@@ -633,7 +643,7 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
     <>
       <div className={`rounded-3xl border border-white/10 overflow-hidden transition-all hover:border-white/20 hover:shadow-lg hover:shadow-white/5 ${isFormula ? 'bg-gradient-to-br from-white/5 to-transparent' : ''}`}>
         {photo && (
-          <div className="w-full h-48 overflow-hidden">
+          <div className={`w-full ${photoHeight} overflow-hidden`}>
             <img src={photo} alt={item.name} className="w-full h-full object-cover" style={{ objectPosition: photoPos }}
               onError={e => { e.target.style.display = 'none'; e.target.parentNode.style.display = 'none'; }} />
           </div>
