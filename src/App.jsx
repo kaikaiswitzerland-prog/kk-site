@@ -605,7 +605,7 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
     <>
       <div className={`rounded-3xl border border-white/10 overflow-hidden transition-all hover:border-white/20 hover:shadow-lg hover:shadow-white/5 ${isFormula ? 'bg-gradient-to-br from-white/5 to-transparent' : ''}`}>
         {photo && (
-          <div className="w-full h-36 overflow-hidden">
+          <div className="w-full h-48 overflow-hidden">
             <img src={photo} alt={item.name} className="w-full h-full object-cover" style={{ objectPosition: photoPos }}
               onError={e => { e.target.style.display = 'none'; e.target.parentNode.style.display = 'none'; }} />
           </div>
