@@ -232,6 +232,19 @@ const CHAUD_PHOTO_POS = {
   "8": "center 45%",
 };
 
+const FROID_PHOTOS = {
+  "9":  "/froid-tahitien.jpg",
+  "10": "/froid-kaikai.jpg",
+  "11": "/froid-haka.jpg",
+  "12": "/froid-mokai.jpg",
+};
+const FROID_PHOTO_POS = {
+  "9":  "center 55%",
+  "10": "center 62%",
+  "11": "center 50%",
+  "12": "center 58%",
+};
+
 function format(price) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
 }
@@ -502,7 +515,8 @@ export default function KaiKaiApp() {
 
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">❄️ Plat Froid</h3>
             {SEC_FROID.map(item => (
-              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} />
+              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                photo={FROID_PHOTOS[item.id]} photoPos={FROID_PHOTO_POS[item.id]} />
             ))}
 
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🎁 Formules</h3>
