@@ -226,10 +226,10 @@ const CHAUD_PHOTOS = {
   "8": "/chaud-boeuf.jpg",
 };
 const CHAUD_PHOTO_POS = {
-  "5": "center 80%",
-  "6": "center 90%",
-  "7": "center 70%",
-  "8": "center 75%",
+  "5": "center 50%",
+  "6": "center 50%",
+  "7": "center 40%",
+  "8": "center 45%",
 };
 
 function format(price) {
