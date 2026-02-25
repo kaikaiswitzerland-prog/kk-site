@@ -227,7 +227,7 @@ const CHAUD_PHOTOS = {
 };
 const CHAUD_PHOTO_POS = {
   "5": "center 50%",
-  "6": "center 50%",
+  "6": "center 70%",
   "7": "center 40%",
   "8": "center 45%",
 };
