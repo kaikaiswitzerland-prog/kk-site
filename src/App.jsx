@@ -760,7 +760,7 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
 function VariantModal({ item, onSelect, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold">Choisir une variante</h3>
           <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
@@ -789,7 +789,7 @@ function VariantModal({ item, onSelect, onClose }) {
 function JusModal({ item, onSelect, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold">Choisir votre jus exotique</h3>
           <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
@@ -818,7 +818,7 @@ function JusModal({ item, onSelect, onClose }) {
 function ProteinModal({ item, onSelect, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold">Choisir votre viande</h3>
           <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
@@ -847,7 +847,7 @@ function ProteinModal({ item, onSelect, onClose }) {
 function CoulisModal({ item, onSelect, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold">Choisir votre coulis</h3>
           <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
@@ -876,7 +876,7 @@ function CoulisModal({ item, onSelect, onClose }) {
 function EauModal({ item, onSelect, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold">Choisir votre eau</h3>
           <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
@@ -1197,7 +1197,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
     <>
       <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
         <div className="min-h-screen flex items-center justify-center py-8">
-          <div className="formule-modal-content bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="formule-modal-content bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold">{item.name}</h3>
               <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
@@ -1423,7 +1423,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
     {/* Sous-modals rendus en dehors du conteneur principal */}
     {showJusSelector && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowJusSelector(false)} style={{ position: 'fixed' }}>
-        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold">Choisir votre jus</h3>
             <button onClick={() => setShowJusSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
@@ -1447,7 +1447,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
     
     {showProteinSelector && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowProteinSelector(false)} style={{ position: 'fixed' }}>
-        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold">Choisir votre option</h3>
             <button onClick={() => setShowProteinSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
@@ -1472,7 +1472,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
     
     {showEauSelector && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowEauSelector(false)} style={{ position: 'fixed' }}>
-        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold">Choisir votre eau</h3>
             <button onClick={() => setShowEauSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
@@ -1496,7 +1496,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
     
     {showCoulisSelector && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowCoulisSelector(false)} style={{ position: 'fixed' }}>
-        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold">Choisir votre coulis</h3>
             <button onClick={() => setShowCoulisSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
