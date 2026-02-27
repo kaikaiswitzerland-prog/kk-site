@@ -536,7 +536,7 @@ export default function KaiKaiApp() {
             {SEC_ENTREES.map(item => (
               <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
                 photo={ENTREE_PHOTOS[item.id]} photoPos={ENTREE_PHOTO_POS[item.id]}
-                photoHeight={item.id === "3" ? "h-72" : "h-48"} />
+                photoHeight="h-48" />
             ))}
 
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🔥 Plat Chaud</h3>
