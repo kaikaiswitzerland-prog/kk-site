@@ -444,7 +444,6 @@ export default function KaiKaiApp() {
       }); 
     } else {
       n[id] = q;
-      // Retirer la dernière variante ajoutée
       setCartVariants(cv => {
         const currentVariants = cv[id] || [];
         if (currentVariants.length > 0) {
@@ -544,7 +543,7 @@ export default function KaiKaiApp() {
             {SEC_CHAUD.map(item => (
               <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
                 photo={CHAUD_PHOTOS[item.id]} photoPos={CHAUD_PHOTO_POS[item.id]}
-                photoHeight={item.id === "6" ? "h-96" : item.id === "5" ? "h-72" : "h-48"} />
+                photoHeight="h-48" />
             ))}
 
             <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">❄️ Plat Froid</h3>
@@ -726,7 +725,7 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
         />
       )}
       
-      {/* NOUVEAU: Modal protéines (Chao Men / Kai Fan) */}
+      {/* Modal protéines (Chao Men / Kai Fan) */}
       {showProteinModal && item.hasProteinVariants && (
         <ProteinModal 
           item={item} 
@@ -735,7 +734,7 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
         />
       )}
       
-      {/* NOUVEAU: Modal coulis (Cheesecake) */}
+      {/* Modal coulis (Cheesecake) */}
       {showCoulisModal && item.hasCoulisVariants && (
         <CoulisModal 
           item={item} 
@@ -744,7 +743,7 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
         />
       )}
       
-      {/* NOUVEAU: Modal eau (Eau plate/gazeuse) */}
+      {/* Modal eau (Eau plate/gazeuse) */}
       {showEauModal && item.hasEauVariants && (
         <EauModal 
           item={item} 
@@ -814,7 +813,7 @@ function JusModal({ item, onSelect, onClose }) {
   );
 }
 
-// NOUVEAU: Modal de sélection de protéine (Porc/Poulet)
+// Modal de sélection de protéine (Porc/Poulet)
 function ProteinModal({ item, onSelect, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
@@ -843,7 +842,7 @@ function ProteinModal({ item, onSelect, onClose }) {
   );
 }
 
-// NOUVEAU: Modal de sélection de coulis (Cheesecake)
+// Modal de sélection de coulis (Cheesecake)
 function CoulisModal({ item, onSelect, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
@@ -872,7 +871,7 @@ function CoulisModal({ item, onSelect, onClose }) {
   );
 }
 
-// NOUVEAU: Modal de sélection d'eau (Plate/Gazeuse)
+// Modal de sélection d'eau (Plate/Gazeuse)
 function EauModal({ item, onSelect, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
@@ -912,24 +911,17 @@ function FormuleModal({ item, onConfirm, onClose }) {
   const [selectedDessert, setSelectedDessert] = useState(null);
   const [showJusSelector, setShowJusSelector] = useState(false);
   const [jusIndex, setJusIndex] = useState(0);
-  
-  // NOUVEAU: States pour gérer les variantes de protéine dans les formules
   const [showProteinSelector, setShowProteinSelector] = useState(false);
-  const [proteinForPlat, setProteinForPlat] = useState(null); // Quel plat nécessite une protéine
-  const [selectedProteins, setSelectedProteins] = useState({}); // {platName: proteinName}
-  const [isMultiPlat, setIsMultiPlat] = useState(false); // Pour distinguer Découverte vs Voyage
-  
-  // NOUVEAU: States pour gérer le choix d'eau dans les formules
+  const [proteinForPlat, setProteinForPlat] = useState(null);
+  const [selectedProteins, setSelectedProteins] = useState({});
+  const [isMultiPlat, setIsMultiPlat] = useState(false);
   const [showEauSelector, setShowEauSelector] = useState(false);
   const [selectedEauDecouverte, setSelectedEauDecouverte] = useState(null);
   const [selectedEauVoyage, setSelectedEauVoyage] = useState([]);
   const [eauIndex, setEauIndex] = useState(0);
-  
-  // NOUVEAU: States pour gérer le choix de coulis de dessert dans les formules
   const [showCoulisSelector, setShowCoulisSelector] = useState(false);
   const [selectedCoulisDessert, setSelectedCoulisDessert] = useState(null);
   
-  // Bloquer le scroll de la page quand le modal est ouvert
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
@@ -937,7 +929,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
     };
   }, []);
   
-  // Bloquer aussi le scroll du modal parent quand les sous-modals sont ouverts
   useEffect(() => {
     const modalElement = document.querySelector('.formule-modal-content');
     if (showJusSelector || showProteinSelector || showEauSelector || showCoulisSelector) {
@@ -959,30 +950,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
     { id: 'ace', name: '🍊 Cocktail ACE' }
   ];
   
-  const proteinOptions = [
-    { id: 'porc', name: 'Porc', icon: '🥩' },
-    { id: 'poulet', name: 'Poulet', icon: '🥩' },
-    { id: 'porc-poulet', name: 'Porc + Poulet', icon: '🥩' },
-    { id: 'veggie', name: 'Veggie', icon: '🥬' }
-  ];
-  
-  // NOUVEAU: Fonction pour obtenir les options de protéine selon le plat
-  const getProteinOptionsForPlat = (platName) => {
-    if (platName === 'Omelette Fu Young') {
-      return [
-        { id: 'veggie', name: 'Veggie' },
-        { id: 'poulet', name: 'Poulet' }
-      ];
-    }
-    // Pour Chao Men et Kai Fan
-    return [
-      { id: 'porc', name: 'Porc' },
-      { id: 'poulet', name: 'Poulet' },
-      { id: 'porc-poulet', name: 'Porc + Poulet' },
-      { id: 'veggie', name: 'Veggie' }
-    ];
-  };
-  
   const eauOptions = [
     { id: 'plate', name: '💧 Eau Plate' },
     { id: 'gazeuse', name: '🫧 Eau Gazeuse' }
@@ -990,6 +957,21 @@ function FormuleModal({ item, onConfirm, onClose }) {
   
   const needsProteinChoice = (platName) => {
     return platName === 'Chao Men' || platName === 'Kai Fan' || platName === 'Omelette Fu Young';
+  };
+  
+  const getProteinOptionsForPlat = (platName) => {
+    if (platName === 'Omelette Fu Young') {
+      return [
+        { id: 'veggie', name: 'Veggie' },
+        { id: 'poulet', name: 'Poulet' }
+      ];
+    }
+    return [
+      { id: 'porc', name: 'Porc' },
+      { id: 'poulet', name: 'Poulet' },
+      { id: 'porc-poulet', name: 'Porc + Poulet' },
+      { id: 'veggie', name: 'Veggie' }
+    ];
   };
   
   const handleProteinSelection = (proteinName) => {
@@ -1020,7 +1002,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
   
   const handlePlatCheckbox = (plat) => {
     if (selectedPlats.includes(plat)) {
-      // Si on décoche, retirer aussi la protéine associée
       setSelectedPlats(selectedPlats.filter(p => p !== plat));
       setSelectedProteins(prev => {
         const newProteins = { ...prev };
@@ -1029,7 +1010,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
       });
     } else {
       if (selectedPlats.length < 2) {
-        // Si le plat nécessite un choix de protéine, ouvrir le modal
         if (needsProteinChoice(plat)) {
           setProteinForPlat(plat);
           setIsMultiPlat(true);
@@ -1044,25 +1024,20 @@ function FormuleModal({ item, onConfirm, onClose }) {
     const currentJusCount = selectedBoissons.filter(b => b === 'Jus exotique').length;
     const currentEauCount = selectedBoissons.filter(b => b === 'Eau').length;
     
-    // Gérer Jus exotique
     if (boisson === 'Jus exotique') {
       if (currentJusCount === 0 && selectedBoissons.length < 2) {
-        // Ajouter le premier jus
         setSelectedBoissons([...selectedBoissons, boisson]);
         setJusIndex(0);
         setShowJusSelector(true);
       } else if (currentJusCount === 1 && selectedBoissons.length < 2) {
-        // Ajouter le deuxième jus
         setSelectedBoissons([...selectedBoissons, boisson]);
         setJusIndex(1);
         setShowJusSelector(true);
       } else if (currentJusCount === 1) {
-        // Retirer le seul jus (pas de limite de 2 boissons atteinte)
         const newBoissons = selectedBoissons.filter(b => b !== 'Jus exotique');
         setSelectedBoissons(newBoissons);
         setSelectedJusVoyage([]);
       } else if (currentJusCount === 2) {
-        // Retirer un jus (on en a 2)
         const newBoissons = [...selectedBoissons];
         const index = newBoissons.lastIndexOf('Jus exotique');
         newBoissons.splice(index, 1);
@@ -1071,26 +1046,20 @@ function FormuleModal({ item, onConfirm, onClose }) {
         newJus.pop();
         setSelectedJusVoyage(newJus);
       }
-    } 
-    // Gérer Eau
-    else if (boisson === 'Eau') {
+    } else if (boisson === 'Eau') {
       if (currentEauCount === 0 && selectedBoissons.length < 2) {
-        // Ajouter la première eau
         setSelectedBoissons([...selectedBoissons, boisson]);
         setEauIndex(0);
         setShowEauSelector(true);
       } else if (currentEauCount === 1 && selectedBoissons.length < 2) {
-        // Ajouter la deuxième eau
         setSelectedBoissons([...selectedBoissons, boisson]);
         setEauIndex(1);
         setShowEauSelector(true);
       } else if (currentEauCount === 1) {
-        // Retirer la seule eau
         const newBoissons = selectedBoissons.filter(b => b !== 'Eau');
         setSelectedBoissons(newBoissons);
         setSelectedEauVoyage([]);
       } else if (currentEauCount === 2) {
-        // Retirer une eau (on en a 2)
         const newBoissons = [...selectedBoissons];
         const index = newBoissons.lastIndexOf('Eau');
         newBoissons.splice(index, 1);
@@ -1099,9 +1068,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
         newEau.pop();
         setSelectedEauVoyage(newEau);
       }
-    } 
-    // Gérer les autres boissons (si jamais il y en a)
-    else {
+    } else {
       if (selectedBoissons.includes(boisson)) {
         setSelectedBoissons(selectedBoissons.filter(b => b !== boisson));
       } else if (selectedBoissons.length < 2) {
@@ -1144,7 +1111,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
         alert('Veuillez sélectionner exactement 2 plats');
         return;
       }
-      // Vérifier que tous les plats qui nécessitent une protéine en ont une
       for (const plat of selectedPlats) {
         if (needsProteinChoice(plat) && !selectedProteins[plat]) {
           alert('Veuillez choisir votre viande/option pour ' + plat);
@@ -1159,7 +1125,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
         alert('Veuillez sélectionner un dessert');
         return;
       }
-      // Vérifier que le dessert qui nécessite un coulis en a un
       if (needsCoulisChoice(selectedDessert) && !selectedCoulisDessert) {
         alert('Veuillez choisir votre coulis pour ' + selectedDessert);
         return;
@@ -1176,7 +1141,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
       }
     }
     
-    // Créer un objet avec tous les détails de la formule
     const formuleDetails = {
       type: item.formuleType,
       plat: selectedPlat,
@@ -1208,7 +1172,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
         
         {item.formuleType === "decouverte" && (
           <div className="space-y-6">
-            {/* Choix du Plat */}
             <div>
               <h4 className="text-lg font-medium mb-3">1. Choisissez votre plat :</h4>
               <div className="space-y-2">
@@ -1219,10 +1182,8 @@ function FormuleModal({ item, onConfirm, onClose }) {
                       name="formule-decouverte-plat" 
                       checked={selectedPlat === plat}
                       onClick={() => {
-                        // Permettre la désélection en cliquant à nouveau
                         if (selectedPlat === plat) {
                           setSelectedPlat(null);
-                          // Retirer aussi la protéine associée
                           setSelectedProteins(prev => {
                             const newProteins = { ...prev };
                             delete newProteins[plat];
@@ -1230,7 +1191,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
                           });
                         } else {
                           setSelectedPlat(plat);
-                          // Si c'est Chao Men, Kai Fan ou Omelette Fu Young, ouvrir le sélecteur de protéine
                           if (needsProteinChoice(plat)) {
                             setProteinForPlat(plat);
                             setIsMultiPlat(false);
@@ -1238,7 +1198,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
                           }
                         }
                       }}
-                      onChange={() => {}} // Nécessaire pour éviter les warnings React
+                      onChange={() => {}}
                       className="w-4 h-4" 
                     />
                     <div className="flex-1">
@@ -1257,7 +1217,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
               </div>
             </div>
 
-            {/* Choix de la Boisson */}
             <div>
               <h4 className="text-lg font-medium mb-3">2. Choisissez votre boisson :</h4>
               <div className="space-y-2">
@@ -1268,7 +1227,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
                       name="formule-decouverte-boisson" 
                       checked={selectedBoisson === boisson}
                       onClick={() => {
-                        // Permettre la désélection en cliquant à nouveau
                         if (selectedBoisson === boisson) {
                           setSelectedBoisson(null);
                           if (boisson === 'Jus exotique') {
@@ -1285,7 +1243,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
                           }
                         }
                       }}
-                      onChange={() => {}} // Nécessaire pour éviter les warnings React
+                      onChange={() => {}}
                       className="w-4 h-4" 
                     />
                     <div className="flex-1">
@@ -1303,7 +1261,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
         
         {item.formuleType === "voyage" && (
           <div className="space-y-6">
-            {/* Choix des 2 Plats */}
             <div>
               <h4 className="text-lg font-medium mb-3">1. Choisissez vos 2 plats :</h4>
               <div className="space-y-2">
@@ -1333,7 +1290,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
               <p className="text-xs text-white/50 mt-2">Sélectionnez exactement 2 plats</p>
             </div>
 
-            {/* Choix des 2 Boissons */}
             <div>
               <h4 className="text-lg font-medium mb-3">2. Choisissez vos 2 boissons :</h4>
               <div className="space-y-2">
@@ -1369,7 +1325,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
               <p className="text-xs text-white/50 mt-2">Sélectionnez jusqu'à 2 boissons (cliquez 2x sur jus pour 2 jus ou 2x sur eau pour 2 eaux)</p>
             </div>
 
-            {/* Choix du Dessert */}
             <div>
               <h4 className="text-lg font-medium mb-3">3. Choisissez votre dessert :</h4>
               <div className="space-y-2">
@@ -1379,19 +1334,17 @@ function FormuleModal({ item, onConfirm, onClose }) {
                       type="radio" 
                       checked={selectedDessert === dessert}
                       onClick={() => {
-                        // Permettre la désélection en cliquant à nouveau
                         if (selectedDessert === dessert) {
                           setSelectedDessert(null);
                           setSelectedCoulisDessert(null);
                         } else {
                           setSelectedDessert(dessert);
-                          // Si c'est Crème Tropicale ou Cheesecake, ouvrir le sélecteur de coulis
                           if (needsCoulisChoice(dessert)) {
                             setShowCoulisSelector(true);
                           }
                         }
                       }}
-                      onChange={() => {}} // Nécessaire pour éviter les warnings React
+                      onChange={() => {}}
                       className="w-4 h-4" 
                     />
                     <div className="flex-1">
@@ -1420,7 +1373,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
     </div>
     </div>
     
-    {/* Sous-modals rendus en dehors du conteneur principal */}
     {showJusSelector && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowJusSelector(false)} style={{ position: 'fixed' }}>
         <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
@@ -1653,7 +1605,6 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                     form.phone && 
                     (mode === "pickup" || (form.address && form.postalCode && !deliveryError));
   
-  // Forcer le mode pickup si le montant minimum de livraison n'est pas atteint
   useEffect(() => {
     if (!canDelivery && mode === "delivery") {
       setMode("pickup");
@@ -1689,7 +1640,6 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                   <div className="flex-1">
                     <div className="font-medium">{it.name}</div>
                     
-                    {/* Affichage des formules - une par une si plusieurs */}
                     {variantsToDisplay.length > 0 && variantsToDisplay[0]?.type && (
                       <div className="mt-2 space-y-3">
                         {variantsToDisplay.map((variant, formuleIdx) => (
@@ -1727,7 +1677,6 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                       </div>
                     )}
                     
-                    {/* Affichage simple des variantes non-formule */}
                     {variantsToDisplay.length > 0 && !variantsToDisplay[0]?.type && (
                       <div className="mt-1 space-y-0.5">
                         {variantsToDisplay.map((v, idx) => (
@@ -1755,11 +1704,7 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           )}
           <div className="flex gap-2">
             <button 
-              onClick={() => {
-                if (canDelivery) {
-                  setMode("delivery");
-                }
-              }}
+              onClick={() => { if (canDelivery) { setMode("delivery"); } }}
               disabled={!canDelivery}
               className={`flex-1 rounded-2xl px-3 py-2 text-sm transition-all ${
                 mode === "delivery" 
