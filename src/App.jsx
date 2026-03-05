@@ -420,15 +420,28 @@ const CATEGORIES = [
 function CategoryNav({ activeCategory }) {
   const navRef = React.useRef(null);
   const activeRef = React.useRef(null);
+  const [scrolled, setScrolled] = React.useState(false);
+  const [headerH, setHeaderH] = React.useState(0);
 
-  const scrollToCategory = (id) => {
-    const el = document.getElementById(`section-${id}`);
-    if (el) {
-      const offset = 110;
-      const top = el.getBoundingClientRect().top + window.scrollY - offset;
-      window.scrollTo({ top, behavior: "smooth" });
-    }
-  };
+  // Mesure la vraie hauteur du header sticky
+  useEffect(() => {
+    const measure = () => {
+      const h = document.querySelector("header");
+      if (h) setHeaderH(h.offsetHeight);
+    };
+    measure();
+    // Réessayer après le premier render
+    const t = setTimeout(measure, 100);
+    window.addEventListener("resize", measure);
+    return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
+  }, []);
+
+  useEffect(() => {
+    if (headerH === 0) return;
+    const handleScroll = () => setScrolled(window.scrollY > headerH);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [headerH]);
 
   useEffect(() => {
     if (activeRef.current && navRef.current) {
@@ -439,31 +452,72 @@ function CategoryNav({ activeCategory }) {
     }
   }, [activeCategory]);
 
+  const scrollToCategory = (id) => {
+    const el = document.getElementById(`section-${id}`);
+    if (el) {
+      const navH = navRef.current ? navRef.current.offsetHeight : 36;
+      const offset = (scrolled ? 0 : headerH) + navH + 8;
+      const top = el.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  };
+
+  // Tant que headerH pas mesuré, on positionne hors écran pour éviter flash
+  const topPos = headerH === 0 ? -200 : scrolled ? 0 : headerH;
+
   return (
-    <div
-      ref={navRef}
-      className="sticky z-30 flex gap-2 overflow-x-auto px-4 py-2 bg-black/90 backdrop-blur border-b border-white/10"
-      style={{ top: "57px", msOverflowStyle: "none", scrollbarWidth: "none" }}
-    >
-      <style>{`.category-nav-hide::-webkit-scrollbar { display: none; }`}</style>
-      {CATEGORIES.map(cat => {
-        const isActive = activeCategory === cat.id;
-        return (
-          <button
-            key={cat.id}
-            ref={isActive ? activeRef : null}
-            onClick={() => scrollToCategory(cat.id)}
-            className={`flex-shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-all whitespace-nowrap ${
-              isActive
-                ? "bg-white text-black"
-                : "border border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
-            }`}
-          >
-            {cat.label}
-          </button>
-        );
-      })}
-    </div>
+    <>
+      <style>{`
+        .cat-nav::-webkit-scrollbar { display: none; }
+        .cat-nav { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
+      <div
+        ref={navRef}
+        className="cat-nav"
+        style={{
+          position: "fixed",
+          top: topPos,
+          left: 0,
+          right: 0,
+          zIndex: 35,
+          display: "flex",
+          gap: "8px",
+          overflowX: "auto",
+          padding: scrolled ? "5px 16px" : "8px 16px",
+          background: scrolled ? "rgba(0,0,0,0.70)" : "rgba(0,0,0,0.95)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          borderBottom: scrolled ? "1px solid rgba(255,255,255,0.04)" : "1px solid rgba(255,255,255,0.10)",
+          transition: "top 0.25s ease, padding 0.2s ease, background 0.25s ease",
+        }}
+      >
+        {CATEGORIES.map(cat => {
+          const isActive = activeCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              ref={isActive ? activeRef : null}
+              onClick={() => scrollToCategory(cat.id)}
+              style={{
+                flexShrink: 0,
+                whiteSpace: "nowrap",
+                borderRadius: "999px",
+                padding: scrolled ? "2px 10px" : "5px 14px",
+                fontSize: scrolled ? "11px" : "13px",
+                fontWeight: 500,
+                transition: "all 0.2s ease",
+                background: isActive ? "white" : "transparent",
+                color: isActive ? "black" : scrolled ? "rgba(255,255,255,0.40)" : "rgba(255,255,255,0.70)",
+                border: isActive ? "none" : scrolled ? "1px solid rgba(255,255,255,0.10)" : "1px solid rgba(255,255,255,0.20)",
+                cursor: "pointer",
+              }}
+            >
+              {cat.label}
+            </button>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -585,11 +639,12 @@ export default function KaiKaiApp() {
 
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
 
+      {/* Navigation sticky des catégories - toujours montée pour rester fixed */}
+      {step === "menu" && <CategoryNav activeCategory={activeCategory} />}
+
       {/* Menu principal */}
       {step === "menu" && (
         <>
-          {/* NOUVEAU : Navigation sticky des catégories */}
-          <CategoryNav activeCategory={activeCategory} />
 
           <section className="mx-auto max-w-5xl px-4 py-10">
             <div className="mb-10 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-6">
@@ -627,39 +682,39 @@ export default function KaiKaiApp() {
 
             {/* Grille de plats */}
             <div className="grid gap-6 sm:grid-cols-2">
-              <h3 id="section-entrees" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60 scroll-mt-28">🥗 Entrées</h3>
+              <h3 id="section-entrees" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
               {SEC_ENTREES.map(item => (
                 <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
                   photo={ENTREE_PHOTOS[item.id]} photoPos={ENTREE_PHOTO_POS[item.id]}
                   photoHeight="h-56" />
               ))}
 
-              <h3 id="section-chaud" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60 scroll-mt-28">🔥 Plat Chaud</h3>
+              <h3 id="section-chaud" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🔥 Plat Chaud</h3>
               {SEC_CHAUD.map(item => (
                 <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
                   photo={CHAUD_PHOTOS[item.id]} photoPos={CHAUD_PHOTO_POS[item.id]}
                   photoHeight="h-56" />
               ))}
 
-              <h3 id="section-froid" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60 scroll-mt-28">❄️ Plat Froid</h3>
+              <h3 id="section-froid" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">❄️ Plat Froid</h3>
               {SEC_FROID.map(item => (
                 <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
                   photo={FROID_PHOTOS[item.id]} photoPos={FROID_PHOTO_POS[item.id]} />
               ))}
 
-              <h3 id="section-formules" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60 scroll-mt-28">🎁 Formules</h3>
+              <h3 id="section-formules" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🎁 Formules</h3>
               {SEC_FORMULES.map(item => (
                 <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} isFormula
                   photo={FORMULE_PHOTOS[item.id]} photoPos={FORMULE_PHOTO_POS[item.id]} photoHeight="h-64" />
               ))}
 
-              <h3 id="section-desserts" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60 scroll-mt-28">🍰 Desserts</h3>
+              <h3 id="section-desserts" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍰 Desserts</h3>
               {SEC_DESSERT.map(item => (
                 <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
                   photo={DESSERT_PHOTOS[item.id]} photoPos={DESSERT_PHOTO_POS[item.id]} />
               ))}
 
-              <h3 id="section-boissons" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60 scroll-mt-28">🧉 Boissons</h3>
+              <h3 id="section-boissons" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧉 Boissons</h3>
               {SEC_BOISSON.map(item => (
                 <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
                   photo={BOISSON_PHOTOS[item.id]} photoPos={BOISSON_PHOTO_POS[item.id]} />
