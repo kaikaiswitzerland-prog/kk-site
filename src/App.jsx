@@ -162,7 +162,7 @@ const MENU = [
   { 
     id: "19", 
     name: "Jus exotiques", 
-    desc: "Pomme/kiwi, fraise/framboise, ananas/citron/gingembre, coktail ACE", 
+    desc: "Pomme/kiwi, fraise/framboise, ananas/citron/gingembre, cocktail ACE", 
     price: 3.50, 
     category: "boissons",
     hasJusVariants: true,
@@ -407,6 +407,89 @@ function OpenStatus() {
   );
 }
 
+// ─── NOUVEAU : Navigation sticky par catégorie ───────────────────────────────
+const CATEGORIES = [
+  { id: "entrees",  label: "🥗 Entrées" },
+  { id: "chaud",    label: "🔥 Plats Chauds" },
+  { id: "froid",    label: "❄️ Plats Froids" },
+  { id: "formules", label: "🎁 Formules" },
+  { id: "desserts", label: "🍰 Desserts" },
+  { id: "boissons", label: "🧉 Boissons" },
+];
+
+function CategoryNav({ activeCategory }) {
+  const navRef = React.useRef(null);
+  const activeRef = React.useRef(null);
+
+  const scrollToCategory = (id) => {
+    const el = document.getElementById(`section-${id}`);
+    if (el) {
+      const offset = 110;
+      const top = el.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  };
+
+  useEffect(() => {
+    if (activeRef.current && navRef.current) {
+      const nav = navRef.current;
+      const btn = activeRef.current;
+      const scrollLeft = btn.offsetLeft - nav.offsetWidth / 2 + btn.offsetWidth / 2;
+      nav.scrollTo({ left: scrollLeft, behavior: "smooth" });
+    }
+  }, [activeCategory]);
+
+  return (
+    <div
+      ref={navRef}
+      className="sticky z-30 flex gap-2 overflow-x-auto px-4 py-2 bg-black/90 backdrop-blur border-b border-white/10"
+      style={{ top: "57px", msOverflowStyle: "none", scrollbarWidth: "none" }}
+    >
+      <style>{`.category-nav-hide::-webkit-scrollbar { display: none; }`}</style>
+      {CATEGORIES.map(cat => {
+        const isActive = activeCategory === cat.id;
+        return (
+          <button
+            key={cat.id}
+            ref={isActive ? activeRef : null}
+            onClick={() => scrollToCategory(cat.id)}
+            className={`flex-shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-all whitespace-nowrap ${
+              isActive
+                ? "bg-white text-black"
+                : "border border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            {cat.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function useActiveCategory() {
+  const [active, setActive] = useState("entrees");
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const offset = 130;
+      for (let i = CATEGORIES.length - 1; i >= 0; i--) {
+        const el = document.getElementById(`section-${CATEGORIES[i].id}`);
+        if (el && el.getBoundingClientRect().top <= offset) {
+          setActive(CATEGORIES[i].id);
+          return;
+        }
+      }
+      setActive(CATEGORIES[0].id);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return active;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function KaiKaiApp() {
   const [cart, setCart] = useState({});
   const [cartVariants, setCartVariants] = useState({});
@@ -415,6 +498,9 @@ export default function KaiKaiApp() {
   const [step, setStep] = useState("menu");
   const [logoVisible, setLogoVisible] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
+
+  // Navigation sticky active
+  const activeCategory = useActiveCategory();
 
   const items = useMemo(() => MENU_SORTED.map(m => ({ ...m, qty: cart[m.id] || 0 })), [cart]);
   const subtotal = useMemo(() => items.reduce((s, it) => s + it.price * it.qty, 0), [items]);
@@ -501,80 +587,90 @@ export default function KaiKaiApp() {
 
       {/* Menu principal */}
       {step === "menu" && (
-        <section className="mx-auto max-w-5xl px-4 py-10">
-          <div className="mb-10 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-6">
-            <div className="mb-6 text-center">
-              <div className="flex flex-wrap items-center justify-center gap-3 mb-3">
-                <Badge type="halal" />
-                <Badge type="healthy" />
+        <>
+          {/* NOUVEAU : Navigation sticky des catégories */}
+          <CategoryNav activeCategory={activeCategory} />
+
+          <section className="mx-auto max-w-5xl px-4 py-10">
+            <div className="mb-10 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-6">
+              <div className="mb-6 text-center">
+                <div className="flex flex-wrap items-center justify-center gap-3 mb-3">
+                  <Badge type="halal" />
+                  <Badge type="healthy" />
+                </div>
+                <h2 className="mb-2 text-3xl font-bold">Bienvenue chez KaïKaï</h2>
+                <p className="text-white/70">Cuisine tahitienne authentique — Genève</p>
               </div>
-              <h2 className="mb-2 text-3xl font-bold">Bienvenue chez KaïKaï</h2>
-              <p className="text-white/70">Cuisine tahitienne authentique — Genève</p>
+              <HeroSlider />
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-white/60">
+                <a 
+                  href={`https://www.google.com/maps/search/?api=1&query=${RESTAURANT_INFO.coordinates.lat},${RESTAURANT_INFO.coordinates.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 hover:text-white transition-colors"
+                >
+                  <MapPin className="h-4 w-4" />{RESTAURANT_INFO.address}
+                </a>
+                <div className="flex items-center gap-2">
+                  <Bike className="h-4 w-4" />Livraison en {RESTAURANT_INFO.deliveryTime} min
+                </div>
+                {/* MODIFICATION : -10% avec explication claire */}
+                <div className="flex items-center gap-2 text-green-400">
+                  <Percent className="h-4 w-4" />-10% en commandant ici
+                </div>
+              </div>
+              {/* NOUVEAU : Bandeau explicatif de la remise */}
+              <div className="mt-4 rounded-2xl border border-green-500/20 bg-green-500/5 px-4 py-3 text-center text-sm text-green-400/90">
+                💚 Commandez directement sur notre site et économisez 10% — sans commission de plateforme, votre argent va directement au restaurant.
+              </div>
             </div>
-            <HeroSlider />
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-white/60">
-              <a 
-                href={`https://www.google.com/maps/search/?api=1&query=${RESTAURANT_INFO.coordinates.lat},${RESTAURANT_INFO.coordinates.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 hover:text-white transition-colors"
-              >
-                <MapPin className="h-4 w-4" />{RESTAURANT_INFO.address}
-              </a>
-              <div className="flex items-center gap-2">
-                <Bike className="h-4 w-4" />Livraison en {RESTAURANT_INFO.deliveryTime} min
-              </div>
-              <div className="flex items-center gap-2">
-                <Percent className="h-4 w-4" />-10% sur votre commande
-              </div>
+
+            {/* Grille de plats */}
+            <div className="grid gap-6 sm:grid-cols-2">
+              <h3 id="section-entrees" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60 scroll-mt-28">🥗 Entrées</h3>
+              {SEC_ENTREES.map(item => (
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                  photo={ENTREE_PHOTOS[item.id]} photoPos={ENTREE_PHOTO_POS[item.id]}
+                  photoHeight="h-56" />
+              ))}
+
+              <h3 id="section-chaud" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60 scroll-mt-28">🔥 Plat Chaud</h3>
+              {SEC_CHAUD.map(item => (
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                  photo={CHAUD_PHOTOS[item.id]} photoPos={CHAUD_PHOTO_POS[item.id]}
+                  photoHeight="h-56" />
+              ))}
+
+              <h3 id="section-froid" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60 scroll-mt-28">❄️ Plat Froid</h3>
+              {SEC_FROID.map(item => (
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                  photo={FROID_PHOTOS[item.id]} photoPos={FROID_PHOTO_POS[item.id]} />
+              ))}
+
+              <h3 id="section-formules" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60 scroll-mt-28">🎁 Formules</h3>
+              {SEC_FORMULES.map(item => (
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} isFormula
+                  photo={FORMULE_PHOTOS[item.id]} photoPos={FORMULE_PHOTO_POS[item.id]} photoHeight="h-64" />
+              ))}
+
+              <h3 id="section-desserts" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60 scroll-mt-28">🍰 Desserts</h3>
+              {SEC_DESSERT.map(item => (
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                  photo={DESSERT_PHOTOS[item.id]} photoPos={DESSERT_PHOTO_POS[item.id]} />
+              ))}
+
+              <h3 id="section-boissons" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60 scroll-mt-28">🧉 Boissons</h3>
+              {SEC_BOISSON.map(item => (
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                  photo={BOISSON_PHOTOS[item.id]} photoPos={BOISSON_PHOTO_POS[item.id]} />
+              ))}
             </div>
-          </div>
 
-          {/* Grille de plats */}
-          <div className="grid gap-6 sm:grid-cols-2">
-            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
-            {SEC_ENTREES.map(item => (
-              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
-                photo={ENTREE_PHOTOS[item.id]} photoPos={ENTREE_PHOTO_POS[item.id]}
-                photoHeight="h-56" />
-            ))}
-
-            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🔥 Plat Chaud</h3>
-            {SEC_CHAUD.map(item => (
-              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
-                photo={CHAUD_PHOTOS[item.id]} photoPos={CHAUD_PHOTO_POS[item.id]}
-                photoHeight="h-56" />
-            ))}
-
-            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">❄️ Plat Froid</h3>
-            {SEC_FROID.map(item => (
-              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
-                photo={FROID_PHOTOS[item.id]} photoPos={FROID_PHOTO_POS[item.id]} />
-            ))}
-
-            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🎁 Formules</h3>
-            {SEC_FORMULES.map(item => (
-              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} isFormula
-                photo={FORMULE_PHOTOS[item.id]} photoPos={FORMULE_PHOTO_POS[item.id]} photoHeight="h-64" />
-            ))}
-
-            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍰 Desserts</h3>
-            {SEC_DESSERT.map(item => (
-              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
-                photo={DESSERT_PHOTOS[item.id]} photoPos={DESSERT_PHOTO_POS[item.id]} />
-            ))}
-
-            <h3 className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧉 Boissons</h3>
-            {SEC_BOISSON.map(item => (
-              <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
-                photo={BOISSON_PHOTOS[item.id]} photoPos={BOISSON_PHOTO_POS[item.id]} />
-            ))}
-          </div>
-
-          <div className="mt-8 text-center text-sm text-white/50 italic">
-            Tous nos plats sont accompagnés de riz et de salade
-          </div>
-        </section>
+            <div className="mt-8 text-center text-sm text-white/50 italic">
+              Tous nos plats sont accompagnés de riz et de salade
+            </div>
+          </section>
+        </>
       )}
 
       {step === "checkout" && (
