@@ -1,19 +1,43 @@
 // src/App.jsx - VERSION AVEC TOUS LES MODALS DE VARIANTES
 import React, { useMemo, useState, useEffect } from "react";
-import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Percent, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle } from "lucide-react";
+import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Percent, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight } from "lucide-react";
 
 // MODIFICATION 1: Logo PNG au lieu du SVG
 const LOGO_SRC = "/logo_kaikai.png";
 
 // Style global pour empêcher le scroll horizontal
 const globalStyles = `
-  html, body {
-    overflow-x: hidden;
-    max-width: 100vw;
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  * { box-sizing: border-box; }
+
+  @keyframes sheetUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
   }
-  * {
-    box-sizing: border-box;
+  @keyframes backdropIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
+  @keyframes tileIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .modal-backdrop { animation: backdropIn 0.22s ease forwards; }
+  .modal-sheet   { animation: sheetUp 0.36s cubic-bezier(0.32, 1.1, 0.58, 1) forwards; }
+  .tile-0  { animation: tileIn 0.22s ease 0.08s both; }
+  .tile-1  { animation: tileIn 0.22s ease 0.13s both; }
+  .tile-2  { animation: tileIn 0.22s ease 0.18s both; }
+  .tile-3  { animation: tileIn 0.22s ease 0.23s both; }
+  .tile-4  { animation: tileIn 0.22s ease 0.28s both; }
+  .tile-5  { animation: tileIn 0.22s ease 0.33s both; }
+  .tile-6  { animation: tileIn 0.22s ease 0.38s both; }
+
+  .modal-tile { transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease; }
+  .modal-tile:hover { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.22) !important; }
+  .modal-tile:active { transform: scale(0.98); }
+
+  .cat-nav::-webkit-scrollbar { display: none; }
+  .cat-nav { -ms-overflow-style: none; scrollbar-width: none; }
 `;
 
 // Informations du restaurant
@@ -467,10 +491,6 @@ function CategoryNav({ activeCategory }) {
 
   return (
     <>
-      <style>{`
-        .cat-nav::-webkit-scrollbar { display: none; }
-        .cat-nav { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
       <div
         ref={navRef}
         className="cat-nav"
@@ -670,13 +690,13 @@ export default function KaiKaiApp() {
                   <Bike className="h-4 w-4" />Livraison en {RESTAURANT_INFO.deliveryTime} min
                 </div>
                 {/* MODIFICATION : -10% avec explication claire */}
-                <div className="flex items-center gap-2 text-green-400">
+                <div className="flex items-center gap-2">
                   <Percent className="h-4 w-4" />-10% en commandant ici
                 </div>
               </div>
               {/* NOUVEAU : Bandeau explicatif de la remise */}
               <div className="mt-4 rounded-2xl border border-green-500/20 bg-green-500/5 px-4 py-3 text-center text-sm text-green-400/90">
-                 Commandez directement sur notre site et économisez 10% — sans commission de plateforme, juste vous et nous.🤝
+                💚 Commandez directement sur notre site et économisez 10% — sans commission de plateforme, votre argent va directement au restaurant.
               </div>
             </div>
 
@@ -906,152 +926,245 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
   );
 }
 
-// Modal de sélection de variante tartare
+// ─── SYSTÈME DE MODAUX BOTTOM SHEET ─────────────────────────────────────────
+
+// Composant réutilisable : Bottom Sheet avec image header
+function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, footerContent }) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, []);
+
+  return (
+    <div
+      className="modal-backdrop fixed inset-0 z-50 flex items-end justify-center"
+      style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="modal-sheet w-full max-w-lg flex flex-col"
+        style={{
+          background: 'linear-gradient(180deg, #0d0d0d 0%, #111 100%)',
+          borderRadius: '28px 28px 0 0',
+          border: '1px solid rgba(255,255,255,0.09)',
+          borderBottom: 'none',
+          maxHeight: '91vh',
+          overflow: 'hidden',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle bar */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
+          <div style={{ width: 38, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
+        </div>
+
+        {/* Image header optionnel */}
+        {photo && (
+          <div style={{ position: 'relative', height: 190, flexShrink: 0, overflow: 'hidden', margin: '10px 16px 0', borderRadius: 20 }}>
+            <img
+              src={photo} alt={title}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoPos || 'center' }}
+              onError={e => { e.target.parentNode.style.display = 'none'; }}
+            />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(13,13,13,0.92) 100%)' }} />
+            {/* Titre en overlay sur l'image */}
+            <div style={{ position: 'absolute', bottom: 14, left: 16, right: 52 }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'white', textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{title}</div>
+              {subtitle && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{subtitle}</div>}
+            </div>
+            <button
+              onClick={onClose}
+              style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}
+            ><X size={15} /></button>
+          </div>
+        )}
+
+        {/* Header sans image */}
+        {!photo && (
+          <div style={{ padding: '6px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'white' }}>{title}</div>
+              {subtitle && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>{subtitle}</div>}
+            </div>
+            <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0, marginTop: 2 }}>
+              <X size={15} />
+            </button>
+          </div>
+        )}
+
+        {/* Séparateur */}
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '14px 0 0', flexShrink: 0 }} />
+
+        {/* Contenu scrollable */}
+        <div style={{ overflowY: 'auto', flex: 1, padding: '10px 16px 16px' }}>
+          {children}
+        </div>
+
+        {/* Footer fixe optionnel */}
+        {footerContent && (
+          <div style={{ padding: '12px 16px 32px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+            {footerContent}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Tuile de sélection réutilisable
+function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge }) {
+  return (
+    <button
+      className={`modal-tile tile-${Math.min(index, 6)}`}
+      onClick={onClick}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+        padding: '13px 14px', marginBottom: 8,
+        background: isSelected ? 'rgba(255,255,255,0.11)' : 'rgba(255,255,255,0.03)',
+        border: isSelected ? '1px solid rgba(255,255,255,0.28)' : '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 16, cursor: 'pointer', textAlign: 'left',
+      }}
+    >
+      {emoji && (
+        <span style={{ fontSize: 26, width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 13, flexShrink: 0 }}>
+          {emoji}
+        </span>
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: 6 }}>
+          {name}
+          {badge && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'rgba(255,180,0,0.15)', color: 'rgba(255,180,0,0.85)', border: '1px solid rgba(255,180,0,0.2)' }}>{badge}</span>}
+        </div>
+        {desc && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</div>}
+      </div>
+      {isSelected
+        ? <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Check size={13} color="black" strokeWidth={3} /></div>
+        : <ChevronRight size={15} style={{ color: 'rgba(255,255,255,0.20)', flexShrink: 0 }} />
+      }
+    </button>
+  );
+}
+
+// Label de section
+function SectionLabel({ children }) {
+  return (
+    <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', letterSpacing: '0.09em', textTransform: 'uppercase', padding: '14px 2px 10px' }}>
+      {children}
+    </div>
+  );
+}
+
+// Sub-sheet pour sélections imbriquées (protéines dans formule, etc.)
+function SubSheet({ title, subtitle, options, onSelect, onClose }) {
+  return (
+    <div
+      className="modal-backdrop fixed inset-0 z-[100] flex items-end justify-center"
+      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="modal-sheet w-full max-w-lg"
+        style={{
+          background: '#181818',
+          borderRadius: '24px 24px 0 0',
+          border: '1px solid rgba(255,255,255,0.09)',
+          borderBottom: 'none',
+          maxHeight: '65vh',
+          overflow: 'hidden',
+          display: 'flex', flexDirection: 'column',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
+          <div style={{ width: 34, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
+        </div>
+        <div style={{ padding: '10px 20px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'white' }}>{title}</div>
+            {subtitle && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 2 }}>{subtitle}</div>}
+          </div>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+            <X size={14} />
+          </button>
+        </div>
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+        <div style={{ overflowY: 'auto', flex: 1, padding: '8px 16px 28px' }}>
+          {options.map((opt, i) => (
+            <OptionTile key={opt.id} emoji={opt.emoji} name={opt.name} desc={opt.desc} isSelected={false} onClick={() => onSelect(opt)} index={i} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MODAUX SIMPLES ───────────────────────────────────────────────────────────
+
+const ALL_PHOTOS_MAP = {};
+const ALL_PHOTO_POS_MAP = {};
+
+// Fusion des maps photo dans un objet unique accessible globalement
+function getPhoto(id) {
+  return ENTREE_PHOTOS[id] || CHAUD_PHOTOS[id] || FROID_PHOTOS[id] || FORMULE_PHOTOS[id] || DESSERT_PHOTOS[id] || BOISSON_PHOTOS[id] || null;
+}
+function getPhotoPos(id) {
+  return ENTREE_PHOTO_POS[id] || CHAUD_PHOTO_POS[id] || FROID_PHOTO_POS[id] || FORMULE_PHOTO_POS[id] || DESSERT_PHOTO_POS[id] || BOISSON_PHOTO_POS[id] || 'center';
+}
+
 function VariantModal({ item, onSelect, onClose }) {
+  const variantEmojis = { tahitien: '🥥', haka: '🌶️', mokai: '🥜', kaikai: '🥭' };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold">Choisir une variante</h3>
-          <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="text-sm text-white/60 mb-4">{item.name}</p>
-        <div className="space-y-3">
-          {item.variants.map(variant => (
-            <button
-              key={variant.id}
-              onClick={() => onSelect(variant)}
-              className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-            >
-              <div className="font-medium">{variant.name}</div>
-              <div className="text-sm text-white/60 mt-1">{variant.desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+    <BottomSheet title={item.name} subtitle="Choisissez votre sauce" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
+      {item.variants.map((v, i) => (
+        <OptionTile key={v.id} emoji={variantEmojis[v.id] || '🍽️'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
+      ))}
+    </BottomSheet>
   );
 }
 
-// Modal de sélection de jus
 function JusModal({ item, onSelect, onClose }) {
+  const jusEmojis = { 'pomme-kiwi': '🍏', 'fraise-framboise': '🍓', 'ananas-citron': '🍍', ace: '🍊' };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold">Choisir votre jus exotique</h3>
-          <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="text-sm text-white/60 mb-4">Jus exotiques maison</p>
-        <div className="space-y-3">
-          {item.jusVariants.map(jus => (
-            <button
-              key={jus.id}
-              onClick={() => onSelect(jus)}
-              className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-            >
-              <div className="font-medium">{jus.name}</div>
-              <div className="text-sm text-white/60 mt-1">{jus.desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+    <BottomSheet title="Jus exotiques maison" subtitle="Pressés à la commande" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
+      {item.jusVariants.map((v, i) => (
+        <OptionTile key={v.id} emoji={jusEmojis[v.id] || '🧃'} name={v.name.replace(/^[^\s]+ /, '')} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
+      ))}
+    </BottomSheet>
   );
 }
 
-// Modal de sélection de protéine (Porc/Poulet)
 function ProteinModal({ item, onSelect, onClose }) {
+  const protEmojis = { porc: '🥩', poulet: '🍗', 'porc-poulet': '🍽️', veggie: '🥦' };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold">Choisir votre viande</h3>
-          <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="text-sm text-white/60 mb-4">{item.name}</p>
-        <div className="space-y-3">
-          {item.proteinVariants.map(protein => (
-            <button
-              key={protein.id}
-              onClick={() => onSelect(protein)}
-              className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-            >
-              <div className="font-medium">{protein.id === 'veggie' ? '🥦' : ''} {protein.name}</div>
-              <div className="text-sm text-white/60 mt-1">{protein.desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+    <BottomSheet title={item.name} subtitle="Choisissez votre protéine" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
+      {item.proteinVariants.map((v, i) => (
+        <OptionTile key={v.id} emoji={protEmojis[v.id] || '🍽️'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
+      ))}
+    </BottomSheet>
   );
 }
 
-// Modal de sélection de coulis (Cheesecake)
 function CoulisModal({ item, onSelect, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold">Choisir votre coulis</h3>
-          <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="text-sm text-white/60 mb-4">{item.name}</p>
-        <div className="space-y-3">
-          {item.coulisVariants.map(coulis => (
-            <button
-              key={coulis.id}
-              onClick={() => onSelect(coulis)}
-              className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-            >
-              <div className="font-medium">{coulis.id === 'mangue' ? '🥭' : '🍓'} {coulis.name}</div>
-              <div className="text-sm text-white/60 mt-1">{coulis.desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+    <BottomSheet title={item.name} subtitle="Choisissez votre coulis" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
+      {item.coulisVariants.map((v, i) => (
+        <OptionTile key={v.id} emoji={v.id === 'mangue' ? '🥭' : '🍓'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
+      ))}
+    </BottomSheet>
   );
 }
 
-// Modal de sélection d'eau (Plate/Gazeuse)
 function EauModal({ item, onSelect, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold">Choisir votre eau</h3>
-          <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="text-sm text-white/60 mb-4">{item.name}</p>
-        <div className="space-y-3">
-          {item.eauVariants.map(eau => (
-            <button
-              key={eau.id}
-              onClick={() => onSelect(eau)}
-              className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-            >
-              <div className="font-medium">{eau.name}</div>
-              <div className="text-sm text-white/60 mt-1">{eau.desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+    <BottomSheet title="Eau minérale" subtitle="Plate ou gazeuse ?" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
+      {item.eauVariants.map((v, i) => (
+        <OptionTile key={v.id} emoji={v.id === 'plate' ? '💧' : '🫧'} name={v.name.replace(/^[^\s]+ /, '')} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
+      ))}
+    </BottomSheet>
   );
 }
 
-// Modal de sélection formules COMPLET
+// ─── FORMULE MODAL COMPLET ────────────────────────────────────────────────────
 function FormuleModal({ item, onConfirm, onClose }) {
   const [selectedPlat, setSelectedPlat] = useState(null);
   const [selectedPlats, setSelectedPlats] = useState([]);
@@ -1065,568 +1178,264 @@ function FormuleModal({ item, onConfirm, onClose }) {
   const [showProteinSelector, setShowProteinSelector] = useState(false);
   const [proteinForPlat, setProteinForPlat] = useState(null);
   const [selectedProteins, setSelectedProteins] = useState({});
-  const [isMultiPlat, setIsMultiPlat] = useState(false);
   const [showEauSelector, setShowEauSelector] = useState(false);
   const [selectedEauDecouverte, setSelectedEauDecouverte] = useState(null);
   const [selectedEauVoyage, setSelectedEauVoyage] = useState([]);
   const [eauIndex, setEauIndex] = useState(0);
   const [showCoulisSelector, setShowCoulisSelector] = useState(false);
   const [selectedCoulisDessert, setSelectedCoulisDessert] = useState(null);
-  
+
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    return () => { document.body.style.overflow = 'unset'; };
   }, []);
-  
-  useEffect(() => {
-    const modalElement = document.querySelector('.formule-modal-content');
-    if (showJusSelector || showProteinSelector || showEauSelector || showCoulisSelector) {
-      document.body.style.overflow = 'hidden';
-      if (modalElement) {
-        modalElement.style.overflow = 'hidden';
-      }
+
+  const platsDec = ['Chao Men','Kai Fan','Omelette Fu Young','Tahitien','KaïKaï','Haka'];
+  const platsVoy = ['Chao Men','Kai Fan','Omelette Fu Young','Wok de Bœuf','Tahitien','KaïKaï','Haka'];
+  const platEmojis = { 'Chao Men':'🍜','Kai Fan':'🍚','Omelette Fu Young':'🍳','Wok de Bœuf':'🥩','Tahitien':'🐟','KaïKaï':'🥭','Haka':'🌶️' };
+  const platDescs = { 'Chao Men':'Nouilles sautées','Kai Fan':'Riz sauté','Omelette Fu Young':'Omelette aux légumes','Wok de Bœuf':'Wok de bœuf, sauce sésame','Tahitien':'Thon rouge, sauce coco','KaïKaï':'Thon rouge, sauce sésame','Haka':'Thon rouge, sauce piment' };
+  const needsProtein = (p) => ['Chao Men','Kai Fan','Omelette Fu Young'].includes(p);
+  const needsCoulis = (d) => ['Crème Tropicale','Cheesecake'].includes(d);
+  const desserts = ['Coulant au chocolat','Crème Tropicale','Po'e Banane','Cheesecake'];
+  const dessertEmojis = { 'Coulant au chocolat':'🍫','Crème Tropicale':'🥥','Po'e Banane':'🍌','Cheesecake':'🍰' };
+
+  const proteinOpts = (plat) => plat === 'Omelette Fu Young'
+    ? [{ id:'veggie', name:'Veggie', desc:'100% végétarien', emoji:'🥦' },{ id:'poulet', name:'Poulet', desc:'Avec poulet', emoji:'🍗' }]
+    : [{ id:'porc', name:'Porc', desc:'Wok de porc', emoji:'🥩' },{ id:'poulet', name:'Poulet', desc:'Wok de poulet', emoji:'🍗' },{ id:'porc-poulet', name:'Porc + Poulet', desc:'Mix des deux', emoji:'🍽️' },{ id:'veggie', name:'Veggie', desc:'100% végétarien', emoji:'🥦' }];
+
+  const jusOpts = [{ id:'pomme-kiwi', name:'Pomme / Kiwi', desc:'Frais et vitaminé', emoji:'🍏' },{ id:'fraise-framboise', name:'Fraise / Framboise', desc:'Doux et fruité', emoji:'🍓' },{ id:'ananas-citron', name:'Ananas / Citron / Gingembre', desc:'Tropical et piquant', emoji:'🍍' },{ id:'ace', name:'Cocktail ACE', desc:'Vitaminé A, C, E', emoji:'🍊' }];
+  const eauOpts = [{ id:'plate', name:'Eau Plate', desc:'Eau minérale naturelle', emoji:'💧' },{ id:'gazeuse', name:'Eau Gazeuse', desc:'Eau pétillante', emoji:'🫧' }];
+  const coulisOpts = [{ id:'mangue', name:'Coulis Mangue', desc:'Doux et tropical', emoji:'🥭' },{ id:'fruits-rouges', name:'Coulis Fruits Rouges', desc:'Frais et acidulé', emoji:'🍓' }];
+
+  // Calcul progression
+  const getProgress = () => {
+    if (item.formuleType === 'decouverte') {
+      let done = 0, total = 2;
+      if (selectedPlat) done++;
+      if (selectedBoisson) done++;
+      return { done, total };
     } else {
-      if (modalElement) {
-        modalElement.style.overflow = 'auto';
-      }
+      let done = 0, total = 3;
+      if (selectedPlats.length === 2) done++;
+      if (selectedBoissons.length > 0) done++;
+      if (selectedDessert) done++;
+      return { done, total };
     }
-  }, [showJusSelector, showProteinSelector, showEauSelector, showCoulisSelector]);
-  
-  const jusOptions = [
-    { id: 'pomme-kiwi', name: '🍏 Pomme/Kiwi' },
-    { id: 'fraise-framboise', name: '🍓 Fraise/Framboise' },
-    { id: 'ananas-citron', name: '🍍 Ananas/Citron/Gingembre' },
-    { id: 'ace', name: '🍊 Cocktail ACE' }
-  ];
-  
-  const eauOptions = [
-    { id: 'plate', name: '💧 Eau Plate' },
-    { id: 'gazeuse', name: '🫧 Eau Gazeuse' }
-  ];
-  
-  const needsProteinChoice = (platName) => {
-    return platName === 'Chao Men' || platName === 'Kai Fan' || platName === 'Omelette Fu Young';
   };
-  
-  const getProteinOptionsForPlat = (platName) => {
-    if (platName === 'Omelette Fu Young') {
-      return [
-        { id: 'veggie', name: 'Veggie' },
-        { id: 'poulet', name: 'Poulet' }
-      ];
-    }
-    return [
-      { id: 'porc', name: 'Porc' },
-      { id: 'poulet', name: 'Poulet' },
-      { id: 'porc-poulet', name: 'Porc + Poulet' },
-      { id: 'veggie', name: 'Veggie' }
-    ];
-  };
-  
-  const handleProteinSelection = (proteinName) => {
-    setSelectedProteins(prev => ({ ...prev, [proteinForPlat]: proteinName }));
-    setShowProteinSelector(false);
-    setProteinForPlat(null);
-  };
-  
-  const handleEauSelection = (eauName) => {
-    if (item.formuleType === "decouverte") {
-      setSelectedEauDecouverte(eauName);
+
+  const canConfirm = () => {
+    if (item.formuleType === 'decouverte') {
+      if (!selectedPlat || !selectedBoisson) return false;
+      if (needsProtein(selectedPlat) && !selectedProteins[selectedPlat]) return false;
+      if (selectedBoisson === 'Jus exotique' && !selectedJusDecouverte) return false;
+      if (selectedBoisson === 'Eau' && !selectedEauDecouverte) return false;
+      return true;
     } else {
-      const newEau = [...selectedEauVoyage];
-      newEau[eauIndex] = eauName;
-      setSelectedEauVoyage(newEau);
-    }
-    setShowEauSelector(false);
-  };
-  
-  const needsCoulisChoice = (dessertName) => {
-    return dessertName === 'Crème Tropicale' || dessertName === 'Cheesecake';
-  };
-  
-  const handleCoulisSelection = (coulisName) => {
-    setSelectedCoulisDessert(coulisName);
-    setShowCoulisSelector(false);
-  };
-  
-  const handlePlatCheckbox = (plat) => {
-    if (selectedPlats.includes(plat)) {
-      setSelectedPlats(selectedPlats.filter(p => p !== plat));
-      setSelectedProteins(prev => {
-        const newProteins = { ...prev };
-        delete newProteins[plat];
-        return newProteins;
-      });
-    } else {
-      if (selectedPlats.length < 2) {
-        if (needsProteinChoice(plat)) {
-          setProteinForPlat(plat);
-          setIsMultiPlat(true);
-          setShowProteinSelector(true);
-        }
-        setSelectedPlats([...selectedPlats, plat]);
-      }
-    }
-  };
-  
-  const handleBoissonCheckbox = (boisson) => {
-    const currentJusCount = selectedBoissons.filter(b => b === 'Jus exotique').length;
-    const currentEauCount = selectedBoissons.filter(b => b === 'Eau').length;
-    
-    if (boisson === 'Jus exotique') {
-      if (currentJusCount === 0 && selectedBoissons.length < 2) {
-        setSelectedBoissons([...selectedBoissons, boisson]);
-        setJusIndex(0);
-        setShowJusSelector(true);
-      } else if (currentJusCount === 1 && selectedBoissons.length < 2) {
-        setSelectedBoissons([...selectedBoissons, boisson]);
-        setJusIndex(1);
-        setShowJusSelector(true);
-      } else if (currentJusCount === 1) {
-        const newBoissons = selectedBoissons.filter(b => b !== 'Jus exotique');
-        setSelectedBoissons(newBoissons);
-        setSelectedJusVoyage([]);
-      } else if (currentJusCount === 2) {
-        const newBoissons = [...selectedBoissons];
-        const index = newBoissons.lastIndexOf('Jus exotique');
-        newBoissons.splice(index, 1);
-        setSelectedBoissons(newBoissons);
-        const newJus = [...selectedJusVoyage];
-        newJus.pop();
-        setSelectedJusVoyage(newJus);
-      }
-    } else if (boisson === 'Eau') {
-      if (currentEauCount === 0 && selectedBoissons.length < 2) {
-        setSelectedBoissons([...selectedBoissons, boisson]);
-        setEauIndex(0);
-        setShowEauSelector(true);
-      } else if (currentEauCount === 1 && selectedBoissons.length < 2) {
-        setSelectedBoissons([...selectedBoissons, boisson]);
-        setEauIndex(1);
-        setShowEauSelector(true);
-      } else if (currentEauCount === 1) {
-        const newBoissons = selectedBoissons.filter(b => b !== 'Eau');
-        setSelectedBoissons(newBoissons);
-        setSelectedEauVoyage([]);
-      } else if (currentEauCount === 2) {
-        const newBoissons = [...selectedBoissons];
-        const index = newBoissons.lastIndexOf('Eau');
-        newBoissons.splice(index, 1);
-        setSelectedBoissons(newBoissons);
-        const newEau = [...selectedEauVoyage];
-        newEau.pop();
-        setSelectedEauVoyage(newEau);
-      }
-    } else {
-      if (selectedBoissons.includes(boisson)) {
-        setSelectedBoissons(selectedBoissons.filter(b => b !== boisson));
-      } else if (selectedBoissons.length < 2) {
-        setSelectedBoissons([...selectedBoissons, boisson]);
-      }
-    }
-  };
-  
-  const handleJusSelection = (jus) => {
-    if (item.formuleType === "decouverte") {
-      setSelectedJusDecouverte(jus);
-    } else {
-      const newJus = [...selectedJusVoyage];
-      newJus[jusIndex] = jus;
-      setSelectedJusVoyage(newJus);
-    }
-    setShowJusSelector(false);
-  };
-  
-  const handleConfirm = () => {
-    if (item.formuleType === "decouverte") {
-      if (!selectedPlat || !selectedBoisson) {
-        alert('Veuillez sélectionner un plat et une boisson');
-        return;
-      }
-      if (needsProteinChoice(selectedPlat) && !selectedProteins[selectedPlat]) {
-        alert('Veuillez choisir votre viande/option pour ' + selectedPlat);
-        return;
-      }
-      if (selectedBoisson === 'Jus exotique' && !selectedJusDecouverte) {
-        alert('Veuillez choisir votre jus exotique');
-        return;
-      }
-      if (selectedBoisson === 'Eau' && !selectedEauDecouverte) {
-        alert('Veuillez choisir votre type d\'eau');
-        return;
-      }
-    } else if (item.formuleType === "voyage") {
-      if (selectedPlats.length !== 2) {
-        alert('Veuillez sélectionner exactement 2 plats');
-        return;
-      }
-      for (const plat of selectedPlats) {
-        if (needsProteinChoice(plat) && !selectedProteins[plat]) {
-          alert('Veuillez choisir votre viande/option pour ' + plat);
-          return;
-        }
-      }
-      if (selectedBoissons.length === 0 || selectedBoissons.length > 2) {
-        alert('Veuillez sélectionner 1 ou 2 boissons');
-        return;
-      }
-      if (!selectedDessert) {
-        alert('Veuillez sélectionner un dessert');
-        return;
-      }
-      if (needsCoulisChoice(selectedDessert) && !selectedCoulisDessert) {
-        alert('Veuillez choisir votre coulis pour ' + selectedDessert);
-        return;
-      }
+      if (selectedPlats.length !== 2) return false;
+      for (const p of selectedPlats) { if (needsProtein(p) && !selectedProteins[p]) return false; }
+      if (selectedBoissons.length === 0) return false;
+      if (!selectedDessert) return false;
+      if (needsCoulis(selectedDessert) && !selectedCoulisDessert) return false;
       const nbJus = selectedBoissons.filter(b => b === 'Jus exotique').length;
-      if (selectedJusVoyage.length < nbJus) {
-        alert('Veuillez choisir vos jus exotiques');
-        return;
-      }
+      if (selectedJusVoyage.filter(Boolean).length < nbJus) return false;
       const nbEau = selectedBoissons.filter(b => b === 'Eau').length;
-      if (selectedEauVoyage.length < nbEau) {
-        alert('Veuillez choisir vos types d\'eau');
-        return;
-      }
+      if (selectedEauVoyage.filter(Boolean).length < nbEau) return false;
+      return true;
     }
-    
-    const formuleDetails = {
-      type: item.formuleType,
-      plat: selectedPlat,
-      plats: selectedPlats,
-      proteins: selectedProteins,
-      boisson: selectedBoisson,
-      boissons: selectedBoissons,
-      jus: item.formuleType === "decouverte" ? selectedJusDecouverte : selectedJusVoyage,
-      eau: item.formuleType === "decouverte" ? selectedEauDecouverte : selectedEauVoyage,
-      dessert: selectedDessert,
-      coulisDessert: selectedCoulisDessert
-    };
-    
-    onConfirm(formuleDetails);
   };
-  
+
+  const handleConfirm = () => {
+    if (!canConfirm()) return;
+    onConfirm({ type: item.formuleType, plat: selectedPlat, plats: selectedPlats, proteins: selectedProteins, boisson: selectedBoisson, boissons: selectedBoissons, jus: item.formuleType === 'decouverte' ? selectedJusDecouverte : selectedJusVoyage, eau: item.formuleType === 'decouverte' ? selectedEauDecouverte : selectedEauVoyage, dessert: selectedDessert, coulisDessert: selectedCoulisDessert });
+  };
+
+  const togglePlatDec = (plat) => {
+    if (selectedPlat === plat) { setSelectedPlat(null); setSelectedProteins(p => { const n={...p}; delete n[plat]; return n; }); return; }
+    setSelectedPlat(plat);
+    if (needsProtein(plat)) { setProteinForPlat(plat); setShowProteinSelector(true); }
+  };
+
+  const togglePlatVoy = (plat) => {
+    if (selectedPlats.includes(plat)) { setSelectedPlats(selectedPlats.filter(p => p !== plat)); setSelectedProteins(p => { const n={...p}; delete n[plat]; return n; }); return; }
+    if (selectedPlats.length >= 2) return;
+    setSelectedPlats([...selectedPlats, plat]);
+    if (needsProtein(plat)) { setProteinForPlat(plat); setShowProteinSelector(true); }
+  };
+
+  const handleBoissonDec = (b) => {
+    if (selectedBoisson === b) { setSelectedBoisson(null); if(b==='Jus exotique') setSelectedJusDecouverte(null); if(b==='Eau') setSelectedEauDecouverte(null); return; }
+    setSelectedBoisson(b);
+    if (b === 'Jus exotique') setShowJusSelector(true);
+    if (b === 'Eau') setShowEauSelector(true);
+  };
+
+  const handleBoissonVoy = (b) => {
+    const jusCount = selectedBoissons.filter(x => x === 'Jus exotique').length;
+    const eauCount = selectedBoissons.filter(x => x === 'Eau').length;
+    if (b === 'Jus exotique') {
+      if (jusCount > 0) { setSelectedBoissons(selectedBoissons.filter(x => x !== 'Jus exotique')); setSelectedJusVoyage([]); return; }
+      if (selectedBoissons.length >= 2) return;
+      setSelectedBoissons([...selectedBoissons, b]); setJusIndex(0); setShowJusSelector(true);
+    } else {
+      if (eauCount > 0) { setSelectedBoissons(selectedBoissons.filter(x => x !== 'Eau')); setSelectedEauVoyage([]); return; }
+      if (selectedBoissons.length >= 2) return;
+      setSelectedBoissons([...selectedBoissons, b]); setEauIndex(0); setShowEauSelector(true);
+    }
+  };
+
+  const prog = getProgress();
+  const plats = item.formuleType === 'decouverte' ? platsDec : platsVoy;
+  const isVoyage = item.formuleType === 'voyage';
+
+  const cta = (
+    <button
+      onClick={handleConfirm}
+      disabled={!canConfirm()}
+      style={{
+        width: '100%', padding: '15px 20px', borderRadius: 18,
+        background: canConfirm() ? 'white' : 'rgba(255,255,255,0.10)',
+        color: canConfirm() ? 'black' : 'rgba(255,255,255,0.28)',
+        border: 'none', fontSize: 15, fontWeight: 700,
+        cursor: canConfirm() ? 'pointer' : 'not-allowed',
+        transition: 'all 0.2s ease',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+      }}
+    >
+      <span>Ajouter au panier</span>
+      <span style={{ fontWeight: 400, opacity: 0.65 }}>{format(item.price)}</span>
+    </button>
+  );
+
   return (
     <>
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-        <div className="min-h-screen flex items-center justify-center py-8">
-          <div className="formule-modal-content bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold">{item.name}</h3>
-              <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <p className="text-sm text-white/60 mb-6">{item.desc}</p>
-        
-        {item.formuleType === "decouverte" && (
-          <div className="space-y-6">
-            <div>
-              <h4 className="text-lg font-medium mb-3">1. Choisissez votre plat :</h4>
-              <div className="space-y-2">
-                {['Chao Men', 'Kai Fan', 'Omelette Fu Young', 'Tahitien', 'KaïKaï', 'Haka'].map(plat => (
-                  <label key={plat} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="formule-decouverte-plat" 
-                      checked={selectedPlat === plat}
-                      onClick={() => {
-                        if (selectedPlat === plat) {
-                          setSelectedPlat(null);
-                          setSelectedProteins(prev => {
-                            const newProteins = { ...prev };
-                            delete newProteins[plat];
-                            return newProteins;
-                          });
-                        } else {
-                          setSelectedPlat(plat);
-                          if (needsProteinChoice(plat)) {
-                            setProteinForPlat(plat);
-                            setIsMultiPlat(false);
-                            setShowProteinSelector(true);
-                          }
-                        }
-                      }}
-                      onChange={() => {}}
-                      className="w-4 h-4" 
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">{plat}</div>
-                      <div className="text-sm text-white/60">
-                        {plat === 'Chao Men' && (selectedProteins[plat] ? `Nouilles sautées - ${selectedProteins[plat]}` : 'Nouilles sautées')}
-                        {plat === 'Kai Fan' && (selectedProteins[plat] ? `Riz sauté - ${selectedProteins[plat]}` : 'Riz sauté')}
-                        {plat === 'Omelette Fu Young' && (selectedProteins[plat] ? `Omelette aux légumes - ${selectedProteins[plat]}` : 'Omelette aux légumes')}
-                        {plat === 'Tahitien' && 'Thon rouge, sauce coco'}
-                        {plat === 'KaïKaï' && 'Thon rouge, sauce sésame'}
-                        {plat === 'Haka' && 'Thon rouge, sauce piment'}
-                      </div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
+      <BottomSheet
+        title={item.name}
+        subtitle={item.desc}
+        photo={getPhoto(item.id)}
+        photoPos={getPhotoPos(item.id)}
+        onClose={onClose}
+        footerContent={cta}
+      >
+        {/* Barre de progression */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 2px 0', marginBottom: 2 }}>
+          {[...Array(prog.total)].map((_, i) => (
+            <div key={i} style={{ height: 3, flex: 1, borderRadius: 2, background: i < prog.done ? 'white' : 'rgba(255,255,255,0.14)', transition: 'background 0.3s ease' }} />
+          ))}
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginLeft: 4, whiteSpace: 'nowrap' }}>{prog.done}/{prog.total}</span>
+        </div>
 
-            <div>
-              <h4 className="text-lg font-medium mb-3">2. Choisissez votre boisson :</h4>
-              <div className="space-y-2">
-                {['Jus exotique', 'Eau'].map(boisson => (
-                  <label key={boisson} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="formule-decouverte-boisson" 
-                      checked={selectedBoisson === boisson}
-                      onClick={() => {
-                        if (selectedBoisson === boisson) {
-                          setSelectedBoisson(null);
-                          if (boisson === 'Jus exotique') {
-                            setSelectedJusDecouverte(null);
-                          } else if (boisson === 'Eau') {
-                            setSelectedEauDecouverte(null);
-                          }
-                        } else {
-                          setSelectedBoisson(boisson);
-                          if (boisson === 'Jus exotique') {
-                            setShowJusSelector(true);
-                          } else if (boisson === 'Eau') {
-                            setShowEauSelector(true);
-                          }
-                        }
-                      }}
-                      onChange={() => {}}
-                      className="w-4 h-4" 
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">{boisson}</div>
-                      <div className="text-sm text-white/60">
-                        {boisson === 'Jus exotique' ? (selectedJusDecouverte || 'Au choix') : (selectedEauDecouverte || 'Plate ou gazeuse')}
-                      </div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
+        {/* Section plats */}
+        <SectionLabel>{isVoyage ? 'Choisissez vos 2 plats' : 'Votre plat'}</SectionLabel>
+        {plats.map((plat, i) => {
+          const sel = isVoyage ? selectedPlats.includes(plat) : selectedPlat === plat;
+          const prot = selectedProteins[plat];
+          return (
+            <OptionTile
+              key={plat}
+              emoji={platEmojis[plat]}
+              name={plat}
+              desc={prot ? `${platDescs[plat]} · ${prot}` : platDescs[plat]}
+              isSelected={sel}
+              onClick={() => isVoyage ? togglePlatVoy(plat) : togglePlatDec(plat)}
+              index={i}
+              badge={needsProtein(plat) && sel && !prot ? 'choix requis' : null}
+            />
+          );
+        })}
+
+        {/* Section boissons */}
+        <SectionLabel>{isVoyage ? 'Boissons (jusqu'à 2)' : 'Votre boisson'}</SectionLabel>
+        {['Jus exotique', 'Eau'].map((b, i) => {
+          const selDec = selectedBoisson === b;
+          const countVoy = selectedBoissons.filter(x => x === b).length;
+          const selVoy = countVoy > 0;
+          const sel = isVoyage ? selVoy : selDec;
+          const subLabel = b === 'Jus exotique'
+            ? (isVoyage ? (selectedJusVoyage[0] || 'Au choix') : (selectedJusDecouverte || 'Au choix'))
+            : (isVoyage ? (selectedEauVoyage[0] || 'Plate ou gazeuse') : (selectedEauDecouverte || 'Plate ou gazeuse'));
+          return (
+            <OptionTile
+              key={b}
+              emoji={b === 'Jus exotique' ? '🧃' : '💧'}
+              name={b + (isVoyage && countVoy > 1 ? ` ×${countVoy}` : '')}
+              desc={subLabel}
+              isSelected={sel}
+              onClick={() => isVoyage ? handleBoissonVoy(b) : handleBoissonDec(b)}
+              index={plats.length + i}
+            />
+          );
+        })}
+
+        {/* Section dessert (Voyage seulement) */}
+        {isVoyage && (
+          <>
+            <SectionLabel>Votre dessert</SectionLabel>
+            {desserts.map((d, i) => (
+              <OptionTile
+                key={d}
+                emoji={dessertEmojis[d]}
+                name={d}
+                desc={selectedDessert === d && selectedCoulisDessert ? selectedCoulisDessert : needsCoulis(d) ? 'Coulis au choix' : (d === 'Coulant au chocolat' ? 'Gâteau fondant' : 'Dessert tahitien')}
+                isSelected={selectedDessert === d}
+                onClick={() => {
+                  if (selectedDessert === d) { setSelectedDessert(null); setSelectedCoulisDessert(null); return; }
+                  setSelectedDessert(d);
+                  if (needsCoulis(d)) setShowCoulisSelector(true);
+                }}
+                index={i}
+                badge={selectedDessert === d && needsCoulis(d) && !selectedCoulisDessert ? 'coulis requis' : null}
+              />
+            ))}
+          </>
         )}
-        
-        {item.formuleType === "voyage" && (
-          <div className="space-y-6">
-            <div>
-              <h4 className="text-lg font-medium mb-3">1. Choisissez vos 2 plats :</h4>
-              <div className="space-y-2">
-                {['Chao Men', 'Kai Fan', 'Omelette Fu Young', 'Wok de Bœuf', 'Tahitien', 'KaïKaï', 'Haka'].map(plat => (
-                  <label key={plat} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={selectedPlats.includes(plat)}
-                      onChange={() => handlePlatCheckbox(plat)}
-                      className="w-4 h-4" 
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">{plat}</div>
-                      <div className="text-sm text-white/60">
-                        {plat === 'Chao Men' && (selectedProteins[plat] ? `Nouilles sautées - ${selectedProteins[plat]}` : 'Nouilles sautées')}
-                        {plat === 'Kai Fan' && (selectedProteins[plat] ? `Riz sauté - ${selectedProteins[plat]}` : 'Riz sauté')}
-                        {plat === 'Omelette Fu Young' && (selectedProteins[plat] ? `Omelette aux légumes - ${selectedProteins[plat]}` : 'Omelette aux légumes')}
-                        {plat === 'Wok de Bœuf' && 'Wok de bœuf, sauce sésame'}
-                        {plat === 'Tahitien' && 'Thon rouge, sauce coco'}
-                        {plat === 'KaïKaï' && 'Thon rouge, sauce sésame'}
-                        {plat === 'Haka' && 'Thon rouge, sauce piment'}
-                      </div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-              <p className="text-xs text-white/50 mt-2">Sélectionnez exactement 2 plats</p>
-            </div>
+      </BottomSheet>
 
-            <div>
-              <h4 className="text-lg font-medium mb-3">2. Choisissez vos 2 boissons :</h4>
-              <div className="space-y-2">
-                <label className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedBoissons.filter(b => b === 'Jus exotique').length > 0}
-                    onChange={() => handleBoissonCheckbox('Jus exotique')}
-                    className="w-4 h-4" 
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium">Jus exotique {selectedBoissons.filter(b => b === 'Jus exotique').length > 0 && `(${selectedBoissons.filter(b => b === 'Jus exotique').length})`}</div>
-                    <div className="text-sm text-white/60">
-                      {selectedJusVoyage.length > 0 ? selectedJusVoyage.join(', ') : 'Au choix - Cliquez plusieurs fois pour 2 jus'}
-                    </div>
-                  </div>
-                </label>
-                <label className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedBoissons.filter(b => b === 'Eau').length > 0}
-                    onChange={() => handleBoissonCheckbox('Eau')}
-                    className="w-4 h-4" 
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium">Eau {selectedBoissons.filter(b => b === 'Eau').length > 0 && `(${selectedBoissons.filter(b => b === 'Eau').length})`}</div>
-                    <div className="text-sm text-white/60">
-                      {selectedEauVoyage.length > 0 ? selectedEauVoyage.join(', ') : 'Plate ou gazeuse - Cliquez plusieurs fois pour 2 eaux'}
-                    </div>
-                  </div>
-                </label>
-              </div>
-              <p className="text-xs text-white/50 mt-2">Sélectionnez jusqu'à 2 boissons (cliquez 2x sur jus pour 2 jus ou 2x sur eau pour 2 eaux)</p>
-            </div>
-
-            <div>
-              <h4 className="text-lg font-medium mb-3">3. Choisissez votre dessert :</h4>
-              <div className="space-y-2">
-                {['Coulant au chocolat', 'Crème Tropicale', 'Po\'e Banane', 'Cheesecake'].map(dessert => (
-                  <label key={dessert} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3 hover:border-white/30 hover:bg-white/5 transition-all cursor-pointer">
-                    <input 
-                      type="radio" 
-                      checked={selectedDessert === dessert}
-                      onClick={() => {
-                        if (selectedDessert === dessert) {
-                          setSelectedDessert(null);
-                          setSelectedCoulisDessert(null);
-                        } else {
-                          setSelectedDessert(dessert);
-                          if (needsCoulisChoice(dessert)) {
-                            setShowCoulisSelector(true);
-                          }
-                        }
-                      }}
-                      onChange={() => {}}
-                      className="w-4 h-4" 
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">{dessert}</div>
-                      <div className="text-sm text-white/60">
-                        {dessert === 'Coulant au chocolat' && 'Gâteau fondant'}
-                        {dessert === 'Crème Tropicale' && (selectedCoulisDessert && selectedDessert === 'Crème Tropicale' ? selectedCoulisDessert : 'Coulis au choix')}
-                        {dessert === 'Cheesecake' && (selectedCoulisDessert && selectedDessert === 'Cheesecake' ? selectedCoulisDessert : 'Coulis au choix')}
-                        {dessert === 'Po\'e Banane' && 'Dessert tahitien à la banane'}
-                      </div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <button
-          onClick={handleConfirm}
-          className="mt-6 w-full rounded-2xl bg-white text-black px-4 py-3 font-medium hover:bg-white/90 transition-all"
-        >
-          Ajouter au panier - {format(item.price)}
-        </button>
-      </div>
-    </div>
-    </div>
-    
-    {showJusSelector && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowJusSelector(false)} style={{ position: 'fixed' }}>
-        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold">Choisir votre jus</h3>
-            <button onClick={() => setShowJusSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="space-y-3">
-            {jusOptions.map(jus => (
-              <button
-                key={jus.id}
-                onClick={() => handleJusSelection(jus.name)}
-                className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-              >
-                <div className="font-medium">{jus.name}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    )}
-    
-    {showProteinSelector && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowProteinSelector(false)} style={{ position: 'fixed' }}>
-        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold">Choisir votre option</h3>
-            <button onClick={() => setShowProteinSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <p className="text-sm text-white/60 mb-4">{proteinForPlat}</p>
-          <div className="space-y-3">
-            {getProteinOptionsForPlat(proteinForPlat).map(protein => (
-              <button
-                key={protein.id}
-                onClick={() => handleProteinSelection(protein.name)}
-                className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-              >
-                <div className="font-medium">{protein.id === 'veggie' ? '🥦' : ''} {protein.name}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    )}
-    
-    {showEauSelector && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowEauSelector(false)} style={{ position: 'fixed' }}>
-        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold">Choisir votre eau</h3>
-            <button onClick={() => setShowEauSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="space-y-3">
-            {eauOptions.map(eau => (
-              <button
-                key={eau.id}
-                onClick={() => handleEauSelection(eau.name)}
-                className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-              >
-                <div className="font-medium">{eau.name}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    )}
-    
-    {showCoulisSelector && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowCoulisSelector(false)} style={{ position: 'fixed' }}>
-        <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold">Choisir votre coulis</h3>
-            <button onClick={() => setShowCoulisSelector(false)} className="rounded-xl border border-white/20 p-2 hover:bg-white/10">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <p className="text-sm text-white/60 mb-4">{selectedDessert}</p>
-          <div className="space-y-3">
-            {[
-              { id: 'mangue', name: 'Coulis Mangue', desc: 'Doux et tropical', emoji: '🥭' },
-              { id: 'fruits-rouges', name: 'Coulis Fruits Rouges', desc: 'Frais et acidulé', emoji: '🍓' }
-            ].map(coulis => (
-              <button
-                key={coulis.id}
-                onClick={() => handleCoulisSelection(coulis.name)}
-                className="w-full text-left rounded-2xl border border-white/10 p-4 hover:border-white/30 hover:bg-white/5 transition-all"
-              >
-                <div className="font-medium">{coulis.emoji} {coulis.name}</div>
-                <div className="text-sm text-white/60 mt-1">{coulis.desc}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    )}
+      {showProteinSelector && (
+        <SubSheet
+          title="Choisissez votre protéine"
+          subtitle={proteinForPlat}
+          options={proteinOpts(proteinForPlat)}
+          onSelect={opt => { setSelectedProteins(p => ({...p, [proteinForPlat]: opt.name})); setShowProteinSelector(false); setProteinForPlat(null); }}
+          onClose={() => setShowProteinSelector(false)}
+        />
+      )}
+      {showJusSelector && (
+        <SubSheet
+          title="Choisissez votre jus"
+          options={jusOpts}
+          onSelect={opt => {
+            if (item.formuleType === 'decouverte') setSelectedJusDecouverte(opt.name);
+            else { const n=[...selectedJusVoyage]; n[jusIndex]=opt.name; setSelectedJusVoyage(n); }
+            setShowJusSelector(false);
+          }}
+          onClose={() => setShowJusSelector(false)}
+        />
+      )}
+      {showEauSelector && (
+        <SubSheet
+          title="Plate ou gazeuse ?"
+          options={eauOpts}
+          onSelect={opt => {
+            if (item.formuleType === 'decouverte') setSelectedEauDecouverte(opt.name);
+            else { const n=[...selectedEauVoyage]; n[eauIndex]=opt.name; setSelectedEauVoyage(n); }
+            setShowEauSelector(false);
+          }}
+          onClose={() => setShowEauSelector(false)}
+        />
+      )}
+      {showCoulisSelector && (
+        <SubSheet
+          title="Choisissez votre coulis"
+          subtitle={selectedDessert}
+          options={coulisOpts}
+          onSelect={opt => { setSelectedCoulisDessert(opt.name); setShowCoulisSelector(false); }}
+          onClose={() => setShowCoulisSelector(false)}
+        />
+      )}
     </>
   );
+}
+
 }
 
 function AboutModal({ onClose }) {
