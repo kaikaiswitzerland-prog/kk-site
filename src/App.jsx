@@ -676,7 +676,7 @@ export default function KaiKaiApp() {
               </div>
               {/* NOUVEAU : Bandeau explicatif de la remise */}
               <div className="mt-4 rounded-2xl border border-green-500/20 bg-green-500/5 px-4 py-3 text-center text-sm text-green-400/90">
-                💚 Commandez directement sur notre site et économisez 10% — sans commission de plateforme, votre argent va directement au restaurant.
+                 Commandez directement sur notre site et économisez 10% — sans commission de plateforme, juste vous et nous.🤝
               </div>
             </div>
 
