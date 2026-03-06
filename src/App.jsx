@@ -94,8 +94,8 @@ const MENU = [
     category: "chaud",
     hasProteinVariants: true,
     proteinVariants: [
-      { id: "porc", name: "Porc", desc: "Wok de porc" },
-      { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
+      { id: "porc", name: "Porc", desc: "Viande de porc mijotée façon KaïKaï" },
+      { id: "poulet", name: "Poulet", desc: "Viande de poulet mijotée façon KaïKaï" },
       { id: "porc-poulet", name: "Porc + Poulet", desc: "Mix des deux viandes" },
       { id: "veggie", name: "Veggie", desc: "100% végétarien" }
     ]
@@ -108,8 +108,8 @@ const MENU = [
     category: "chaud",
     hasProteinVariants: true,
     proteinVariants: [
-      { id: "porc", name: "Porc", desc: "Wok de porc" },
-      { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
+      { id: "porc", name: "Porc", desc: "Viande de porc mijotée façon KaïKaï" },
+      { id: "poulet", name: "Poulet", desc: "Viande de poulet mijotée façon KaïKaï" },
       { id: "porc-poulet", name: "Porc + Poulet", desc: "Mix des deux viandes" },
       { id: "veggie", name: "Veggie", desc: "100% végétarien" }
     ]
@@ -522,8 +522,8 @@ function CategoryNav({ activeCategory }) {
                 flexShrink: 0,
                 whiteSpace: "nowrap",
                 borderRadius: "999px",
-                padding: scrolled ? "2px 10px" : "5px 14px",
-                fontSize: scrolled ? "11px" : "13px",
+                padding: scrolled ? "3px 12px" : "6px 16px",
+                fontSize: scrolled ? "13px" : "15px",
                 fontWeight: 500,
                 transition: "all 0.2s ease",
                 background: isActive ? "white" : "transparent",
@@ -1254,7 +1254,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
 
   const proteinOpts = (plat) => plat === 'Omelette Fu Young'
     ? [{ id:'veggie', name:'Veggie', desc:'100% végétarien', emoji:'🥦' },{ id:'poulet', name:'Poulet', desc:'Avec poulet', emoji:'🍗' }]
-    : [{ id:'porc', name:'Porc', desc:'Wok de porc', emoji:'🥩' },{ id:'poulet', name:'Poulet', desc:'Wok de poulet', emoji:'🍗' },{ id:'porc-poulet', name:'Porc + Poulet', desc:'Mix des deux', emoji:'🍽️' },{ id:'veggie', name:'Veggie', desc:'100% végétarien', emoji:'🥦' }];
+    : [{ id:'porc', name:'Porc', desc:'Viande de porc mijotée façon KaïKaï', emoji:'🥩' },{ id:'poulet', name:'Poulet', desc:'Viande de poulet mijotée façon KaïKaï', emoji:'🍗' },{ id:'porc-poulet', name:'Porc + Poulet', desc:'Mix des deux', emoji:'🍽️' },{ id:'veggie', name:'Veggie', desc:'100% végétarien', emoji:'🥦' }];
 
   const jusOpts = [{ id:'pomme-kiwi', name:'Pomme / Kiwi', desc:'Frais et vitaminé', emoji:'🍏' },{ id:'fraise-framboise', name:'Fraise / Framboise', desc:'Doux et fruité', emoji:'🍓' },{ id:'ananas-citron', name:'Ananas / Citron / Gingembre', desc:'Tropical et piquant', emoji:'🍍' },{ id:'ace', name:'Cocktail ACE', desc:'Vitaminé A, C, E', emoji:'🍊' }];
   const eauOpts = [{ id:'plate', name:'Eau Plate', desc:'Eau minérale naturelle', emoji:'💧' },{ id:'gazeuse', name:'Eau Gazeuse', desc:'Eau pétillante', emoji:'🫧' }];
