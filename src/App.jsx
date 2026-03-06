@@ -78,10 +78,10 @@ const MENU = [
     category: "entrees",
     hasVariants: true,
     variants: [
-      { id: "tahitien", name: "Tahitien", desc: "Sauce coco" },
-      { id: "haka", name: "Haka", desc: "Sauce piment maison" },
-      { id: "mokai", name: "Mokaï", desc: "Sauce arachide et guacamole" },
-      { id: "kaikai", name: "KaïKaï", desc: "Sauce sésame, mangue et ananas" }
+      { id: "tahitien", name: "Tartare Tahitien", desc: "Sauce coco" },
+      { id: "haka", name: "Tartare Haka", desc: "Sauce piment maison" },
+      { id: "mokai", name: "Tartare Mokaï", desc: "Sauce arachide et guacamole" },
+      { id: "kaikai", name: "Tartare KaïKaï", desc: "Sauce sésame, mangue et ananas" }
     ]
   },
 
@@ -95,7 +95,7 @@ const MENU = [
     hasProteinVariants: true,
     proteinVariants: [
       { id: "porc", name: "Porc", desc: "Viande de porc mijotée façon KaïKaï" },
-      { id: "poulet", name: "Poulet", desc: "Viande de poulet mijotée façon KaïKaï" },
+      { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
       { id: "porc-poulet", name: "Porc + Poulet", desc: "Mix des deux viandes" },
       { id: "veggie", name: "Veggie", desc: "100% végétarien" }
     ]
@@ -109,7 +109,7 @@ const MENU = [
     hasProteinVariants: true,
     proteinVariants: [
       { id: "porc", name: "Porc", desc: "Viande de porc mijotée façon KaïKaï" },
-      { id: "poulet", name: "Poulet", desc: "Viande de poulet mijotée façon KaïKaï" },
+      { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
       { id: "porc-poulet", name: "Porc + Poulet", desc: "Mix des deux viandes" },
       { id: "veggie", name: "Veggie", desc: "100% végétarien" }
     ]
@@ -723,13 +723,20 @@ export default function KaiKaiApp() {
               </div>
               {/* NOUVEAU : Bandeau explicatif de la remise */}
               <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/70">
-                💰 Commandez directement sur notre site et économisez 10% — sans commission de plateforme, votre argent va directement au restaurant.
+                💰 Commandez directement sur notre site et économisez 10% — sans commission de plateforme, juste vous et nous.🤙
               </div>
             </div>
 
             {/* Grille de plats */}
             <div className="grid gap-6 sm:grid-cols-2">
               <h3 id="section-entrees" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
+              {Object.values(cart).reduce((s, q) => s + q, 0) === 0 && (
+                <div className="col-span-full flex items-center justify-center gap-2 py-2 text-sm text-white/35 animate-pulse">
+                  <span>Appuyez sur</span>
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/25 text-white/50 text-xs font-bold">+</span>
+                  <span>pour commencer à commander</span>
+                </div>
+              )}
               {SEC_ENTREES.map(item => (
                 <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
                   photo={ENTREE_PHOTOS[item.id]} photoPos={ENTREE_PHOTO_POS[item.id]}
@@ -788,6 +795,7 @@ export default function KaiKaiApp() {
           onClose={() => setStep("menu")}
           onClear={clear}
           onRemoveOne={removeOne}
+          onAdd={add}
           onSuccess={() => { setStep("success"); clear(); }}
         />
       )}
@@ -1177,7 +1185,7 @@ function JusModal({ item, onSelect, onClose }) {
 }
 
 function ProteinModal({ item, onSelect, onClose }) {
-  const protEmojis = { porc: '🥩', poulet: '🍗', 'porc-poulet': '🍽️', veggie: '🥦' };
+  const protEmojis = { porc: '🍖', poulet: '🍗', 'porc-poulet': '🍽️', veggie: '🥦' };
   return (
     <BottomSheet title={item.name} subtitle="Choisissez votre protéine" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
       {item.proteinVariants.map((v, i) => (
@@ -1243,10 +1251,10 @@ function FormuleModal({ item, onConfirm, onClose }) {
     };
   }, []);
 
-  const platsDec = ['Chao Men','Kai Fan','Omelette Fu Young','Tahitien','KaïKaï','Haka'];
-  const platsVoy = ['Chao Men','Kai Fan','Omelette Fu Young','Wok de Bœuf','Tahitien','KaïKaï','Haka'];
-  const platEmojis = { 'Chao Men':'🍜','Kai Fan':'🍚','Omelette Fu Young':'🍳','Wok de Bœuf':'🥩','Tahitien':'🐟','KaïKaï':'🥭','Haka':'🌶️' };
-  const platDescs = { 'Chao Men':'Nouilles sautées','Kai Fan':'Riz sauté','Omelette Fu Young':'Omelette aux légumes','Wok de Bœuf':'Wok de bœuf, sauce sésame','Tahitien':'Thon rouge, sauce coco','KaïKaï':'Thon rouge, sauce sésame','Haka':'Thon rouge, sauce piment' };
+  const platsDec = ['Chao Men','Kai Fan','Omelette Fu Young','Tartare Tahitien','Tartare KaïKaï','Tartare Haka'];
+  const platsVoy = ['Chao Men','Kai Fan','Omelette Fu Young','Wok de Bœuf','Tartare Tahitien','Tartare KaïKaï','Tartare Haka'];
+  const platEmojis = { 'Chao Men':'🍜','Kai Fan':'🍚','Omelette Fu Young':'🍳','Wok de Bœuf':'🥩','Tartare Tahitien':'🐟','Tartare KaïKaï':'🥭','Tartare Haka':'🌶️' };
+  const platDescs = { 'Chao Men':'Nouilles sautées','Kai Fan':'Riz sauté','Omelette Fu Young':'Omelette aux légumes','Wok de Bœuf':'Wok de bœuf, sauce sésame','Tartare Tahitien':'Thon rouge, sauce coco','Tartare KaïKaï':'Thon rouge, sauce sésame','Tartare Haka':'Thon rouge, sauce piment' };
   const needsProtein = (p) => ['Chao Men','Kai Fan','Omelette Fu Young'].includes(p);
   const needsCoulis = (d) => ['Crème Tropicale','Cheesecake'].includes(d);
   const desserts = ['Coulant au chocolat','Crème Tropicale',"Po'e Banane",'Cheesecake'];
@@ -1254,7 +1262,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
 
   const proteinOpts = (plat) => plat === 'Omelette Fu Young'
     ? [{ id:'veggie', name:'Veggie', desc:'100% végétarien', emoji:'🥦' },{ id:'poulet', name:'Poulet', desc:'Avec poulet', emoji:'🍗' }]
-    : [{ id:'porc', name:'Porc', desc:'Viande de porc mijotée façon KaïKaï', emoji:'🥩' },{ id:'poulet', name:'Poulet', desc:'Viande de poulet mijotée façon KaïKaï', emoji:'🍗' },{ id:'porc-poulet', name:'Porc + Poulet', desc:'Mix des deux', emoji:'🍽️' },{ id:'veggie', name:'Veggie', desc:'100% végétarien', emoji:'🥦' }];
+    : [{ id:'porc', name:'Porc', desc:'Viande de porc mijotée façon KaïKaï', emoji:'🍖' },{ id:'poulet', name:'Poulet', desc:'Wok de poulet', emoji:'🍗' },{ id:'porc-poulet', name:'Porc + Poulet', desc:'Mix des deux', emoji:'🍽️' },{ id:'veggie', name:'Veggie', desc:'100% végétarien', emoji:'🥦' }];
 
   const jusOpts = [{ id:'pomme-kiwi', name:'Pomme / Kiwi', desc:'Frais et vitaminé', emoji:'🍏' },{ id:'fraise-framboise', name:'Fraise / Framboise', desc:'Doux et fruité', emoji:'🍓' },{ id:'ananas-citron', name:'Ananas / Citron / Gingembre', desc:'Tropical et piquant', emoji:'🍍' },{ id:'ace', name:'Cocktail ACE', desc:'Vitaminé A, C, E', emoji:'🍊' }];
   const eauOpts = [{ id:'plate', name:'Eau Plate', desc:'Eau minérale naturelle', emoji:'💧' },{ id:'gazeuse', name:'Eau Gazeuse', desc:'Eau pétillante', emoji:'🫧' }];
@@ -1409,7 +1417,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
           return (
             <OptionTile
               key={b}
-              emoji={b === 'Jus exotique' ? '🧃' : '💧'}
+              emoji={b === 'Jus exotique' ? '🧉' : '💧'}
               name={b + (isVoyage && countVoy > 1 ? ` ×${countVoy}` : '')}
               desc={subLabel}
               isSelected={sel}
@@ -1643,7 +1651,7 @@ function AboutModal({ onClose }) {
   );
 }
 
-function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total, mode, setMode, onClose, onClear, onRemoveOne, onSuccess }) {
+function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total, mode, setMode, onClose, onClear, onRemoveOne, onAdd, onSuccess }) {
   const [form, setForm] = useState({ 
     firstName: "", 
     lastName: "", 
@@ -1654,7 +1662,7 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
   });
   const [deliveryError, setDeliveryError] = useState("");
   
-  const MINIMUM_DELIVERY = 19.90;
+  const MINIMUM_DELIVERY = 20.00;
   const canDelivery = subtotal >= MINIMUM_DELIVERY;
   
   const hasItems = items.some(i => i.qty > 0);
@@ -1762,6 +1770,13 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                   <div className="flex flex-col items-end gap-1">
                     <div className="text-right font-medium">{format(it.price * it.qty)}</div>
                     <div className="flex items-center gap-1 mt-1">
+                      <button
+                        onClick={() => onAdd(it.id)}
+                        className="flex h-7 w-7 items-center justify-center rounded-xl border border-white/15 text-white/50 hover:bg-white/10 hover:text-white transition-all"
+                        title="Ajouter 1"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
                       {it.qty > 1 && (
                         <button
                           onClick={() => onRemoveOne(it.id)}
