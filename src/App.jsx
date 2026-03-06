@@ -1229,8 +1229,8 @@ function FormuleModal({ item, onConfirm, onClose }) {
   const platDescs = { 'Chao Men':'Nouilles sautées','Kai Fan':'Riz sauté','Omelette Fu Young':'Omelette aux légumes','Wok de Bœuf':'Wok de bœuf, sauce sésame','Tahitien':'Thon rouge, sauce coco','KaïKaï':'Thon rouge, sauce sésame','Haka':'Thon rouge, sauce piment' };
   const needsProtein = (p) => ['Chao Men','Kai Fan','Omelette Fu Young'].includes(p);
   const needsCoulis = (d) => ['Crème Tropicale','Cheesecake'].includes(d);
-  const desserts = ['Coulant au chocolat','Crème Tropicale','Po'e Banane','Cheesecake'];
-  const dessertEmojis = { 'Coulant au chocolat':'🍫','Crème Tropicale':'🥥','Po'e Banane':'🍌','Cheesecake':'🍰' };
+  const desserts = ['Coulant au chocolat','Crème Tropicale',"Po'e Banane",'Cheesecake'];
+  const dessertEmojis = { 'Coulant au chocolat':'🍫','Crème Tropicale':'🥥',"Po'e Banane":'🍌','Cheesecake':'🍰' };
 
   const proteinOpts = (plat) => plat === 'Omelette Fu Young'
     ? [{ id:'veggie', name:'Veggie', desc:'100% végétarien', emoji:'🥦' },{ id:'poulet', name:'Poulet', desc:'Avec poulet', emoji:'🍗' }]
@@ -1377,7 +1377,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
         })}
 
         {/* Section boissons */}
-        <SectionLabel>{isVoyage ? 'Boissons (jusqu'à 2)' : 'Votre boisson'}</SectionLabel>
+        <SectionLabel>{isVoyage ? "Boissons (jusqu'à 2)" : 'Votre boisson'}</SectionLabel>
         {['Jus exotique', 'Eau'].map((b, i) => {
           const selDec = selectedBoisson === b;
           const countVoy = selectedBoissons.filter(x => x === b).length;
