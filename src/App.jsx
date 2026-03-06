@@ -592,6 +592,33 @@ export default function KaiKaiApp() {
     }
   };
   
+  const removeOne = (id, variantIndex = null) => {
+    setCart(c => {
+      const q = (c[id] || 0) - 1;
+      const n = { ...c };
+      if (q <= 0) {
+        delete n[id];
+        setCartVariants(cv => { const nv = {...cv}; delete nv[id]; return nv; });
+      } else {
+        n[id] = q;
+        if (variantIndex !== null) {
+          setCartVariants(cv => {
+            const arr = [...(cv[id] || [])];
+            arr.splice(variantIndex, 1);
+            return { ...cv, [id]: arr };
+          });
+        } else {
+          setCartVariants(cv => {
+            const arr = cv[id] || [];
+            if (arr.length > 0) return { ...cv, [id]: arr.slice(0, -1) };
+            return cv;
+          });
+        }
+      }
+      return n;
+    });
+  };
+
   const remove = (id) => setCart(c => { 
     const q = (c[id] || 0) - 1; 
     const n = { ...c }; 
@@ -695,8 +722,8 @@ export default function KaiKaiApp() {
                 </div>
               </div>
               {/* NOUVEAU : Bandeau explicatif de la remise */}
-              <div className="mt-4 rounded-2xl border border-green-500/20 bg-green-500/5 px-4 py-3 text-center text-sm text-green-400/90">
-                💚 Commandez directement sur notre site et économisez 10% — sans commission de plateforme, votre argent va directement au restaurant.
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/70">
+                💰 Commandez directement sur notre site et économisez 10% — sans commission de plateforme, votre argent va directement au restaurant.
               </div>
             </div>
 
@@ -760,6 +787,7 @@ export default function KaiKaiApp() {
           setMode={setMode}
           onClose={() => setStep("menu")}
           onClear={clear}
+          onRemoveOne={removeOne}
           onSuccess={() => { setStep("success"); clear(); }}
         />
       )}
@@ -771,6 +799,11 @@ export default function KaiKaiApp() {
           <p className="mt-2 text-white/70">Un e-mail de confirmation vous a été envoyé. Préparation en cours.</p>
           <button onClick={() => setStep("menu")} className="mt-6 rounded-2xl bg-white px-4 py-2 text-black hover:bg-white/90 transition-colors">Revenir au menu</button>
         </section>
+      )}
+
+      {/* Mini panier flottant */}
+      {step === "menu" && Object.values(cart).reduce((s, q) => s + q, 0) > 0 && (
+        <MiniCart cart={cart} items={items} total={total} discount={discount} onOpen={() => setStep("checkout")} />
       )}
 
       {/* Footer */}
@@ -1436,6 +1469,65 @@ function FormuleModal({ item, onConfirm, onClose }) {
   );
 }
 
+// ─── MINI PANIER FLOTTANT ────────────────────────────────────────────────────
+function MiniCart({ cart, items, total, discount, onOpen }) {
+  const totalQty = Object.values(cart).reduce((s, q) => s + q, 0);
+  const cartItems = items.filter(i => i.qty > 0).slice(0, 3);
+
+  return (
+    <div
+      onClick={onOpen}
+      style={{
+        position: 'fixed',
+        bottom: 24,
+        right: 16,
+        zIndex: 45,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '12px 16px',
+        background: 'white',
+        borderRadius: 20,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
+        cursor: 'pointer',
+        maxWidth: 280,
+        animation: 'tileIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both',
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.55)'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.45)'; }}
+    >
+      {/* Icône panier avec badge */}
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ShoppingCart size={18} color="white" />
+        </div>
+        <span style={{
+          position: 'absolute', top: -6, right: -6,
+          width: 20, height: 20, borderRadius: '50%',
+          background: '#111', border: '2px solid white',
+          color: 'white', fontSize: 10, fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {totalQty}
+        </span>
+      </div>
+
+      {/* Résumé */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.45)', marginBottom: 1 }}>
+          {cartItems.map(i => i.name).join(', ')}{cartItems.length < Object.keys(cart).length ? '…' : ''}
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'black' }}>
+          {format(total)}
+          {discount > 0 && <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(0,0,0,0.45)', marginLeft: 4 }}>(-10%)</span>}
+        </div>
+      </div>
+
+      {/* Flèche */}
+      <ChevronRight size={16} color="rgba(0,0,0,0.4)" style={{ flexShrink: 0 }} />
+    </div>
+  );
 }
 
 function AboutModal({ onClose }) {
@@ -1531,7 +1623,7 @@ function AboutModal({ onClose }) {
   );
 }
 
-function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total, mode, setMode, onClose, onClear, onSuccess }) {
+function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total, mode, setMode, onClose, onClear, onRemoveOne, onSuccess }) {
   const [form, setForm] = useState({ 
     firstName: "", 
     lastName: "", 
@@ -1596,7 +1688,7 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
             
             return (
               <div key={it.id} className="rounded-2xl border border-white/10 p-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
                     <div className="font-medium">{it.name}</div>
                     
@@ -1647,7 +1739,31 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                     
                     <div className="text-sm text-white/60 mt-1">{it.qty} × {format(it.price)}</div>
                   </div>
-                  <div className="text-right">{format(it.price * it.qty)}</div>
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="text-right font-medium">{format(it.price * it.qty)}</div>
+                    <div className="flex items-center gap-1 mt-1">
+                      {it.qty > 1 && (
+                        <button
+                          onClick={() => onRemoveOne(it.id)}
+                          className="flex h-7 w-7 items-center justify-center rounded-xl border border-white/15 text-white/50 hover:bg-white/10 hover:text-white transition-all text-xs"
+                          title="Retirer 1"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          const arr = cartVariants[it.id];
+                          const lastIdx = Array.isArray(arr) ? arr.length - 1 : null;
+                          onRemoveOne(it.id, lastIdx);
+                        }}
+                        className="flex h-7 w-7 items-center justify-center rounded-xl border border-white/15 text-white/40 hover:bg-red-500/15 hover:border-red-500/30 hover:text-red-400 transition-all"
+                        title="Supprimer"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
