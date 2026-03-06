@@ -964,8 +964,18 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
 // Composant réutilisable : Bottom Sheet avec image header
 function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, footerContent }) {
   useEffect(() => {
+    const scrollY = window.scrollY;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = 'unset'; };
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
   }, []);
 
   return (
@@ -1219,8 +1229,18 @@ function FormuleModal({ item, onConfirm, onClose }) {
   const [selectedCoulisDessert, setSelectedCoulisDessert] = useState(null);
 
   useEffect(() => {
+    const scrollY = window.scrollY;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = 'unset'; };
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
   }, []);
 
   const platsDec = ['Chao Men','Kai Fan','Omelette Fu Young','Tahitien','KaïKaï','Haka'];
