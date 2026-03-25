@@ -68,20 +68,19 @@ const RESTAURANT_INFO = {
 const MENU = [
   // ENTRÉES
   { id: "1",  name: "Velouté koko", desc: "Légumes de saison et crème coco", price: 4.90, category: "entrees" },
-  { id: "2",  name: "Salade d'avocat", desc: "Salade, tomate, patate, concombre, guacamole maison, cacahuètes", price: 7.90, category: "entrees" },
+  { id: "2",  name: "Salade Tropicale", desc: "Salade, tomate, patate, concombre, guacamole maison, cacahuètes", price: 7.90, category: "entrees" },
   { id: "3",  name: "Salade de poulet", desc: "Salade, tomate, patate, concombre, poulet", price: 9.90, category: "entrees" },
   { 
     id: "4",  
     name: "Tartare de thon rouge", 
-    desc: "Mariné au citron vert et gingembre (4 variantes: Tahitien, Haka, Mokaï, KaïKaï)", 
+    desc: "Mariné au citron vert et gingembre (3 variantes: Tahiti, Hawaï, Samoa)", 
     price: 12.90, 
     category: "entrees",
     hasVariants: true,
     variants: [
-      { id: "tahitien", name: "Tartare Tahitien", desc: "Sauce coco" },
-      { id: "haka", name: "Tartare Haka", desc: "Sauce piment maison" },
-      { id: "mokai", name: "Tartare Mokaï", desc: "Sauce arachide et guacamole" },
-      { id: "kaikai", name: "Tartare KaïKaï", desc: "Sauce sésame, mangue et ananas" }
+      { id: "tahiti", name: "Tartare Tahiti", desc: "Sauce coco" },
+      { id: "hawaii", name: "Tartare Hawaï", desc: "Sauce sésame, mangue et ananas" },
+      { id: "samoa", name: "Tartare Samoa", desc: "Sauce piment maison" }
     ]
   },
 
@@ -129,10 +128,10 @@ const MENU = [
   { id: "8",  name: "Wok de Bœuf", desc: "Wok de bœuf, légumes de saison, sauce sésame, servi avec du riz et de salade", price: 26.90, category: "chaud" },
 
   // PLATS FROIDS
-  { id: "9",  name: "Tahitien", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce coco", price: 22.90, category: "froid" },
-  { id: "10", name: "KaïKaï", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce sésame, mangue et ananas", price: 22.90, category: "froid" },
-  { id: "11", name: "Haka", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce piment maison", price: 22.90, category: "froid" },
-  { id: "12", name: "Mokaï", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce arachide et guacamole maison", price: 24.90, category: "froid" },
+  { id: "9",  name: "Tahiti", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce coco", price: 22.90, category: "froid" },
+  { id: "10", name: "Hawaï", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce sésame, mangue et ananas", price: 22.90, category: "froid" },
+  { id: "11", name: "Samoa", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce piment maison", price: 22.90, category: "froid" },
+  { id: "12", name: "Manoa", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce arachide et guacamole maison", price: 24.90, category: "froid" },
 
   // FORMULES
   { 
@@ -447,14 +446,12 @@ function CategoryNav({ activeCategory }) {
   const [scrolled, setScrolled] = React.useState(false);
   const [headerH, setHeaderH] = React.useState(0);
 
-  // Mesure la vraie hauteur du header sticky
   useEffect(() => {
     const measure = () => {
       const h = document.querySelector("header");
       if (h) setHeaderH(h.offsetHeight);
     };
     measure();
-    // Réessayer après le premier render
     const t = setTimeout(measure, 100);
     window.addEventListener("resize", measure);
     return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
@@ -486,7 +483,6 @@ function CategoryNav({ activeCategory }) {
     }
   };
 
-  // Tant que headerH pas mesuré, on positionne hors écran pour éviter flash
   const topPos = headerH === 0 ? -200 : scrolled ? 0 : headerH;
 
   return (
@@ -573,7 +569,6 @@ export default function KaiKaiApp() {
   const [logoVisible, setLogoVisible] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
 
-  // Navigation sticky active
   const activeCategory = useActiveCategory();
 
   const items = useMemo(() => MENU_SORTED.map(m => ({ ...m, qty: cart[m.id] || 0 })), [cart]);
@@ -686,13 +681,11 @@ export default function KaiKaiApp() {
 
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
 
-      {/* Navigation sticky des catégories - toujours montée pour rester fixed */}
       {step === "menu" && <CategoryNav activeCategory={activeCategory} />}
 
       {/* Menu principal */}
       {step === "menu" && (
         <>
-
           <section className="mx-auto max-w-5xl px-4 py-10">
             <div className="mb-10 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-6">
               <div className="mb-6 text-center">
@@ -716,12 +709,10 @@ export default function KaiKaiApp() {
                 <div className="flex items-center gap-2">
                   <Bike className="h-4 w-4" />Livraison en {RESTAURANT_INFO.deliveryTime} min
                 </div>
-                {/* MODIFICATION : -10% avec explication claire */}
                 <div className="flex items-center gap-2">
                   <Percent className="h-4 w-4" />-10% en commandant ici
                 </div>
               </div>
-              {/* NOUVEAU : Bandeau explicatif de la remise */}
               <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/70">
                 💰 Commandez directement sur notre site et économisez 10% — sans commission de plateforme, juste vous et nous.🤙
               </div>
@@ -809,7 +800,6 @@ export default function KaiKaiApp() {
         </section>
       )}
 
-      {/* Mini panier flottant */}
       {step === "menu" && Object.values(cart).reduce((s, q) => s + q, 0) > 0 && (
         <MiniCart cart={cart} items={items} total={total} discount={discount} onOpen={() => setStep("checkout")} />
       )}
@@ -910,7 +900,6 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
         </div>
       </div>
       
-      {/* Modal variantes tartare */}
       {showVariants && item.hasVariants && (
         <VariantModal 
           item={item} 
@@ -919,7 +908,6 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
         />
       )}
       
-      {/* Modal jus exotiques */}
       {showJus && item.hasJusVariants && (
         <JusModal 
           item={item} 
@@ -928,7 +916,6 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
         />
       )}
       
-      {/* Modal formules */}
       {showFormuleModal && item.hasFormule && (
         <FormuleModal 
           item={item} 
@@ -937,7 +924,6 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
         />
       )}
       
-      {/* Modal protéines (Chao Men / Kai Fan) */}
       {showProteinModal && item.hasProteinVariants && (
         <ProteinModal 
           item={item} 
@@ -946,7 +932,6 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
         />
       )}
       
-      {/* Modal coulis (Cheesecake) */}
       {showCoulisModal && item.hasCoulisVariants && (
         <CoulisModal 
           item={item} 
@@ -955,7 +940,6 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
         />
       )}
       
-      {/* Modal eau (Eau plate/gazeuse) */}
       {showEauModal && item.hasEauVariants && (
         <EauModal 
           item={item} 
@@ -969,7 +953,6 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
 
 // ─── SYSTÈME DE MODAUX BOTTOM SHEET ─────────────────────────────────────────
 
-// Composant réutilisable : Bottom Sheet avec image header
 function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, footerContent }) {
   useEffect(() => {
     const scrollY = window.scrollY;
@@ -1004,12 +987,10 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Handle bar */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
           <div style={{ width: 38, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
         </div>
 
-        {/* Image header optionnel */}
         {photo && (
           <div style={{ position: 'relative', height: 190, flexShrink: 0, overflow: 'hidden', margin: '10px 16px 0', borderRadius: 20 }}>
             <img
@@ -1018,7 +999,6 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
               onError={e => { e.target.parentNode.style.display = 'none'; }}
             />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(13,13,13,0.92) 100%)' }} />
-            {/* Titre en overlay sur l'image */}
             <div style={{ position: 'absolute', bottom: 14, left: 16, right: 52 }}>
               <div style={{ fontSize: 20, fontWeight: 700, color: 'white', textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{title}</div>
               {subtitle && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{subtitle}</div>}
@@ -1030,7 +1010,6 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
           </div>
         )}
 
-        {/* Header sans image */}
         {!photo && (
           <div style={{ padding: '6px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
             <div>
@@ -1043,15 +1022,12 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
           </div>
         )}
 
-        {/* Séparateur */}
         <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '14px 0 0', flexShrink: 0 }} />
 
-        {/* Contenu scrollable */}
         <div style={{ overflowY: 'auto', flex: 1, padding: '10px 16px 16px' }}>
           {children}
         </div>
 
-        {/* Footer fixe optionnel */}
         {footerContent && (
           <div style={{ padding: '12px 16px 32px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
             {footerContent}
@@ -1062,7 +1038,6 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
   );
 }
 
-// Tuile de sélection réutilisable
 function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge }) {
   return (
     <button
@@ -1096,7 +1071,6 @@ function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge }) {
   );
 }
 
-// Label de section
 function SectionLabel({ children }) {
   return (
     <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', letterSpacing: '0.09em', textTransform: 'uppercase', padding: '14px 2px 10px' }}>
@@ -1105,7 +1079,6 @@ function SectionLabel({ children }) {
   );
 }
 
-// Sub-sheet pour sélections imbriquées (protéines dans formule, etc.)
 function SubSheet({ title, subtitle, options, onSelect, onClose }) {
   return (
     <div
@@ -1151,10 +1124,6 @@ function SubSheet({ title, subtitle, options, onSelect, onClose }) {
 
 // ─── MODAUX SIMPLES ───────────────────────────────────────────────────────────
 
-const ALL_PHOTOS_MAP = {};
-const ALL_PHOTO_POS_MAP = {};
-
-// Fusion des maps photo dans un objet unique accessible globalement
 function getPhoto(id) {
   return ENTREE_PHOTOS[id] || CHAUD_PHOTOS[id] || FROID_PHOTOS[id] || FORMULE_PHOTOS[id] || DESSERT_PHOTOS[id] || BOISSON_PHOTOS[id] || null;
 }
@@ -1163,7 +1132,7 @@ function getPhotoPos(id) {
 }
 
 function VariantModal({ item, onSelect, onClose }) {
-  const variantEmojis = { tahitien: '🥥', haka: '🌶️', mokai: '🥜', kaikai: '🥭' };
+  const variantEmojis = { tahiti: '🥥', hawaii: '🥭', samoa: '🌶️' };
   return (
     <BottomSheet title={item.name} subtitle="Choisissez votre sauce" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
       {item.variants.map((v, i) => (
@@ -1251,10 +1220,10 @@ function FormuleModal({ item, onConfirm, onClose }) {
     };
   }, []);
 
-  const platsDec = ['Chao Men','Kai Fan','Omelette Fu Young','Tartare Tahitien','Tartare KaïKaï','Tartare Haka'];
-  const platsVoy = ['Chao Men','Kai Fan','Omelette Fu Young','Wok de Bœuf','Tartare Tahitien','Tartare KaïKaï','Tartare Haka'];
-  const platEmojis = { 'Chao Men':'🍜','Kai Fan':'🍚','Omelette Fu Young':'🍳','Wok de Bœuf':'🥩','Tartare Tahitien':'🐟','Tartare KaïKaï':'🥭','Tartare Haka':'🌶️' };
-  const platDescs = { 'Chao Men':'Nouilles sautées','Kai Fan':'Riz sauté','Omelette Fu Young':'Omelette aux légumes','Wok de Bœuf':'Wok de bœuf, sauce sésame','Tartare Tahitien':'Thon rouge, sauce coco','Tartare KaïKaï':'Thon rouge, sauce sésame','Tartare Haka':'Thon rouge, sauce piment' };
+  const platsDec = ['Chao Men','Kai Fan','Omelette Fu Young','Tartare Tahiti','Tartare Hawaï','Tartare Samoa'];
+  const platsVoy = ['Chao Men','Kai Fan','Omelette Fu Young','Wok de Bœuf','Tartare Tahiti','Tartare Hawaï','Tartare Samoa'];
+  const platEmojis = { 'Chao Men':'🍜','Kai Fan':'🍚','Omelette Fu Young':'🍳','Wok de Bœuf':'🥩','Tartare Tahiti':'🐟','Tartare Hawaï':'🥭','Tartare Samoa':'🌶️' };
+  const platDescs = { 'Chao Men':'Nouilles sautées','Kai Fan':'Riz sauté','Omelette Fu Young':'Omelette aux légumes','Wok de Bœuf':'Wok de bœuf, sauce sésame','Tartare Tahiti':'Thon rouge, sauce coco','Tartare Hawaï':'Thon rouge, sauce sésame','Tartare Samoa':'Thon rouge, sauce piment' };
   const needsProtein = (p) => ['Chao Men','Kai Fan','Omelette Fu Young'].includes(p);
   const needsCoulis = (d) => ['Crème Tropicale','Cheesecake'].includes(d);
   const desserts = ['Coulant au chocolat','Crème Tropicale',"Po'e Banane",'Cheesecake'];
@@ -1268,7 +1237,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
   const eauOpts = [{ id:'plate', name:'Eau Plate', desc:'Eau minérale naturelle', emoji:'💧' },{ id:'gazeuse', name:'Eau Gazeuse', desc:'Eau pétillante', emoji:'🫧' }];
   const coulisOpts = [{ id:'mangue', name:'Coulis Mangue', desc:'Doux et tropical', emoji:'🥭' },{ id:'fruits-rouges', name:'Coulis Fruits Rouges', desc:'Frais et acidulé', emoji:'🍓' }];
 
-  // Calcul progression
   const getProgress = () => {
     if (item.formuleType === 'decouverte') {
       let done = 0, total = 2;
@@ -1377,7 +1345,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
         onClose={onClose}
         footerContent={cta}
       >
-        {/* Barre de progression */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 2px 0', marginBottom: 2 }}>
           {[...Array(prog.total)].map((_, i) => (
             <div key={i} style={{ height: 3, flex: 1, borderRadius: 2, background: i < prog.done ? 'white' : 'rgba(255,255,255,0.14)', transition: 'background 0.3s ease' }} />
@@ -1385,7 +1352,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
           <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginLeft: 4, whiteSpace: 'nowrap' }}>{prog.done}/{prog.total}</span>
         </div>
 
-        {/* Section plats */}
         <SectionLabel>{isVoyage ? 'Choisissez vos 2 plats' : 'Votre plat'}</SectionLabel>
         {plats.map((plat, i) => {
           const sel = isVoyage ? selectedPlats.includes(plat) : selectedPlat === plat;
@@ -1404,7 +1370,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
           );
         })}
 
-        {/* Section boissons */}
         <SectionLabel>{isVoyage ? "Boissons (jusqu'à 2)" : 'Votre boisson'}</SectionLabel>
         {['Jus exotique', 'Eau'].map((b, i) => {
           const selDec = selectedBoisson === b;
@@ -1427,7 +1392,6 @@ function FormuleModal({ item, onConfirm, onClose }) {
           );
         })}
 
-        {/* Section dessert (Voyage seulement) */}
         {isVoyage && (
           <>
             <SectionLabel>Votre dessert</SectionLabel>
@@ -1525,7 +1489,6 @@ function MiniCart({ cart, items, total, discount, onOpen }) {
       onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.55)'; }}
       onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.45)'; }}
     >
-      {/* Icône panier avec badge */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <div style={{ width: 40, height: 40, borderRadius: 12, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <ShoppingCart size={18} color="white" />
@@ -1541,7 +1504,6 @@ function MiniCart({ cart, items, total, discount, onOpen }) {
         </span>
       </div>
 
-      {/* Résumé */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.45)', marginBottom: 1 }}>
           {cartItems.map(i => i.name).join(', ')}{cartItems.length < Object.keys(cart).length ? '…' : ''}
@@ -1552,7 +1514,6 @@ function MiniCart({ cart, items, total, discount, onOpen }) {
         </div>
       </div>
 
-      {/* Flèche */}
       <ChevronRight size={16} color="rgba(0,0,0,0.4)" style={{ flexShrink: 0 }} />
     </div>
   );
