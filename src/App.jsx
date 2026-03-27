@@ -467,10 +467,10 @@ function HeroSlider() {
       {/* ── EXITING SLIDE ── */}
       {animating && (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 1 }}>
             <span className="hero-word" style={{ animation: wordExitAnim }}>{slide.category}</span>
           </div>
-          <div className="hero-bowl" style={{ animation: bowlExitAnim }}>
+          <div className="hero-bowl" style={{ animation: bowlExitAnim, position: 'relative', zIndex: 2 }}>
             <img src={slide.image} alt={slide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
           </div>
         </div>
@@ -478,19 +478,19 @@ function HeroSlider() {
 
       {/* ── ENTERING / IDLE SLIDE ── */}
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-        {/* Giant word — parallax inverse */}
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        {/* Giant word — z-index 1 → derrière l'assiette */}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 1 }}>
           <span className="hero-word" style={animating ? { animation: wordEnterAnim } : {}}>
             {displaySlide.category}
           </span>
         </div>
 
-        {/* Circular dish image */}
-        <div className="hero-bowl" style={animating ? { animation: bowlEnterAnim } : {}}>
+        {/* Circular dish image — z-index 2 → devant le mot */}
+        <div className="hero-bowl" style={{ ...(animating ? { animation: bowlEnterAnim } : {}), position: 'relative', zIndex: 2 }}>
           <img src={displaySlide.image} alt={displaySlide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
         </div>
 
-        {/* Floating decorative elements */}
+        {/* Floating decorative elements — z-index 3 */}
         {displaySlide.decorElements.map((emoji, i) => (
           <div
             key={`${animating ? nxt : cur}-decor-${i}`}
@@ -500,6 +500,7 @@ function HeroSlider() {
               fontSize: 'clamp(1.4rem, 2.8vmin, 2.2rem)',
               animation: `floatDecor 3s ease-in-out ${i * 0.7}s infinite, decorAppear 0.4s ease ${i * 0.15}s both`,
               userSelect: 'none',
+              zIndex: 3,
             }}
           >
             {emoji}
@@ -507,10 +508,10 @@ function HeroSlider() {
         ))}
       </div>
 
-      {/* ── INFO — bas gauche ── */}
+      {/* ── INFO — bas gauche — z-index 4 ── */}
       <div
         key={`info-${animating ? nxt : cur}`}
-        style={{ position: 'absolute', bottom: '12%', left: '5%', maxWidth: '52%', animation: 'infoFadeUp 0.4s ease 0.3s both', pointerEvents: 'none', zIndex: 2 }}
+        style={{ position: 'absolute', bottom: '12%', left: '5%', maxWidth: '52%', animation: 'infoFadeUp 0.4s ease 0.3s both', pointerEvents: 'none', zIndex: 4 }}
       >
         <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', margin: '0 0 0.45rem' }}>
           {displaySlide.category}
@@ -552,8 +553,11 @@ function HeroSlider() {
         ))}
       </div>
 
+      {/* ── DÉGRADÉ TRANSITION HERO → MENU ── */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, background: 'linear-gradient(to bottom, transparent, #000)', zIndex: 2, pointerEvents: 'none' }} />
+
       {/* ── BARRE DE PROGRESSION ── */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.1)', zIndex: 3 }}>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.1)', zIndex: 4 }}>
         <div style={{ height: '100%', background: 'rgba(255,255,255,0.75)', width: `${progress * 100}%`, transition: 'width 0.1s linear' }} />
       </div>
     </div>
@@ -666,10 +670,10 @@ function CategoryNav({ activeCategory }) {
           gap: "8px",
           overflowX: "auto",
           padding: scrolled ? "5px 16px" : "8px 16px",
-          background: scrolled ? "rgba(0,0,0,0.70)" : "rgba(0,0,0,0.95)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
-          borderBottom: scrolled ? "1px solid rgba(255,255,255,0.04)" : "1px solid rgba(255,255,255,0.10)",
+          background: scrolled ? "rgba(0,0,0,0.35)" : "transparent",
+          backdropFilter: scrolled ? "blur(14px)" : "none",
+          WebkitBackdropFilter: scrolled ? "blur(14px)" : "none",
+          borderBottom: scrolled ? "1px solid rgba(255,255,255,0.06)" : "none",
           transition: "top 0.25s ease, padding 0.2s ease, background 0.25s ease",
         }}
       >
@@ -688,9 +692,9 @@ function CategoryNav({ activeCategory }) {
                 fontSize: scrolled ? "13px" : "15px",
                 fontWeight: 500,
                 transition: "all 0.2s ease",
-                background: isActive ? "white" : "transparent",
-                color: isActive ? "black" : scrolled ? "rgba(255,255,255,0.40)" : "rgba(255,255,255,0.70)",
-                border: isActive ? "none" : scrolled ? "1px solid rgba(255,255,255,0.10)" : "1px solid rgba(255,255,255,0.20)",
+                background: isActive ? "white" : "rgba(0,0,0,0.18)",
+                color: isActive ? "black" : "rgba(255,255,255,0.85)",
+                border: isActive ? "none" : "1px solid rgba(255,255,255,0.22)",
                 cursor: "pointer",
               }}
             >
