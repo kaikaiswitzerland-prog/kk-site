@@ -1,6 +1,6 @@
 // src/App.jsx - VERSION AVEC TOUS LES MODALS DE VARIANTES
 import React, { useMemo, useState, useEffect } from "react";
-import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Percent, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight } from "lucide-react";
+import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight } from "lucide-react";
 
 // MODIFICATION 1: Logo PNG au lieu du SVG
 const LOGO_SRC = "/logo_kaikai.png";
@@ -38,6 +38,30 @@ const globalStyles = `
 
   .cat-nav::-webkit-scrollbar { display: none; }
   .cat-nav { -ms-overflow-style: none; scrollbar-width: none; }
+
+  @keyframes bowlExitLeft  { from { transform: translateX(0);     opacity: 1; } to { transform: translateX(-120%); opacity: 0; } }
+  @keyframes bowlExitRight { from { transform: translateX(0);     opacity: 1; } to { transform: translateX(120%);  opacity: 0; } }
+  @keyframes bowlEnterRight{ from { transform: translateX(120%);  opacity: 0; } to { transform: translateX(0);     opacity: 1; } }
+  @keyframes bowlEnterLeft { from { transform: translateX(-120%); opacity: 0; } to { transform: translateX(0);     opacity: 1; } }
+
+  @keyframes wordExitLeft     { from { transform: translateX(0);   } to { transform: translateX(60%);  } }
+  @keyframes wordExitRight    { from { transform: translateX(0);   } to { transform: translateX(-60%); } }
+  @keyframes wordEnterFromRight { from { transform: translateX(-60%); } to { transform: translateX(0); } }
+  @keyframes wordEnterFromLeft  { from { transform: translateX(60%);  } to { transform: translateX(0); } }
+
+  @keyframes infoFadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes floatDecor { 0%,100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-8px) rotate(5deg); } }
+  @keyframes decorAppear { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+  .hero-bowl { width: 55vmin; height: 55vmin; border-radius: 50%; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.55); flex-shrink: 0; }
+  .hero-word  { font-size: 18vw; font-weight: 900; color: rgba(255,255,255,0.18); text-transform: uppercase; letter-spacing: -0.03em; user-select: none; white-space: nowrap; line-height: 1; }
+  .hero-arrow { width: 56px; height: 56px; min-width: 48px; min-height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.35); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #fff; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+  .hero-arrow:hover { background: rgba(0,0,0,0.6); }
+  @media (max-width: 768px) {
+    .hero-bowl { width: 80vw; height: 80vw; }
+    .hero-word  { font-size: 22vw; }
+    .hero-arrow { width: 48px; height: 48px; }
+  }
 `;
 
 // Informations du restaurant
@@ -337,58 +361,200 @@ function getNextOpeningTime() {
 }
 
 function HeroSlider() {
-  const IMAGES = [
-    { src: "/hero-tartare.jpg", alt: "Tartare de thon", pos: "center center" },
-    { src: "/hero-wok-poulet.jpg", alt: "Wok poulet / nouilles", pos: "center center" },
-    { src: "/hero-boeuf.jpg", alt: "Wok de bœuf et riz", pos: "center 35%" },
+  const SLIDES = [
+    { name: "Tahiti",            category: "POISSON",  price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",          bgColor: "#0d2a1a", image: "/froid-tahitien.jpg",  decorElements: ["🐟", "🌿", "🍋"] },
+    { name: "Hawaï",             category: "POISSON",  price: "22.90 CHF", description: "Thon rouge, mangue, ananas, sauce sésame",                bgColor: "#7a3d10", image: "/froid-kaikai.jpg",   decorElements: ["🍍", "🥭", "🌺"] },
+    { name: "Chao Men",          category: "CHAUD",    price: "18.90 CHF", description: "Nouilles sautées, wok de porc, sauce crevettes",           bgColor: "#4a1208", image: "/chaud-chaomen.jpg",  decorElements: ["🍜", "🥢", "🌶️"] },
+    { name: "Kai Fan",           category: "CHAUD",    price: "18.90 CHF", description: "Riz sauté, wok de porc, sauce champignons",                bgColor: "#1a2e0a", image: "/chaud-kaifan.jpg",   decorElements: ["🍚", "🥬", "🍄"] },
+    { name: "Coulant Chocolat",  category: "DESSERT",  price: "9.90 CHF",  description: "Coulant fondant, servi chaud",                             bgColor: "#200e03", image: "/dessert-coulant.jpg", decorElements: ["🍫", "🍮", "✨"] },
   ];
-  const [idx, setIdx] = React.useState(0);
+  const N = SLIDES.length;
+
+  const [cur,       setCur]       = React.useState(0);
+  const [nxt,       setNxt]       = React.useState(null);
+  const [dir,       setDir]       = React.useState(null);
+  const [animating, setAnimating] = React.useState(false);
+  const [hoverPaused, setHoverPaused] = React.useState(false);
+  const [arrowPaused, setArrowPaused] = React.useState(false);
+  const [progress,  setProgress]  = React.useState(0);
+
+  const animTimerRef    = React.useRef(null);
+  const pauseTimerRef   = React.useRef(null);
+  const rafRef          = React.useRef(null);
+  const progressStart   = React.useRef(null);
+  const stateRef        = React.useRef({ cur: 0, animating: false });
+  stateRef.current      = { cur, animating };
+
+  const autoplayPaused = hoverPaused || arrowPaused;
+
+  const navigate = (nextIdx, direction) => {
+    if (stateRef.current.animating) return;
+    setAnimating(true);
+    setNxt(nextIdx);
+    setDir(direction);
+    animTimerRef.current = setTimeout(() => {
+      setCur(nextIdx);
+      setNxt(null);
+      setDir(null);
+      setAnimating(false);
+    }, 520);
+  };
+
+  const goNext = () => navigate((stateRef.current.cur + 1) % N, 'next');
+  const goPrev = () => navigate((stateRef.current.cur - 1 + N) % N, 'prev');
+
+  const handleArrow = (fn) => {
+    fn();
+    setArrowPaused(true);
+    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    pauseTimerRef.current = setTimeout(() => {
+      setArrowPaused(false);
+      pauseTimerRef.current = null;
+    }, 8000);
+  };
+
+  const goNextRef = React.useRef(goNext);
+  goNextRef.current = goNext;
 
   React.useEffect(() => {
-    const t = setInterval(() => setIdx(i => (i + 1) % IMAGES.length), 4000);
-    return () => clearInterval(t);
+    if (autoplayPaused) return;
+    const id = setInterval(() => goNextRef.current(), 5000);
+    return () => clearInterval(id);
+  }, [autoplayPaused]);
+
+  React.useEffect(() => {
+    cancelAnimationFrame(rafRef.current);
+    if (autoplayPaused) { setProgress(0); return; }
+    progressStart.current = Date.now();
+    setProgress(0);
+    const tick = () => {
+      const p = Math.min((Date.now() - progressStart.current) / 5000, 1);
+      setProgress(p);
+      if (p < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [cur, autoplayPaused]);
+
+  React.useEffect(() => () => {
+    clearTimeout(animTimerRef.current);
+    clearTimeout(pauseTimerRef.current);
+    cancelAnimationFrame(rafRef.current);
   }, []);
 
+  const slide       = SLIDES[cur];
+  const nextSlide   = nxt !== null ? SLIDES[nxt] : null;
+  const displaySlide = animating && nextSlide ? nextSlide : slide;
+  const bgColor      = animating && nextSlide ? nextSlide.bgColor : slide.bgColor;
+
+  const bowlExitAnim  = dir === 'next' ? 'bowlExitLeft 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards'  : 'bowlExitRight 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
+  const bowlEnterAnim = dir === 'next' ? 'bowlEnterRight 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards' : 'bowlEnterLeft 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
+  const wordExitAnim  = dir === 'next' ? 'wordExitLeft 0.5s ease-in-out forwards'      : 'wordExitRight 0.5s ease-in-out forwards';
+  const wordEnterAnim = dir === 'next' ? 'wordEnterFromRight 0.5s ease-in-out forwards' : 'wordEnterFromLeft 0.5s ease-in-out forwards';
+
+  const DECOR_POS = [
+    { top: '18%', right: '14%' },
+    { top: '60%', right: '7%'  },
+    { top: '40%', right: '24%' },
+  ];
+
   return (
-    <div className="relative">
-      <div className="relative max-h-96 rounded-3xl overflow-hidden border border-white/10">
-        {IMAGES.map((img, i) => (
-          <img
-            key={img.src}
-            src={img.src}
-            alt={img.alt}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === idx ? "opacity-100" : "opacity-0"}`}
-            style={{ objectPosition: img.pos }}
-            draggable={false}
-          />
+    <div
+      style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', backgroundColor: bgColor, transition: 'background-color 0.5s ease-in-out' }}
+      onMouseEnter={() => setHoverPaused(true)}
+      onMouseLeave={() => setHoverPaused(false)}
+    >
+      {/* ── EXITING SLIDE ── */}
+      {animating && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <span className="hero-word" style={{ animation: wordExitAnim }}>{slide.category}</span>
+          </div>
+          <div className="hero-bowl" style={{ animation: bowlExitAnim }}>
+            <img src={slide.image} alt={slide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+          </div>
+        </div>
+      )}
+
+      {/* ── ENTERING / IDLE SLIDE ── */}
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+        {/* Giant word — parallax inverse */}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          <span className="hero-word" style={animating ? { animation: wordEnterAnim } : {}}>
+            {displaySlide.category}
+          </span>
+        </div>
+
+        {/* Circular dish image */}
+        <div className="hero-bowl" style={animating ? { animation: bowlEnterAnim } : {}}>
+          <img src={displaySlide.image} alt={displaySlide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+        </div>
+
+        {/* Floating decorative elements */}
+        {displaySlide.decorElements.map((emoji, i) => (
+          <div
+            key={`${animating ? nxt : cur}-decor-${i}`}
+            style={{
+              position: 'absolute',
+              ...DECOR_POS[i],
+              fontSize: 'clamp(1.4rem, 2.8vmin, 2.2rem)',
+              animation: `floatDecor 3s ease-in-out ${i * 0.7}s infinite, decorAppear 0.4s ease ${i * 0.15}s both`,
+              userSelect: 'none',
+            }}
+          >
+            {emoji}
+          </div>
         ))}
-        <img src={IMAGES[0].src} alt="" className="opacity-0 w-full h-full object-cover select-none" />
       </div>
 
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-2">
-        <button
-          onClick={() => setIdx(i => (i - 1 + IMAGES.length) % IMAGES.length)}
-          className="pointer-events-auto rounded-xl border border-white/20 bg-black/40 px-3 py-2 text-sm hover:bg-black/60 transition-colors"
-        >
-          ◀
-        </button>
-        <button
-          onClick={() => setIdx(i => (i + 1) % IMAGES.length)}
-          className="pointer-events-auto rounded-xl border border-white/20 bg-black/40 px-3 py-2 text-sm hover:bg-black/60 transition-colors"
-        >
-          ▶
-        </button>
+      {/* ── INFO — bas gauche ── */}
+      <div
+        key={`info-${animating ? nxt : cur}`}
+        style={{ position: 'absolute', bottom: '12%', left: '5%', maxWidth: '52%', animation: 'infoFadeUp 0.4s ease 0.3s both', pointerEvents: 'none', zIndex: 2 }}
+      >
+        <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', margin: '0 0 0.45rem' }}>
+          {displaySlide.category}
+        </p>
+        <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, color: '#fff', lineHeight: 1.05, margin: '0 0 0.35rem' }}>
+          {displaySlide.name}
+        </h2>
+        <p style={{ fontSize: 'clamp(1rem, 2.2vw, 1.4rem)', fontWeight: 700, color: 'rgba(255,255,255,0.85)', margin: '0 0 0.5rem' }}>
+          {displaySlide.price}
+        </p>
+        <p style={{ fontSize: 'clamp(0.78rem, 1.4vw, 0.9rem)', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, margin: 0 }}>
+          {displaySlide.description}
+        </p>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        {IMAGES.map((_, i) => (
+      {/* ── FLÈCHES ── */}
+      <button
+        onClick={() => handleArrow(goPrev)}
+        className="hero-arrow"
+        style={{ position: 'absolute', left: '2%', top: '50%', transform: 'translateY(-50%)', zIndex: 3 }}
+        aria-label="Plat précédent"
+      >◀</button>
+      <button
+        onClick={() => handleArrow(goNext)}
+        className="hero-arrow"
+        style={{ position: 'absolute', right: '2%', top: '50%', transform: 'translateY(-50%)', zIndex: 3 }}
+        aria-label="Plat suivant"
+      >▶</button>
+
+      {/* ── DOTS ── */}
+      <div style={{ position: 'absolute', bottom: '4%', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px', alignItems: 'center', zIndex: 3 }}>
+        {SLIDES.map((_, i) => (
           <button
             key={i}
-            onClick={() => setIdx(i)}
-            className={`h-2 w-2 rounded-full transition-all ${i === idx ? "bg-white w-8" : "bg-white/30"}`}
-            aria-label={`Aller à l'image ${i+1}`}
+            onClick={() => !animating && navigate(i, i > cur ? 'next' : 'prev')}
+            style={{ width: i === cur ? 24 : 8, height: 8, borderRadius: 4, background: i === cur ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)', border: 'none', cursor: 'pointer', transition: 'all 0.3s ease', padding: 0 }}
+            aria-label={`Slide ${i + 1}`}
           />
         ))}
+      </div>
+
+      {/* ── BARRE DE PROGRESSION ── */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.1)', zIndex: 3 }}>
+        <div style={{ height: '100%', background: 'rgba(255,255,255,0.75)', width: `${progress * 100}%`, transition: 'width 0.1s linear' }} />
       </div>
     </div>
   );
@@ -686,38 +852,8 @@ export default function KaiKaiApp() {
       {/* Menu principal */}
       {step === "menu" && (
         <>
+          <HeroSlider />
           <section className="mx-auto max-w-5xl px-4 py-10">
-            <div className="mb-10 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-6">
-              <div className="mb-6 text-center">
-                <div className="flex flex-wrap items-center justify-center gap-3 mb-3">
-                  <Badge type="halal" />
-                  <Badge type="healthy" />
-                </div>
-                <h2 className="mb-2 text-3xl font-bold">Bienvenue chez KaïKaï</h2>
-                <p className="text-white/70">Cuisine tahitienne authentique — Genève</p>
-              </div>
-              <HeroSlider />
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-white/60">
-                <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${RESTAURANT_INFO.coordinates.lat},${RESTAURANT_INFO.coordinates.lng}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:text-white transition-colors"
-                >
-                  <MapPin className="h-4 w-4" />{RESTAURANT_INFO.address}
-                </a>
-                <div className="flex items-center gap-2">
-                  <Bike className="h-4 w-4" />Livraison en {RESTAURANT_INFO.deliveryTime} min
-                </div>
-                <div className="flex items-center gap-2">
-                  <Percent className="h-4 w-4" />-10% en commandant ici
-                </div>
-              </div>
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/70">
-                💰 Commandez directement sur notre site et économisez 10% — sans commission de plateforme, juste vous et nous.🤙
-              </div>
-            </div>
-
             {/* Grille de plats */}
             <div className="grid gap-6 sm:grid-cols-2">
               <h3 id="section-entrees" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
