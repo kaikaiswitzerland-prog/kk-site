@@ -1,508 +1,271 @@
-// src/components/PalmLeaves.jsx — Feuilles botaniques fidèles au flyer KaïKaï
-//
-// 6 groupes de feuilles en position: fixed sur les bords, z-index: 1, pointer-events: none
-// Types : banana, broad, monstera, oval, palm, curved-palm
-
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useIslandMode } from '../context/IslandModeContext';
 
-// ── SVG : Feuilles de bananier allongées ────────────────────────────────────
-function BananaSVG({ id, colors: [c0, c1, c2] }) {
-  return (
-    <svg viewBox="0 0 200 320" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
-      <defs>
-        <linearGradient id={`b1-${id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor={c0} />
-          <stop offset="45%"  stopColor={c1} />
-          <stop offset="100%" stopColor={c0} stopOpacity="0.4" />
-        </linearGradient>
-        <linearGradient id={`b2-${id}`} x1="100%" y1="0%" x2="0%" y2="0%">
-          <stop offset="0%"   stopColor={c0} />
-          <stop offset="45%"  stopColor={c2} />
-          <stop offset="100%" stopColor={c1} stopOpacity="0.5" />
-        </linearGradient>
-      </defs>
-      {/* Feuille 1 — grande, vers la gauche-haut */}
-      <path
-        d="M 100,295 C 80,250 35,190 10,110 C 3,70 12,28 42,12 C 72,0 105,28 115,90 C 120,140 112,215 100,295 Z"
-        fill={`url(#b1-${id})`} opacity="0.92"
-      />
-      <path d="M 100,295 C 72,235 38,155 28,68"
-        fill="none" stroke={c2} strokeWidth="1.3" opacity="0.5" />
-      {/* veines secondaires gauche */}
-      {[200,160,120,85].map((y, i) => (
-        <line key={i} x1={105 - i*2} y1={y} x2={105 - i*2 - 30} y2={y - 10}
-          stroke={c2} strokeWidth="0.7" opacity="0.28" />
-      ))}
+// ─── SVG LEAF DEFINITIONS ───────────────────────────────────────────────────
+// Each leaf is a precise botanical SVG matching the KaïKaï flyer aesthetic:
+// dark jungle greens, detailed nervures, realistic proportions.
 
-      {/* Feuille 2 — vers la droite-haut */}
-      <path
-        d="M 100,295 C 120,250 165,190 190,110 C 197,70 188,28 158,12 C 128,0 95,28 85,90 C 80,140 88,215 100,295 Z"
-        fill={`url(#b2-${id})`} opacity="0.85"
-      />
-      <path d="M 100,295 C 128,235 162,155 172,68"
-        fill="none" stroke={c2} strokeWidth="1.3" opacity="0.5" />
-      {[200,160,120,85].map((y, i) => (
-        <line key={i} x1={95 + i*2} y1={y} x2={95 + i*2 + 30} y2={y - 10}
-          stroke={c2} strokeWidth="0.7" opacity="0.28" />
-      ))}
+// Feuille monstera (bas gauche) — grande feuille avec découpures caractéristiques
+const MonsteraLeaf = () => (
+  <svg viewBox="0 0 320 300" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:'100%'}}>
+    <defs>
+      <radialGradient id="mg1" cx="40%" cy="40%" r="60%">
+        <stop offset="0%" stopColor="#3a6a25"/>
+        <stop offset="50%" stopColor="#2a5018"/>
+        <stop offset="100%" stopColor="#0d1f0d"/>
+      </radialGradient>
+      <radialGradient id="mg2" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="#4a7a30"/>
+        <stop offset="100%" stopColor="#1a3a10"/>
+      </radialGradient>
+    </defs>
+    {/* Corps principal de la feuille monstera */}
+    <path d="M 60,280 C 40,250 20,200 30,150 C 40,100 70,60 110,40 C 150,20 200,25 240,50 C 280,75 300,120 290,165 C 280,210 250,240 210,255 C 185,265 160,260 140,248 C 160,235 175,215 170,195 C 165,175 145,168 125,175 C 105,182 95,200 100,220 C 90,230 75,255 60,280 Z" fill="url(#mg1)"/>
+    {/* Découpure 1 — côté droit haut */}
+    <path d="M 200,80 C 215,90 225,110 220,130 C 215,150 200,160 185,155 C 195,140 200,120 195,105 C 192,95 196,85 200,80 Z" fill="#0a1a08"/>
+    {/* Découpure 2 — côté droit bas */}
+    <path d="M 230,160 C 250,170 260,195 250,215 C 240,235 220,242 205,235 C 220,222 228,202 222,185 C 218,172 222,163 230,160 Z" fill="#0a1a08"/>
+    {/* Découpure 3 — bas gauche */}
+    <path d="M 110,220 C 95,215 85,200 90,185 C 95,170 110,165 122,172 C 112,180 108,195 114,208 C 118,218 116,222 110,220 Z" fill="#0a1a08"/>
+    {/* Nervure centrale */}
+    <path d="M 60,280 C 80,240 110,190 150,150 C 190,110 230,80 260,60" stroke="#1a3a10" strokeWidth="3" strokeLinecap="round" opacity="0.6"/>
+    {/* Nervures secondaires */}
+    <path d="M 100,230 C 120,210 145,200 170,195" stroke="#1a3a10" strokeWidth="1.5" opacity="0.4"/>
+    <path d="M 130,190 C 155,175 180,170 205,175" stroke="#1a3a10" strokeWidth="1.5" opacity="0.4"/>
+    <path d="M 160,155 C 185,145 210,140 235,145" stroke="#1a3a10" strokeWidth="1.5" opacity="0.4"/>
+    <path d="M 185,120 C 205,112 225,110 245,115" stroke="#1a3a10" strokeWidth="1.5" opacity="0.4"/>
+    {/* Reflet lumineux */}
+    <path d="M 80,240 C 100,200 140,160 180,130" stroke="#5a8a40" strokeWidth="2" opacity="0.25" strokeLinecap="round"/>
+  </svg>
+);
 
-      {/* Feuille 3 — centre, plus courte */}
-      <path
-        d="M 100,295 C 88,255 62,195 48,125 C 40,80 52,38 78,22 C 100,10 125,28 132,78 C 138,128 122,218 100,295 Z"
-        fill={`url(#b1-${id})`} opacity="0.7"
-      />
-      <path d="M 100,295 C 85,240 65,165 60,85"
-        fill="none" stroke={c2} strokeWidth="1" opacity="0.38" />
-    </svg>
-  );
-}
+// Feuilles palmier effilées (milieu droite) — folioles longues sur tige arquée
+const PalmFrond = ({ flip = false }) => (
+  <svg viewBox="0 0 380 280" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:'100%', transform: flip ? 'scaleX(-1)' : 'none'}}>
+    <defs>
+      <linearGradient id="pf1" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#8aaa20"/>
+        <stop offset="40%" stopColor="#5a7a15"/>
+        <stop offset="100%" stopColor="#2a4a08"/>
+      </linearGradient>
+      <linearGradient id="pf2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#6a8a18"/>
+        <stop offset="100%" stopColor="#1a3008"/>
+      </linearGradient>
+    </defs>
+    {/* Tige principale arquée */}
+    <path d="M 20,20 C 80,40 160,80 260,200 C 300,248 340,270 370,275" stroke="#3a5010" strokeWidth="4" strokeLinecap="round" fill="none"/>
+    {/* Folioles gauches — de la base vers le bout */}
+    <path d="M 45,32 C 30,10 15,0 5,5 C 15,15 25,28 35,42 Z" fill="url(#pf1)"/>
+    <path d="M 75,50 C 55,25 38,15 28,18 C 40,28 52,42 62,58 Z" fill="url(#pf1)"/>
+    <path d="M 108,72 C 85,45 68,35 58,38 C 70,48 84,64 96,80 Z" fill="url(#pf1)"/>
+    <path d="M 142,98 C 118,70 100,60 90,63 C 103,73 118,90 130,108 Z" fill="url(#pf2)"/>
+    <path d="M 178,130 C 152,102 133,92 123,95 C 136,106 152,124 163,142 Z" fill="url(#pf2)"/>
+    <path d="M 215,165 C 188,138 168,128 158,132 C 172,143 188,162 199,180 Z" fill="url(#pf2)"/>
+    <path d="M 252,200 C 225,174 205,164 195,168 C 209,180 225,198 236,216 Z" fill="url(#pf2)"/>
+    {/* Folioles droites */}
+    <path d="M 55,40 C 62,15 72,5 80,8 C 72,20 65,34 60,50 Z" fill="url(#pf1)"/>
+    <path d="M 88,60 C 96,33 108,22 116,25 C 107,38 100,53 94,70 Z" fill="url(#pf1)"/>
+    <path d="M 122,84 C 132,56 144,45 152,48 C 143,62 136,78 130,95 Z" fill="url(#pf2)"/>
+    <path d="M 158,112 C 168,83 182,72 190,75 C 180,89 173,106 167,123 Z" fill="url(#pf2)"/>
+    <path d="M 195,145 C 206,116 220,105 228,108 C 218,122 210,140 204,157 Z" fill="url(#pf2)"/>
+    <path d="M 233,180 C 244,152 258,141 266,144 C 256,158 248,176 242,193 Z" fill="url(#pf2)"/>
+  </svg>
+);
 
-// ── SVG : Feuilles larges pointues (tropical broad-leaf) ─────────────────────
-function BroadSVG({ id, colors: [c0, c1, c2] }) {
-  return (
-    <svg viewBox="0 0 240 290" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
-      <defs>
-        <linearGradient id={`br1-${id}`} x1="0%" y1="100%" x2="50%" y2="0%">
-          <stop offset="0%"   stopColor={c0} />
-          <stop offset="60%"  stopColor={c1} />
-          <stop offset="100%" stopColor={c2} stopOpacity="0.65" />
-        </linearGradient>
-        <linearGradient id={`br2-${id}`} x1="100%" y1="100%" x2="50%" y2="0%">
-          <stop offset="0%"   stopColor={c0} />
-          <stop offset="55%"  stopColor={c2} />
-          <stop offset="100%" stopColor={c1} stopOpacity="0.5" />
-        </linearGradient>
-      </defs>
-      {/* Feuille principale — large, nervures visibles */}
-      <path
-        d="M 120,270 C 70,248 12,198 5,135 C -2,75 28,22 72,8 C 108,-3 155,20 168,72 C 178,118 162,188 120,270 Z"
-        fill={`url(#br1-${id})`} opacity="0.92"
-      />
-      {/* Nervure centrale */}
-      <line x1="120" y1="270" x2="88" y2="8" stroke={c2} strokeWidth="1.6" opacity="0.52" />
-      {/* Nervures secondaires gauche */}
-      {[[108,215,48,185],[100,170,38,140],[93,125,38,95],[87,82,42,52]].map(([x1,y1,x2,y2], i) => (
-        <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={c2} strokeWidth="0.85" opacity="0.32" />
-      ))}
-      {/* Nervures secondaires droite */}
-      {[[130,215,185,188],[138,170,188,145],[144,125,185,98],[148,80,180,55]].map(([x1,y1,x2,y2], i) => (
-        <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={c2} strokeWidth="0.85" opacity="0.32" />
-      ))}
+// Feuilles bananier allongées (haut gauche/droite)
+const BananaLeaves = ({ flip = false }) => (
+  <svg viewBox="0 0 300 220" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:'100%', transform: flip ? 'scaleX(-1)' : 'none'}}>
+    <defs>
+      <linearGradient id="bl1" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#0d1f0d"/>
+        <stop offset="30%" stopColor="#1a3a1a"/>
+        <stop offset="70%" stopColor="#2a5a20"/>
+        <stop offset="100%" stopColor="#1a3a1a"/>
+      </linearGradient>
+      <linearGradient id="bl2" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#0a1808"/>
+        <stop offset="40%" stopColor="#1a3a15"/>
+        <stop offset="100%" stopColor="#0d2008"/>
+      </linearGradient>
+      <linearGradient id="bl3" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#162a12"/>
+        <stop offset="50%" stopColor="#3a6a28"/>
+        <stop offset="100%" stopColor="#1a3a15"/>
+      </linearGradient>
+    </defs>
+    {/* Feuille 1 — grande, légèrement inclinée */}
+    <path d="M 10,40 C 30,35 80,30 130,32 C 180,34 240,38 290,45 C 240,52 180,56 130,54 C 80,52 30,48 10,40 Z" fill="url(#bl1)" transform="rotate(-8, 150, 40)"/>
+    {/* Nervure centrale feuille 1 */}
+    <path d="M 10,40 C 100,38 200,40 290,45" stroke="#4a7a35" strokeWidth="1.5" opacity="0.5" transform="rotate(-8, 150, 40)"/>
 
-      {/* Feuille secondaire derrière */}
-      <path
-        d="M 120,270 C 158,245 210,192 225,130 C 238,72 215,20 175,6 C 145,-5 110,22 100,75 C 90,125 98,195 120,270 Z"
-        fill={`url(#br2-${id})`} opacity="0.68"
-      />
-      <line x1="120" y1="270" x2="155" y2="8" stroke={c2} strokeWidth="1.2" opacity="0.38" />
-      {[[132,215,188,190],[140,168,192,145],[148,122,188,96]].map(([x1,y1,x2,y2], i) => (
-        <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={c2} strokeWidth="0.7" opacity="0.25" />
-      ))}
-    </svg>
-  );
-}
+    {/* Feuille 2 — plus petite, dessus */}
+    <path d="M 5,15 C 25,10 70,8 115,10 C 160,12 210,15 255,20 C 210,25 160,27 115,25 C 70,23 25,20 5,15 Z" fill="url(#bl2)" transform="rotate(-15, 130, 15)"/>
+    <path d="M 5,15 C 85,13 175,15 255,20" stroke="#2a5020" strokeWidth="1" opacity="0.4" transform="rotate(-15, 130, 15)"/>
 
-// ── SVG : Monstera (grande feuille avec découpes caractéristiques) ───────────
-function MonsteraSVG({ id, colors: [c0, c1, c2] }) {
-  return (
-    <svg viewBox="0 0 220 255" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
-      <defs>
-        <linearGradient id={`m1-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%"   stopColor={c0} />
-          <stop offset="55%"  stopColor={c1} />
-          <stop offset="100%" stopColor={c2} stopOpacity="0.6" />
-        </linearGradient>
-      </defs>
-      {/*
-        Contour monstera avec 4 découpes profondes (lobes caractéristiques).
-        On trace le contour complet en incluant les encoches depuis le bord.
-      */}
-      <path
-        d={`
-          M 110,238
-          C 55,220 8,178 4,122
-          C 0,78 18,42 48,22
-          C 68,10 90,8 108,10
-          L 108,10
-          C 98,24 92,40 96,56
-          C 84,50 68,53 60,66
-          C 54,78 60,94 72,94
-          C 78,94 82,90 84,86
-          L 84,86
-          C 80,102 80,118 86,132
-          C 72,124 52,128 48,144
-          C 44,160 56,174 70,170
-          C 76,168 80,164 82,160
-          L 82,160
-          C 88,180 98,205 110,238
-          Z
-        `}
-        fill={`url(#m1-${id})`} opacity="0.92"
-      />
-      <path
-        d={`
-          M 110,238
-          C 165,220 212,178 216,122
-          C 220,78 202,42 172,22
-          C 152,10 130,8 112,10
-          L 112,10
-          C 122,24 128,40 124,56
-          C 136,50 152,53 160,66
-          C 166,78 160,94 148,94
-          C 142,94 138,90 136,86
-          L 136,86
-          C 140,102 140,118 134,132
-          C 148,124 168,128 172,144
-          C 176,160 164,174 150,170
-          C 144,168 140,164 138,160
-          L 138,160
-          C 132,180 122,205 110,238
-          Z
-        `}
-        fill={`url(#m1-${id})`} opacity="0.88"
-      />
-      {/* Trou oval caractéristique — gauche */}
-      <ellipse cx="78" cy="108" rx="10" ry="14"
-        fill={c0} opacity="0.85" />
-      {/* Trou oval — droite */}
-      <ellipse cx="142" cy="108" rx="10" ry="14"
-        fill={c0} opacity="0.85" />
-      {/* Trou haut gauche */}
-      <ellipse cx="82" cy="68" rx="7" ry="10"
-        fill={c0} opacity="0.8" />
-      {/* Trou haut droite */}
-      <ellipse cx="138" cy="68" rx="7" ry="10"
-        fill={c0} opacity="0.8" />
-      {/* Nervure centrale */}
-      <line x1="110" y1="238" x2="110" y2="10" stroke={c2} strokeWidth="1.5" opacity="0.48" />
-      {/* Nervures secondaires */}
-      {[[110,195,65,155],[110,155,68,115],[110,115,72,75],[110,75,80,40]].map(([x1,y1,x2,y2],i) => (
-        <g key={i}>
-          <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c2} strokeWidth="0.85" opacity="0.3" />
-          <line x1={x1} y1={y1} x2={220-x2} y2={y2} stroke={c2} strokeWidth="0.85" opacity="0.3" />
-        </g>
-      ))}
-    </svg>
-  );
-}
+    {/* Feuille 3 — en dessous, plus large */}
+    <path d="M 15,80 C 40,72 100,68 165,70 C 230,72 280,78 300,85 C 275,92 220,96 155,94 C 90,92 40,88 15,80 Z" fill="url(#bl3)" transform="rotate(-3, 155, 80)"/>
+    <path d="M 15,80 C 105,76 205,78 300,85" stroke="#3a6028" strokeWidth="1.5" opacity="0.4" transform="rotate(-3, 155, 80)"/>
 
-// ── SVG : Feuilles ovales ficus (nervures en éventail) ───────────────────────
-function OvalSVG({ id, colors: [c0, c1, c2] }) {
-  const veins = [55,75,95,115,135,155,175,195];
-  return (
-    <svg viewBox="0 0 260 240" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
-      <defs>
-        <linearGradient id={`o1-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%"   stopColor={c0} />
-          <stop offset="50%"  stopColor={c1} />
-          <stop offset="100%" stopColor={c0} stopOpacity="0.35" />
-        </linearGradient>
-        <linearGradient id={`o2-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%"   stopColor={c1} />
-          <stop offset="60%"  stopColor={c2} stopOpacity="0.65" />
-        </linearGradient>
-      </defs>
-      {/* Feuille ovale principale */}
-      <path
-        d="M 130,215 C 60,200 5,160 3,105 C 1,50 58,5 130,5 C 202,5 257,50 257,105 C 257,160 200,200 130,215 Z"
-        fill={`url(#o1-${id})`} opacity="0.92"
-      />
-      {/* Tige */}
-      <line x1="130" y1="215" x2="130" y2="238" stroke={c1} strokeWidth="2.2" opacity="0.7" />
-      {/* Nervure centrale */}
-      <line x1="130" y1="215" x2="130" y2="5" stroke={c2} strokeWidth="1.5" opacity="0.5" />
-      {/* Nervures en éventail */}
-      {veins.map((y, i) => {
-        const spread = (105 - Math.abs(y - 110)) * 0.58;
-        return (
-          <g key={i}>
-            <line x1="130" y1={y + 4} x2={130 - spread} y2={y}
-              stroke={c2} strokeWidth="0.75" opacity="0.3" />
-            <line x1="130" y1={y + 4} x2={130 + spread} y2={y}
-              stroke={c2} strokeWidth="0.75" opacity="0.3" />
-          </g>
-        );
-      })}
-      {/* Seconde feuille en retrait */}
-      <path
-        d="M 88,215 C 22,198 -18,155 -14,105 C -10,55 35,15 88,12 C 140,9 175,45 170,95 C 165,148 138,190 88,215 Z"
-        fill={`url(#o2-${id})`} opacity="0.48"
-      />
-      <line x1="88" y1="215" x2="72" y2="12" stroke={c2} strokeWidth="1" opacity="0.3" />
-    </svg>
-  );
-}
+    {/* Feuille 4 — la plus basse */}
+    <path d="M 20,115 C 50,108 110,105 175,107 C 240,109 285,114 295,120 C 268,126 215,129 150,127 C 85,125 42,120 20,115 Z" fill="url(#bl2)" transform="rotate(5, 155, 115)"/>
+  </svg>
+);
 
-// ── SVG : Palmier effilé (folioles sur tige arquée, jaune-vert) ──────────────
-function PalmSVG({ id, colors: [c0, c1, c2] }) {
-  const sx0=40, sy0=290, sx1=70, sy1=170, sx2=160, sy2=70, sx3=270, sy3=10;
-  const bezier = t => {
-    const mt = 1-t;
-    return {
-      x: mt**3*sx0 + 3*mt**2*t*sx1 + 3*mt*t**2*sx2 + t**3*sx3,
-      y: mt**3*sy0 + 3*mt**2*t*sy1 + 3*mt*t**2*sy2 + t**3*sy3,
-    };
-  };
-  const tangent = t => {
-    const mt = 1-t;
-    const dx = -3*mt**2*sx0 + 3*(mt**2-2*mt*t)*sx1 + 3*(2*mt*t-t**2)*sx2 + 3*t**2*sx3;
-    const dy = -3*mt**2*sy0 + 3*(mt**2-2*mt*t)*sy1 + 3*(2*mt*t-t**2)*sy2 + 3*t**2*sy3;
-    const l = Math.sqrt(dx*dx+dy*dy)||1;
-    return { x: dx/l, y: dy/l };
-  };
-  const folioles = [
-    { t:0.12, la:-82, ra:32, len:58 },
-    { t:0.22, la:-76, ra:28, len:72 },
-    { t:0.32, la:-70, ra:25, len:82 },
-    { t:0.42, la:-65, ra:22, len:85 },
-    { t:0.52, la:-60, ra:20, len:78 },
-    { t:0.62, la:-56, ra:18, len:65 },
-    { t:0.72, la:-52, ra:16, len:50 },
-    { t:0.84, la:-48, ra:14, len:32 },
-  ];
-  return (
-    <svg viewBox="0 0 310 300" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
-      <defs>
-        <linearGradient id={`p1-${id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor={c1} />
-          <stop offset="100%" stopColor={c2} stopOpacity="0.25" />
-        </linearGradient>
-        <linearGradient id={`p2-${id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor={c0} />
-          <stop offset="100%" stopColor={c1} stopOpacity="0.3" />
-        </linearGradient>
-        <linearGradient id={`ps-${id}`} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor={c0} />
-          <stop offset="100%" stopColor={c1} />
-        </linearGradient>
-      </defs>
-      {folioles.map(({ t, la, ra, len }, i) => {
-        const pt  = bezier(t);
-        const tan = tangent(t);
-        const ang = Math.atan2(tan.y, tan.x) * 180 / Math.PI;
-        const lRad = (ang + la) * Math.PI / 180;
-        const rRad = (ang + ra) * Math.PI / 180;
-        const sp = 10;
-        return (
-          <g key={i} opacity={0.78 + i * 0.025}>
-            <path
-              d={`M ${pt.x},${pt.y} Q ${pt.x + len*0.5*Math.cos(lRad) - sp*Math.sin(lRad)},${pt.y + len*0.5*Math.sin(lRad) + sp*Math.cos(lRad)} ${pt.x + len*Math.cos(lRad)},${pt.y + len*Math.sin(lRad)}`}
-              fill="none" stroke={`url(#p1-${id})`} strokeWidth="2.8" strokeLinecap="round"
-            />
-            <path
-              d={`M ${pt.x},${pt.y} Q ${pt.x + len*0.45*Math.cos(rRad) + sp*Math.sin(rRad)},${pt.y + len*0.45*Math.sin(rRad) - sp*Math.cos(rRad)} ${pt.x + len*0.7*Math.cos(rRad)},${pt.y + len*0.7*Math.sin(rRad)}`}
-              fill="none" stroke={`url(#p2-${id})`} strokeWidth="2.2" strokeLinecap="round"
-            />
-          </g>
-        );
-      })}
-      <path d={`M ${sx0},${sy0} C ${sx1},${sy1} ${sx2},${sy2} ${sx3},${sy3}`}
-        fill="none" stroke={`url(#ps-${id})`} strokeWidth="3.2" strokeLinecap="round" opacity="0.9" />
-    </svg>
-  );
-}
+// Feuilles larges pointues (milieu gauche)
+const BroadLeaves = ({ flip = false }) => (
+  <svg viewBox="0 0 280 320" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:'100%', transform: flip ? 'scaleX(-1)' : 'none'}}>
+    <defs>
+      <radialGradient id="brl1" cx="30%" cy="50%" r="70%">
+        <stop offset="0%" stopColor="#3a6a28"/>
+        <stop offset="60%" stopColor="#2a5020"/>
+        <stop offset="100%" stopColor="#0d1f0d"/>
+      </radialGradient>
+      <radialGradient id="brl2" cx="30%" cy="50%" r="70%">
+        <stop offset="0%" stopColor="#2a5820"/>
+        <stop offset="100%" stopColor="#0a1808"/>
+      </radialGradient>
+    </defs>
+    {/* Feuille principale large */}
+    <path d="M 10,160 C 10,100 40,50 90,25 C 115,12 145,10 165,20 C 155,50 130,75 120,105 C 110,135 120,160 140,175 C 115,195 80,205 50,200 C 30,195 15,180 10,160 Z" fill="url(#brl1)"/>
+    {/* Nervures */}
+    <path d="M 10,160 C 50,130 90,100 130,80" stroke="#4a7a35" strokeWidth="2" opacity="0.5" strokeLinecap="round"/>
+    <path d="M 25,175 C 60,155 95,140 125,130" stroke="#3a6028" strokeWidth="1.5" opacity="0.4" strokeLinecap="round"/>
+    <path d="M 20,145 C 55,128 88,115 115,105" stroke="#3a6028" strokeWidth="1" opacity="0.35" strokeLinecap="round"/>
 
-// ── SVG : Palmier courbé vers le bas ─────────────────────────────────────────
-function CurvedPalmSVG({ id, colors: [c0, c1, c2] }) {
-  const sx0=30, sy0=15, sx1=90, sy1=60, sx2=210, sy2=170, sx3=275, sy3=285;
-  const bezier = t => {
-    const mt = 1-t;
-    return {
-      x: mt**3*sx0 + 3*mt**2*t*sx1 + 3*mt*t**2*sx2 + t**3*sx3,
-      y: mt**3*sy0 + 3*mt**2*t*sy1 + 3*mt*t**2*sy2 + t**3*sy3,
-    };
-  };
-  const tangent = t => {
-    const mt = 1-t;
-    const dx = -3*mt**2*sx0 + 3*(mt**2-2*mt*t)*sx1 + 3*(2*mt*t-t**2)*sx2 + 3*t**2*sx3;
-    const dy = -3*mt**2*sy0 + 3*(mt**2-2*mt*t)*sy1 + 3*(2*mt*t-t**2)*sy2 + 3*t**2*sy3;
-    const l = Math.sqrt(dx*dx+dy*dy)||1;
-    return { x: dx/l, y: dy/l };
-  };
-  const folioles = [
-    { t:0.10, la:-78, ra:30, len:62 },
-    { t:0.22, la:-72, ra:26, len:78 },
-    { t:0.34, la:-66, ra:22, len:88 },
-    { t:0.46, la:-60, ra:18, len:84 },
-    { t:0.58, la:-55, ra:16, len:72 },
-    { t:0.70, la:-50, ra:14, len:56 },
-    { t:0.82, la:-46, ra:12, len:36 },
-  ];
-  return (
-    <svg viewBox="0 0 305 300" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
-      <defs>
-        <linearGradient id={`cp1-${id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor={c1} />
-          <stop offset="100%" stopColor={c2} stopOpacity="0.2" />
-        </linearGradient>
-        <linearGradient id={`cp2-${id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor={c0} />
-          <stop offset="100%" stopColor={c1} stopOpacity="0.35" />
-        </linearGradient>
-        <linearGradient id={`cps-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%"   stopColor={c0} />
-          <stop offset="100%" stopColor={c1} />
-        </linearGradient>
-      </defs>
-      {folioles.map(({ t, la, ra, len }, i) => {
-        const pt  = bezier(t);
-        const tan = tangent(t);
-        const ang = Math.atan2(tan.y, tan.x) * 180 / Math.PI;
-        const lRad = (ang + la) * Math.PI / 180;
-        const rRad = (ang + ra) * Math.PI / 180;
-        const sp = 11;
-        return (
-          <g key={i} opacity={0.78 + i * 0.03}>
-            <path
-              d={`M ${pt.x},${pt.y} Q ${pt.x + len*0.52*Math.cos(lRad) - sp*Math.sin(lRad)},${pt.y + len*0.52*Math.sin(lRad) + sp*Math.cos(lRad)} ${pt.x + len*Math.cos(lRad)},${pt.y + len*Math.sin(lRad)}`}
-              fill="none" stroke={`url(#cp1-${id})`} strokeWidth="2.8" strokeLinecap="round"
-            />
-            <path
-              d={`M ${pt.x},${pt.y} Q ${pt.x + len*0.42*Math.cos(rRad) + sp*Math.sin(rRad)},${pt.y + len*0.42*Math.sin(rRad) - sp*Math.cos(rRad)} ${pt.x + len*0.72*Math.cos(rRad)},${pt.y + len*0.72*Math.sin(rRad)}`}
-              fill="none" stroke={`url(#cp2-${id})`} strokeWidth="2.2" strokeLinecap="round"
-            />
-          </g>
-        );
-      })}
-      <path d={`M ${sx0},${sy0} C ${sx1},${sy1} ${sx2},${sy2} ${sx3},${sy3}`}
-        fill="none" stroke={`url(#cps-${id})`} strokeWidth="3.2" strokeLinecap="round" opacity="0.9" />
-    </svg>
-  );
-}
+    {/* Feuille deuxième */}
+    <path d="M 60,310 C 50,260 70,200 110,160 C 135,138 165,128 180,138 C 168,165 148,185 145,210 C 142,235 158,252 175,260 C 148,282 115,295 90,292 C 74,290 64,300 60,310 Z" fill="url(#brl2)"/>
+    <path d="M 60,310 C 80,270 115,230 148,200" stroke="#2a5020" strokeWidth="2" opacity="0.45" strokeLinecap="round"/>
 
-// ── Dispatcher ────────────────────────────────────────────────────────────────
-function LeafSVG({ type, id, colors }) {
-  switch (type) {
-    case 'banana':      return <BananaSVG      id={id} colors={colors} />;
-    case 'broad':       return <BroadSVG       id={id} colors={colors} />;
-    case 'monstera':    return <MonsteraSVG    id={id} colors={colors} />;
-    case 'oval':        return <OvalSVG        id={id} colors={colors} />;
-    case 'palm':        return <PalmSVG        id={id} colors={colors} />;
-    case 'curved-palm': return <CurvedPalmSVG  id={id} colors={colors} />;
-    default:            return null;
-  }
-}
+    {/* Feuille troisième — petite, en haut */}
+    <path d="M 90,60 C 100,30 130,10 160,5 C 175,2 190,8 195,20 C 180,35 162,45 150,60 C 138,75 138,92 145,105 C 125,108 105,100 95,85 C 90,76 89,68 90,60 Z" fill="url(#brl1)" opacity="0.85"/>
+    <path d="M 90,60 C 118,42 148,28 180,18" stroke="#4a7a35" strokeWidth="1.5" opacity="0.4" strokeLinecap="round"/>
+  </svg>
+);
 
-// ── Composant principal ───────────────────────────────────────────────────────
+// ─── COMPOSANT PRINCIPAL ────────────────────────────────────────────────────
 export default function PalmLeaves() {
   const { islandMode } = useIslandMode();
-  const [mounted,        setMounted]        = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const unmountTimerRef = useRef(null);
+  const [visible, setVisible] = useState(false);
+  const rafRef = useRef(null);
 
+  // Gestion apparition/disparition
   useEffect(() => {
-    clearTimeout(unmountTimerRef.current);
     if (islandMode) {
-      setMounted(true);
+      setTimeout(() => setVisible(true), 50);
     } else {
-      unmountTimerRef.current = setTimeout(() => setMounted(false), 900);
+      setVisible(false);
     }
-    return () => clearTimeout(unmountTimerRef.current);
   }, [islandMode]);
 
+  // Animation scroll
   useEffect(() => {
-    if (!mounted) return;
+    if (!islandMode) return;
     const handleScroll = () => {
-      const max = document.body.scrollHeight - window.innerHeight;
-      if (max <= 0) return;
-      setScrollProgress(Math.min(window.scrollY / max, 1));
+      const maxScroll = document.body.scrollHeight - window.innerHeight;
+      if (maxScroll <= 0) return;
+      const p = Math.min(window.scrollY / maxScroll, 1);
+      setScrollProgress(p);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [mounted]);
+  }, [islandMode]);
 
-  if (!mounted) return null;
+  if (!islandMode && !visible) return null;
 
-  const leaves = [
+  const scrollTransition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+
+  // Styles des 6 groupes de feuilles
+  const groups = [
+    // Haut gauche — bananier
     {
-      id: 'top-left',
-      style: { top: '-20px', left: '-30px', width: '280px' },
-      rotation: 15,
-      colors: ['#0d1f0d', '#1a3a1a', '#2a5a20'],
-      type: 'banana',
-      side: 'left',
+      key: 'top-left',
+      leaf: <BananaLeaves />,
+      baseStyle: {
+        position: 'fixed', top: '-30px', left: '-20px',
+        width: '320px', zIndex: 0, pointerEvents: 'none',
+      },
+      enterTranslate: '-80px, -40px',
+      scrollTransform: `rotate(${scrollProgress * 6}deg) translateY(${scrollProgress * 15}px)`,
     },
+    // Milieu gauche — feuilles larges
     {
-      id: 'mid-left',
-      style: { top: '35%', left: '-40px', width: '240px' },
-      rotation: 5,
-      colors: ['#1a3a1a', '#2a5a20', '#3a6a25'],
-      type: 'broad',
-      side: 'left',
+      key: 'mid-left',
+      leaf: <BroadLeaves />,
+      baseStyle: {
+        position: 'fixed', top: '30%', left: '-50px',
+        width: '260px', zIndex: 0, pointerEvents: 'none',
+      },
+      enterTranslate: '-100px, 0px',
+      scrollTransform: `rotate(${scrollProgress * 8}deg) translateY(${scrollProgress * -20}px)`,
     },
+    // Bas gauche — monstera
     {
-      id: 'bot-left',
-      style: { bottom: '5%', left: '-20px', width: '220px' },
-      rotation: -5,
-      colors: ['#2a5a20', '#3a6a25', '#4a7a30'],
-      type: 'monstera',
-      side: 'left',
+      key: 'bot-left',
+      leaf: <MonsteraLeaf />,
+      baseStyle: {
+        position: 'fixed', bottom: '0px', left: '-30px',
+        width: '280px', zIndex: 0, pointerEvents: 'none',
+      },
+      enterTranslate: '-80px, 60px',
+      scrollTransform: `rotate(${scrollProgress * -5}deg) translateY(${scrollProgress * -25}px)`,
     },
+    // Haut droite — bananier flippé
     {
-      id: 'top-right',
-      style: { top: '-10px', right: '-20px', width: '260px' },
-      rotation: -20,
-      colors: ['#0d1f0d', '#1e3d1e', '#2a5a20'],
-      type: 'oval',
-      side: 'right',
+      key: 'top-right',
+      leaf: <BananaLeaves flip />,
+      baseStyle: {
+        position: 'fixed', top: '-20px', right: '-20px',
+        width: '300px', zIndex: 0, pointerEvents: 'none',
+      },
+      enterTranslate: '80px, -40px',
+      scrollTransform: `rotate(${scrollProgress * -6}deg) translateY(${scrollProgress * 15}px)`,
     },
+    // Milieu droite — palmier effilé
     {
-      id: 'mid-right',
-      style: { top: '30%', right: '-30px', width: '300px' },
-      rotation: -10,
-      colors: ['#3a5a10', '#6a8a20', '#8aaa30'],
-      type: 'palm',
-      side: 'right',
+      key: 'mid-right',
+      leaf: <PalmFrond flip />,
+      baseStyle: {
+        position: 'fixed', top: '25%', right: '-40px',
+        width: '320px', zIndex: 0, pointerEvents: 'none',
+      },
+      enterTranslate: '100px, 0px',
+      scrollTransform: `rotate(${scrollProgress * -8}deg) translateY(${scrollProgress * -20}px)`,
     },
+    // Bas droite — palmier courbé
     {
-      id: 'bot-right',
-      style: { bottom: '8%', right: '-25px', width: '280px' },
-      rotation: 10,
-      colors: ['#2a4a10', '#4a6a15', '#6a8a20'],
-      type: 'curved-palm',
-      side: 'right',
+      key: 'bot-right',
+      leaf: <PalmFrond />,
+      baseStyle: {
+        position: 'fixed', bottom: '2%', right: '-30px',
+        width: '300px', zIndex: 0, pointerEvents: 'none',
+      },
+      enterTranslate: '80px, 60px',
+      scrollTransform: `rotate(${20 + scrollProgress * -5}deg) translateY(${scrollProgress * -25}px)`,
     },
   ];
 
-  const rotateAmt  = scrollProgress * 8;
-  const translateY = scrollProgress * 20;
-
   return (
     <>
-      {leaves.map(leaf => {
-        const isLeft = leaf.side === 'left';
-        const scrollT = isLeft
-          ? `rotate(${rotateAmt}deg) translateY(${-translateY}px)`
-          : `rotate(${-rotateAmt}deg) translateY(${-translateY}px)`;
-        const exitTX = isLeft ? '-120px' : '120px';
-
-        return (
-          <div
-            key={leaf.id}
-            style={{
-              position: 'fixed',
-              zIndex: 1,
-              pointerEvents: 'none',
-              height: 'auto',
-              ...leaf.style,
-              opacity:    islandMode ? 1 : 0,
-              transform:  islandMode
-                ? `translateX(0px) rotate(${leaf.rotation}deg) ${scrollT}`
-                : `translateX(${exitTX}) rotate(${leaf.rotation}deg)`,
-              transition: 'opacity 0.8s ease, transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-            }}
-          >
-            <LeafSVG type={leaf.type} id={leaf.id} colors={leaf.colors} />
-          </div>
-        );
-      })}
+      {groups.map((g, i) => (
+        <div
+          key={g.key}
+          style={{
+            ...g.baseStyle,
+            opacity: visible ? 0.92 : 0,
+            transform: visible
+              ? g.scrollTransform
+              : `translate(${g.enterTranslate})`,
+            transition: visible
+              ? `opacity 0.8s ease ${i * 80}ms, ${scrollTransition}`
+              : `opacity 0.5s ease, transform 0.5s ease`,
+            filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.6))',
+          }}
+        >
+          {g.leaf}
+        </div>
+      ))}
     </>
   );
 }
