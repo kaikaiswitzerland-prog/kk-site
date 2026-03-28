@@ -39,29 +39,31 @@ const globalStyles = `
   .cat-nav::-webkit-scrollbar { display: none; }
   .cat-nav { -ms-overflow-style: none; scrollbar-width: none; }
 
-  @keyframes rollOutToLeft  { 0% { transform: translateX(0%)    rotate(0deg);    opacity: 1; } 100% { transform: translateX(-120%) rotate(-180deg); opacity: 0; } }
-  @keyframes rollOutToRight { 0% { transform: translateX(0%)    rotate(0deg);    opacity: 1; } 100% { transform: translateX(120%)  rotate(180deg);  opacity: 0; } }
-  @keyframes rollInFromRight{ 0% { transform: translateX(120%)  rotate(180deg);  opacity: 0; } 60% { opacity: 1; } 100% { transform: translateX(0%) rotate(0deg); opacity: 1; } }
-  @keyframes rollInFromLeft { 0% { transform: translateX(-120%) rotate(-180deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: translateX(0%) rotate(0deg); opacity: 1; } }
+  @keyframes rollOutToLeft  { 0% { transform: translateX(0%) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translateX(-130%) rotate(-200deg) scale(0.85); opacity: 0; } }
+  @keyframes rollOutToRight { 0% { transform: translateX(0%) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translateX(130%) rotate(200deg) scale(0.85); opacity: 0; } }
+  @keyframes rollInFromRight{ 0% { transform: translateX(130%) rotate(200deg) scale(0.85); opacity: 0; } 55% { opacity: 1; } 80% { transform: translateX(-3%) rotate(-5deg) scale(1.02); } 100% { transform: translateX(0%) rotate(0deg) scale(1); opacity: 1; } }
+  @keyframes rollInFromLeft { 0% { transform: translateX(-130%) rotate(-200deg) scale(0.85); opacity: 0; } 55% { opacity: 1; } 80% { transform: translateX(3%) rotate(5deg) scale(1.02); } 100% { transform: translateX(0%) rotate(0deg) scale(1); opacity: 1; } }
 
-  @keyframes wordExitLeft       { from { transform: translateX(0);     } to { transform: translateX(140%);  } }
-  @keyframes wordExitRight      { from { transform: translateX(0);     } to { transform: translateX(-140%); } }
-  @keyframes wordEnterFromRight { from { transform: translateX(-140%); } to { transform: translateX(0);     } }
-  @keyframes wordEnterFromLeft  { from { transform: translateX(140%);  } to { transform: translateX(0);     } }
+  @keyframes wordExitLeft       { from { transform: translateX(0);      } to { transform: translateX(160vw);  } }
+  @keyframes wordExitRight      { from { transform: translateX(0);      } to { transform: translateX(-160vw); } }
+  @keyframes wordEnterFromRight { from { transform: translateX(-160vw); } to { transform: translateX(0);      } }
+  @keyframes wordEnterFromLeft  { from { transform: translateX(160vw);  } to { transform: translateX(0);      } }
 
-  @keyframes infoSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes decorAppear { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
-  @keyframes bowlHint    { 0% { transform: translateX(0) rotate(0deg); } 25% { transform: translateX(12px) rotate(3deg); } 75% { transform: translateX(-12px) rotate(-3deg); } 100% { transform: translateX(0) rotate(0deg); } }
+  @keyframes textUpCat  { from { opacity: 0; transform: translateY(8px);  } to { opacity: 1; transform: translateY(0); } }
+  @keyframes textUpName { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes textUpMeta { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-  @keyframes floatDecor0 { 0%,100% { transform: translateY(0px)  rotate(0deg); } 50% { transform: translateY(-6px)  rotate(4deg); } }
-  @keyframes floatDecor1 { 0%,100% { transform: translateY(0px)  rotate(0deg); } 50% { transform: translateY(-10px) rotate(6deg); } }
-  @keyframes floatDecor2 { 0%,100% { transform: translateY(0px)  rotate(0deg); } 50% { transform: translateY(-8px)  rotate(5deg); } }
+  @keyframes floatDecor0 { 0%,100% { transform: translateY(0px);  } 50% { transform: translateY(-7px);  } }
+  @keyframes floatDecor1 { 0%,100% { transform: translateY(0px);  } 50% { transform: translateY(-11px); } }
+  @keyframes floatDecor2 { 0%,100% { transform: translateY(0px);  } 50% { transform: translateY(-6px);  } }
+  @keyframes decorAppear { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
+  @keyframes bowlHint    { 0% { transform: translateX(0); } 25% { transform: translateX(14px) rotate(3deg); } 75% { transform: translateX(-14px) rotate(-3deg); } 100% { transform: translateX(0); } }
 
-  .hero-bowl { width: 55vmin; height: 55vmin; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 2px rgba(255,255,255,0.08), 0 20px 60px rgba(0,0,0,0.4), 0 40px 100px rgba(0,0,0,0.25); flex-shrink: 0; transform-origin: center center; will-change: transform; }
-  .hero-word { font-size: 18vw; font-weight: 900; color: rgba(255,255,255,0.18); text-transform: uppercase; letter-spacing: 0.05em; user-select: none; white-space: nowrap; line-height: 1; mix-blend-mode: overlay; will-change: transform; }
+  .hero-bowl { width: clamp(280px, 52vmin, 560px); height: clamp(280px, 52vmin, 560px); border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 0 80px rgba(0,0,0,0.5), 0 40px 120px rgba(0,0,0,0.4); flex-shrink: 0; transform-origin: center center; will-change: transform; }
+  .hero-word { font-size: clamp(120px, 22vw, 280px); font-family: 'Bebas Neue', Impact, 'Arial Black', sans-serif; font-weight: 900; color: rgba(255,255,255,0.13); text-transform: uppercase; letter-spacing: 0.04em; user-select: none; white-space: nowrap; line-height: 1; mix-blend-mode: overlay; will-change: transform; }
   @media (max-width: 768px) {
-    .hero-bowl { width: 80vw; height: 80vw; }
-    .hero-word  { font-size: 22vw; }
+    .hero-bowl { width: min(78vw, 340px); height: min(78vw, 340px); }
+    .hero-word  { font-size: max(26vw, 80px); }
   }
   @media (prefers-reduced-motion: reduce) {
     .hero-bowl, .hero-word { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -366,14 +368,22 @@ function getNextOpeningTime() {
 
 function HeroSlider() {
   const SLIDES = [
-    { name: "Tahiti",           category: "POISSON", price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",    bgColor: "#1a3a2a", image: "/froid-tahitien.jpg",  decorElements: ["🐟", "🌿", "🍋"] },
-    { name: "Hawaï",            category: "POISSON", price: "22.90 CHF", description: "Thon rouge, mangue, ananas, sauce sésame",          bgColor: "#c47a2a", image: "/froid-kaikai.jpg",   decorElements: ["🍍", "🥭", "🌺"] },
-    { name: "Chao Men",         category: "CHAUD",   price: "18.90 CHF", description: "Nouilles sautées, wok de porc, sauce crevettes",    bgColor: "#8b2a1a", image: "/chaud-chaomen.jpg",  decorElements: ["🍜", "🥢", "🌶️"] },
-    { name: "Kai Fan",          category: "CHAUD",   price: "18.90 CHF", description: "Riz sauté, wok de porc, sauce champignons",         bgColor: "#2a3a1a", image: "/chaud-kaifan.jpg",   decorElements: ["🍚", "🥬", "🍄"] },
-    { name: "Coulant Chocolat", category: "DESSERT", price: "9.90 CHF",  description: "Coulant fondant, servi chaud",                      bgColor: "#3a1a0a", image: "/dessert-coulant.jpg", decorElements: ["🍫", "🍮", "✨"] },
+    { name: "Tahiti",           category: "POISSON", price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",    bgColor: "#0e2a1a", accentColor: "#2a6644", image: "/froid-tahitien.jpg",  decorElements: ["🐟", "🌿", "🍋"] },
+    { name: "Hawaï",            category: "POISSON", price: "22.90 CHF", description: "Thon rouge, mangue, ananas, sauce sésame",          bgColor: "#2a1800", accentColor: "#c47a2a", image: "/froid-kaikai.jpg",   decorElements: ["🍍", "🥭", "🌺"] },
+    { name: "Manoa",            category: "POISSON", price: "24.90 CHF", description: "Thon rouge, sauce arachide, guacamole maison",      bgColor: "#1a1200", accentColor: "#a0832a", image: "/froid-mokai.jpg",    decorElements: ["🥑", "🌾", "🍋"] },
+    { name: "Chao Men",         category: "CHAUD",   price: "18.90 CHF", description: "Nouilles sautées, wok de porc, sauce crevettes",    bgColor: "#200a0a", accentColor: "#8b2a1a", image: "/chaud-chaomen.jpg",  decorElements: ["🍜", "🥢", "🌶️"] },
+    { name: "Kai Fan",          category: "CHAUD",   price: "18.90 CHF", description: "Riz sauté, wok de porc, sauce champignons",         bgColor: "#0a1a0a", accentColor: "#2a5a1a", image: "/chaud-kaifan.jpg",   decorElements: ["🍚", "🥬", "🍄"] },
+    { name: "Coulant Chocolat", category: "DESSERT", price: "9.90 CHF",  description: "Coulant fondant, servi chaud",                      bgColor: "#100a00", accentColor: "#5a2a00", image: "/dessert-coulant.jpg", decorElements: ["🍫", "🍮", "✨"] },
   ];
   const N = SLIDES.length;
   const SP = 'cubic-bezier(0.34,1.56,0.64,1)';
+  const DECOR_POS = [
+    { top: '30%',  left: '8%'  },
+    { top: '20%',  right: '9%' },
+    { top: '58%',  right: '7%' },
+  ];
+  const FLOAT_DUR = [3.1, 3.8, 4.4];
+  const FLOAT_DEL = [0, 0.6, 1.2];
 
   // ── core state
   const [cur,       setCur]         = React.useState(0);
@@ -477,7 +487,7 @@ function HeroSlider() {
 
   const onDragMove = (e) => {
     if (!isDraggingRef.current) return;
-    const delta = (getClientX(e) - dragStartX.current) * 0.7;
+    const delta = (getClientX(e) - dragStartX.current) * 0.65;
     dragXRef.current = delta;
     setDragX(delta);
   };
@@ -489,7 +499,8 @@ function HeroSlider() {
     const dx = dragXRef.current;
     dragXRef.current = 0;
     setDragX(0);
-    if (Math.abs(dx) >= 80) {
+    const threshold = window.innerWidth <= 768 ? 60 : 80;
+    if (Math.abs(dx) >= threshold) {
       setAfterDragPaused(true);
       if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
       pauseTimerRef.current = setTimeout(() => { setAfterDragPaused(false); pauseTimerRef.current = null; }, 8000);
@@ -507,10 +518,10 @@ function HeroSlider() {
     if (!heroRef.current) return;
     const rect = heroRef.current.getBoundingClientRect();
     setTilt({
-      x: ((e.clientY - rect.top)  / rect.height - 0.5) * -6,
-      y: ((e.clientX - rect.left) / rect.width  - 0.5) *  8,
+      x: ((e.clientY - rect.top)  / rect.height - 0.5) * -5,
+      y: ((e.clientX - rect.left) / rect.width  - 0.5) *  7,
     });
-    setTiltTrans('transform 0.1s ease-out');
+    setTiltTrans('transform 0.08s ease-out');
   };
 
   const handleMouseMove = (e) => { onDragMove(e); onTiltMove(e); };
@@ -534,10 +545,11 @@ function HeroSlider() {
   const displaySlide = animating && nextSlide ? nextSlide : slide;
   const bgColor      = animating && nextSlide ? nextSlide.bgColor : slide.bgColor;
 
+  const EZ = 'cubic-bezier(0.16,1,0.3,1)';
   const bowlExitAnim  = dir === 'next' ? `rollOutToLeft 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards`  : `rollOutToRight 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards`;
-  const bowlEnterAnim = dir === 'next' ? `rollInFromRight 0.6s ${SP} 50ms forwards`                       : `rollInFromLeft 0.6s ${SP} 50ms forwards`;
-  const wordExitAnim  = dir === 'next' ? 'wordExitLeft 0.7s ease-out forwards'                            : 'wordExitRight 0.7s ease-out forwards';
-  const wordEnterAnim = dir === 'next' ? 'wordEnterFromRight 0.7s ease-out forwards'                      : 'wordEnterFromLeft 0.7s ease-out forwards';
+  const bowlEnterAnim = dir === 'next' ? `rollInFromRight 0.65s ${SP} 60ms forwards`                      : `rollInFromLeft 0.65s ${SP} 60ms forwards`;
+  const wordExitAnim  = dir === 'next' ? `wordExitLeft 0.75s ${EZ} forwards`                              : `wordExitRight 0.75s ${EZ} forwards`;
+  const wordEnterAnim = dir === 'next' ? `wordEnterFromRight 0.75s ${EZ} forwards`                        : `wordEnterFromLeft 0.75s ${EZ} forwards`;
 
   // Bowl dynamic style (drag / spring / hint / idle)
   let bowlStyle;
@@ -556,76 +568,98 @@ function HeroSlider() {
   return (
     <div
       ref={heroRef}
-      style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', backgroundColor: bgColor, transition: 'background-color 0.5s ease-in-out', userSelect: 'none', touchAction: 'pan-y' }}
+      style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', backgroundColor: bgColor, transition: 'background-color 0.6s ease-in-out', userSelect: 'none', touchAction: 'pan-y' }}
       onMouseEnter={() => setHoverPaused(true)}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
       onMouseUp={onDragEnd}
     >
-      {/* ── 3D TILT CONTAINER ── */}
-      <div style={{ position: 'absolute', inset: 0, transform: `perspective(1200px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, transition: tiltTrans, transformStyle: 'preserve-3d' }}>
+      {/* ── COUCHE 1 : FOND (derrière tout, z:1) — géré par backgroundColor du parent ── */}
 
-        {/* EXITING slide */}
+      {/* ── 3D TILT CONTAINER ── */}
+      <div style={{ position: 'absolute', inset: 0, transform: `perspective(1400px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, transition: tiltTrans, transformStyle: 'preserve-3d' }}>
+
+        {/* COUCHE 2 : MOT GÉANT EXITING */}
         {animating && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 1 }}>
-              <span className="hero-word" style={{ animation: wordExitAnim }}>{slide.category}</span>
-            </div>
-            <div style={{ position: 'relative', zIndex: 2, transform: 'translateZ(60px)' }}>
-              <div className="hero-bowl" style={{ animation: bowlExitAnim }}>
-                <img src={slide.image} alt={slide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
-              </div>
-            </div>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 2, transform: 'translateZ(18px)', pointerEvents: 'none' }}>
+            <span className="hero-word" style={{ animation: wordExitAnim }}>{slide.category}</span>
           </div>
         )}
+        {/* COUCHE 2 : MOT GÉANT ENTERING/IDLE */}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 2, transform: 'translateZ(18px)', pointerEvents: 'none' }}>
+          <span className="hero-word" style={animating ? { animation: wordEnterAnim } : {}}>
+            {displaySlide.category}
+          </span>
+        </div>
 
-        {/* ENTERING / IDLE slide — drag listeners here */}
+        {/* COUCHE 3 : BOL — drag listeners ici */}
         <div
-          style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'pan-y' }}
+          style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3, transform: 'translateZ(55px)', touchAction: 'pan-y' }}
           onMouseDown={onDragStart}
           onTouchStart={onDragStart}
           onTouchMove={onDragMove}
           onTouchEnd={onDragEnd}
         >
-          {/* Mot géant — z:1, depth 20px */}
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 1, transform: 'translateZ(20px)', pointerEvents: 'none' }}>
-            <span className="hero-word" style={animating ? { animation: wordEnterAnim } : {}}>
-              {displaySlide.category}
-            </span>
-          </div>
-
-          {/* Bol — z:2, depth 60px */}
-          <div style={{ position: 'relative', zIndex: 2, transform: 'translateZ(60px)' }}>
-            <div className="hero-bowl" style={bowlStyle}>
-              <img src={displaySlide.image} alt={displaySlide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+          {/* Bol sortant */}
+          {animating && (
+            <div className="hero-bowl" style={{ animation: bowlExitAnim, position: 'absolute' }}>
+              <img src={slide.image} alt={slide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
             </div>
+          )}
+          {/* Bol entrant / idle */}
+          <div className="hero-bowl" style={bowlStyle}>
+            <img src={displaySlide.image} alt={displaySlide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
           </div>
+        </div>
 
+        {/* COUCHE 4 : DÉCORATIFS FLOTTANTS */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 4, transform: 'translateZ(85px)', pointerEvents: 'none' }}>
+          {displaySlide.decorElements.map((emoji, i) => (
+            <div
+              key={`${animating ? nxt : cur}-d${i}`}
+              style={{
+                position: 'absolute',
+                ...DECOR_POS[i],
+                fontSize: 'clamp(1.4rem, 2.6vmin, 2rem)',
+                animation: `floatDecor${i} ${FLOAT_DUR[i]}s ease-in-out ${FLOAT_DEL[i]}s infinite, decorAppear 0.52s cubic-bezier(0.25,0.46,0.45,0.94) ${i * 180}ms both`,
+                filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.35))',
+                userSelect: 'none',
+              }}
+            >{emoji}</div>
+          ))}
         </div>
       </div>
 
-      {/* ── INFO bas gauche — z:10 ── */}
+      {/* ── COUCHE 5 : TEXTE NOM + ACCROCHE (bas gauche, z:5) ── */}
       <div
         key={`info-${animating ? nxt : cur}`}
-        style={{ position: 'absolute', bottom: '12%', left: '5%', maxWidth: '52%', animation: 'infoSlideUp 0.4s ease-out 0.3s both', pointerEvents: 'none', zIndex: 10 }}
+        style={{ position: 'absolute', bottom: '12%', left: '5%', maxWidth: '55%', pointerEvents: 'none', zIndex: 5, transform: 'translateZ(35px)' }}
       >
-        <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', margin: '0 0 0.45rem' }}>{displaySlide.category}</p>
-        <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, color: '#fff', lineHeight: 1.05, margin: '0 0 0.35rem' }}>{displaySlide.name}</h2>
-        <p style={{ fontSize: 'clamp(1rem, 2.2vw, 1.4rem)', fontWeight: 700, color: 'rgba(255,255,255,0.85)', margin: '0 0 0.5rem' }}>{displaySlide.price}</p>
-        <p style={{ fontSize: 'clamp(0.78rem, 1.4vw, 0.9rem)', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, margin: 0 }}>{displaySlide.description}</p>
+        <p style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', margin: '0 0 0.4rem', animation: 'textUpCat 0.35s ease-out 0.28s both' }}>
+          {displaySlide.category}
+        </p>
+        <h2 style={{ fontSize: 'clamp(42px, 6vw, 80px)', fontFamily: "'Bebas Neue', Impact, 'Arial Black', sans-serif", fontWeight: 900, color: '#fff', lineHeight: 1, margin: '0 0 0.3rem', animation: 'textUpName 0.4s ease-out 0.32s both', letterSpacing: '0.02em' }}>
+          {displaySlide.name}
+        </h2>
+        <p style={{ fontSize: 'clamp(0.95rem, 2vw, 1.3rem)', fontWeight: 500, color: 'rgba(255,255,255,0.9)', margin: '0 0 0.4rem', animation: 'textUpMeta 0.38s ease-out 0.38s both' }}>
+          {displaySlide.price}
+        </p>
+        <p style={{ fontSize: 'clamp(0.75rem, 1.3vw, 0.88rem)', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, margin: 0, animation: 'textUpMeta 0.38s ease-out 0.42s both' }}>
+          {displaySlide.description}
+        </p>
       </div>
 
-      {/* ── BARRE SEGMENTÉE ── */}
-      <div style={{ position: 'absolute', bottom: '4%', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 10, pointerEvents: 'none' }}>
+      {/* ── COUCHE 6 : BARRE SEGMENTÉE (z:6) ── */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, display: 'flex', zIndex: 6, pointerEvents: 'none' }}>
         {SLIDES.map((_, i) => (
-          <div key={i} style={{ width: 40, height: 2, borderRadius: 1, background: 'rgba(255,255,255,0.2)', overflow: 'hidden', transition: 'opacity 0.3s', opacity: i === cur ? 1 : 0.5 }}>
-            <div style={{ height: '100%', background: 'rgba(255,255,255,0.9)', width: i === cur ? `${progress * 100}%` : i < cur ? '100%' : '0%', transition: i === cur ? 'width 0.1s linear' : 'width 0.3s ease' }} />
+          <div key={i} style={{ flex: 1, height: '100%', background: 'rgba(255,255,255,0.18)', overflow: 'hidden', transition: 'opacity 0.3s', opacity: i === cur ? 1 : 0.7, marginRight: i < N - 1 ? 2 : 0 }}>
+            <div style={{ height: '100%', background: 'rgba(255,255,255,0.85)', width: i === cur ? `${progress * 100}%` : i < cur ? '100%' : '0%', transition: i === cur ? 'width 0.1s linear' : 'width 0.3s ease' }} />
           </div>
         ))}
       </div>
 
       {/* ── DÉGRADÉ hero → menu ── */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, background: 'linear-gradient(to bottom, transparent, #000)', zIndex: 5, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 140, background: 'linear-gradient(to bottom, transparent, #000)', zIndex: 5, pointerEvents: 'none' }} />
     </div>
   );
 }
@@ -736,10 +770,10 @@ function CategoryNav({ activeCategory }) {
           gap: "8px",
           overflowX: "auto",
           padding: scrolled ? "5px 16px" : "8px 16px",
-          background: scrolled ? "rgba(0,0,0,0.35)" : "transparent",
-          backdropFilter: scrolled ? "blur(14px)" : "none",
-          WebkitBackdropFilter: scrolled ? "blur(14px)" : "none",
-          borderBottom: scrolled ? "1px solid rgba(255,255,255,0.06)" : "none",
+          background: "transparent",
+          backdropFilter: "none",
+          WebkitBackdropFilter: "none",
+          borderBottom: "none",
           transition: "top 0.25s ease, padding 0.2s ease, background 0.25s ease",
         }}
       >
@@ -758,9 +792,9 @@ function CategoryNav({ activeCategory }) {
                 fontSize: scrolled ? "13px" : "15px",
                 fontWeight: 500,
                 transition: "all 0.2s ease",
-                background: isActive ? "white" : "rgba(0,0,0,0.18)",
-                color: isActive ? "black" : "rgba(255,255,255,0.85)",
-                border: isActive ? "none" : "1px solid rgba(255,255,255,0.22)",
+                background: isActive ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.10)",
+                color: isActive ? "#ffffff" : "rgba(255,255,255,0.85)",
+                border: isActive ? "1px solid rgba(255,255,255,0.45)" : "1px solid rgba(255,255,255,0.20)",
                 cursor: "pointer",
               }}
             >
