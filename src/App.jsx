@@ -374,9 +374,6 @@ function HeroSlider() {
   ];
   const N = SLIDES.length;
   const SP = 'cubic-bezier(0.34,1.56,0.64,1)';
-  const DECOR_POS = [{ top: '18%', right: '14%' }, { top: '60%', right: '7%' }, { top: '40%', right: '24%' }];
-  const FLOAT_KF   = ['floatDecor0', 'floatDecor1', 'floatDecor2'];
-  const FLOAT_DUR  = [2.8, 3.4, 4.1];
 
   // ── core state
   const [cur,       setCur]         = React.useState(0);
@@ -584,7 +581,7 @@ function HeroSlider() {
 
         {/* ENTERING / IDLE slide — drag listeners here */}
         <div
-          style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none' }}
+          style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'pan-y' }}
           onMouseDown={onDragStart}
           onTouchStart={onDragStart}
           onTouchMove={onDragMove}
@@ -604,21 +601,6 @@ function HeroSlider() {
             </div>
           </div>
 
-          {/* Décos — z:3, depth 90px */}
-          {displaySlide.decorElements.map((emoji, i) => (
-            <div
-              key={`${animating ? nxt : cur}-d${i}`}
-              style={{
-                position: 'absolute', ...DECOR_POS[i],
-                fontSize: 'clamp(1.4rem, 2.8vmin, 2.2rem)',
-                animation: `${FLOAT_KF[i]} ${FLOAT_DUR[i]}s ease-in-out ${i * 0.7}s infinite, decorAppear 0.5s cubic-bezier(0.25,0.46,0.45,0.94) ${150 + i * 80}ms both`,
-                userSelect: 'none', zIndex: 3,
-                transform: 'translateZ(90px)',
-                filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
-                pointerEvents: 'none',
-              }}
-            >{emoji}</div>
-          ))}
         </div>
       </div>
 
