@@ -964,15 +964,15 @@ export default function KaiKaiApp() {
       <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+        <div className="mx-auto grid max-w-5xl grid-cols-3 items-center px-4 py-3">
           <div className="flex items-center gap-3">
             {logoVisible && <img src={LOGO_SRC} alt="KaïKaï" className="h-8" style={{ mixBlendMode: 'screen' }} onError={() => setLogoVisible(false)} />}
-            <div>
-              <h1 className="text-xl font-semibold">KaïKaï</h1>
-              <OpenStatus />
-            </div>
+            <h1 className="text-xl font-semibold">KaïKaï</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex justify-center">
+            <OpenStatus />
+          </div>
+          <div className="flex items-center justify-end gap-2">
             <a 
               href={`tel:${RESTAURANT_INFO.phone}`}
               className="rounded-2xl border border-white/20 p-2.5 hover:bg-white/10 transition-all"
