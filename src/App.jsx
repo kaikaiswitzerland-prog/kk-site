@@ -366,6 +366,40 @@ function getNextOpeningTime() {
   }
 }
 
+function CurvedHeroWord({ text, curveY, animStyle, pathId }) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const midY = vh / 2;
+  const d = `M 0,${midY} Q ${vw / 2},${midY + curveY} ${vw},${midY}`;
+  const isMobile = vw <= 768;
+  return (
+    <svg
+      style={{
+        position: 'absolute', inset: 0, width: '100%', height: '100%',
+        overflow: 'visible', pointerEvents: 'none', willChange: 'transform',
+        ...animStyle,
+      }}
+    >
+      <defs><path id={pathId} d={d} fill="none" /></defs>
+      <text
+        fill="rgba(255,255,255,0.13)"
+        textAnchor="middle"
+        style={{
+          fontSize: isMobile ? 'max(26vw, 80px)' : 'clamp(120px, 22vw, 280px)',
+          fontFamily: "'Bebas Neue', Impact, 'Arial Black', sans-serif",
+          fontWeight: 900,
+          textTransform: 'uppercase',
+          letterSpacing: '0.35em',
+          userSelect: 'none',
+          mixBlendMode: 'overlay',
+        }}
+      >
+        <textPath href={`#${pathId}`} startOffset="50%">{text}</textPath>
+      </text>
+    </svg>
+  );
+}
+
 function HeroSlider() {
   const SLIDES = [
     { name: "Tahiti",           category: "POISSON", price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",  bgColor: "#0e2a1a", accentColor: "#2a6644", image: "/froid-tahitien.jpg"  },
@@ -615,15 +649,18 @@ function HeroSlider() {
 
         {/* COUCHE 2 : MOT GÉANT EXITING */}
         {animating && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 2, transform: 'translateZ(18px)', pointerEvents: 'none' }}>
-            <span className="hero-word" style={{ animation: wordExitAnim }}>{slide.category}</span>
+          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 2, transform: 'translateZ(18px)', pointerEvents: 'none' }}>
+            <CurvedHeroWord text={slide.category} curveY={0} animStyle={{ animation: wordExitAnim }} pathId="hero-word-exit" />
           </div>
         )}
         {/* COUCHE 2 : MOT GÉANT ENTERING/IDLE */}
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 2, transform: 'translateZ(18px)', pointerEvents: 'none' }}>
-          <span className="hero-word" style={animating ? { animation: wordEnterAnim } : {}}>
-            {displaySlide.category}
-          </span>
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 2, transform: 'translateZ(18px)', pointerEvents: 'none' }}>
+          <CurvedHeroWord
+            text={displaySlide.category}
+            curveY={dragX * 0.3}
+            animStyle={animating ? { animation: wordEnterAnim } : {}}
+            pathId="hero-word-main"
+          />
         </div>
 
         {/* COUCHE 3 : BOL — drag listeners ici */}
