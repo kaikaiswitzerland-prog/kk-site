@@ -5,13 +5,24 @@
 //   - Si non connecté + clic pour activer → ouvre AuthModal
 //   - Si connecté → bascule immédiatement, état persisté dans localStorage
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useIslandMode } from '../context/IslandModeContext';
 import AuthModal from './AuthModal';
 
 export default function IslandModeToggle() {
   const { islandMode, toggleIslandMode, user } = useIslandMode();
-  const [showAuth, setShowAuth] = useState(false);
+  const [showAuth,    setShowAuth]    = useState(false);
+  const [successMsg,  setSuccessMsg]  = useState(false);
+  const prevMode = useRef(islandMode);
+
+  useEffect(() => {
+    if (!prevMode.current && islandMode) {
+      setSuccessMsg(true);
+      const t = setTimeout(() => setSuccessMsg(false), 2000);
+      return () => clearTimeout(t);
+    }
+    prevMode.current = islandMode;
+  }, [islandMode]);
 
   const handleToggle = () => {
     if (!user && !islandMode) {
@@ -89,17 +100,16 @@ export default function IslandModeToggle() {
           </div>
         </div>
 
-        {/* Sous-titre */}
-        <span
-          style={{
-            fontSize: '0.72rem',
-            color: 'rgba(255,255,255,0.35)',
-            fontStyle: 'italic',
-            paddingLeft: '4px',
-          }}
-        >
-          Activez pour débloquer les avantages membres
-        </span>
+        {/* Message de succès */}
+        {successMsg ? (
+          <span style={{ fontSize: '0.82rem', color: '#4ade80', fontWeight: 600, paddingLeft: '4px', transition: 'opacity 0.3s' }}>
+            Bienvenue dans le Mode Île 🌴
+          </span>
+        ) : (
+          <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', paddingLeft: '4px' }}>
+            Activez pour débloquer les avantages membres
+          </span>
+        )}
       </div>
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}

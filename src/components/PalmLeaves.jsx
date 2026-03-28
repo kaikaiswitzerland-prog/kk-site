@@ -190,9 +190,6 @@ export default function PalmLeaves() {
   const rotAmp   = scrollProgress * 8;   // ±8deg
   const transAmp = scrollProgress * 30;  // ±30px (translateY vers le haut)
 
-  // Transition CSS partagée
-  const transition = 'opacity 0.8s ease, transform 0.8s ease';
-
   // Définition des 4 feuilles
   const leaves = [
     {
@@ -202,12 +199,9 @@ export default function PalmLeaves() {
         left:   '-50px',
         width:  '220px',
         height: '400px',
-        opacity:   islandMode ? 0.88 : 0,
-        transform: islandMode
-          ? `rotate(${-18 + rotAmp}deg) translateY(${-transAmp}px)`
-          : 'rotate(-18deg) translateX(-120px)',
+        opacity: 1,
+        transform: `rotate(${-18 + rotAmp}deg) translateY(${-transAmp}px)`,
         transformOrigin: 'bottom left',
-        transition,
       },
       leafId: 'a',
       flip:   false,
@@ -219,12 +213,9 @@ export default function PalmLeaves() {
         left:   '-25px',
         width:  '170px',
         height: '320px',
-        opacity:   islandMode ? 0.65 : 0,
-        transform: islandMode
-          ? `rotate(${-32 + rotAmp * 0.7}deg) translateY(${-transAmp * 0.8}px)`
-          : 'rotate(-32deg) translateX(-120px)',
+        opacity: 1,
+        transform: `rotate(${-32 + rotAmp * 0.7}deg) translateY(${-transAmp * 0.8}px)`,
         transformOrigin: 'bottom left',
-        transition: `opacity 0.8s ease 0.08s, transform 0.8s ease 0.08s`,
       },
       leafId: 'b',
       flip:   false,
@@ -236,12 +227,9 @@ export default function PalmLeaves() {
         right:  '-50px',
         width:  '220px',
         height: '400px',
-        opacity:   islandMode ? 0.88 : 0,
-        transform: islandMode
-          ? `rotate(${18 - rotAmp}deg) translateY(${-transAmp}px)`
-          : 'rotate(18deg) translateX(120px)',
+        opacity: 1,
+        transform: `rotate(${18 - rotAmp}deg) translateY(${-transAmp}px)`,
         transformOrigin: 'bottom right',
-        transition,
       },
       leafId: 'c',
       flip:   true,
@@ -253,12 +241,9 @@ export default function PalmLeaves() {
         right:  '-25px',
         width:  '170px',
         height: '320px',
-        opacity:   islandMode ? 0.65 : 0,
-        transform: islandMode
-          ? `rotate(${32 - rotAmp * 0.7}deg) translateY(${-transAmp * 0.8}px)`
-          : 'rotate(32deg) translateX(120px)',
+        opacity: 1,
+        transform: `rotate(${32 - rotAmp * 0.7}deg) translateY(${-transAmp * 0.8}px)`,
         transformOrigin: 'bottom right',
-        transition: `opacity 0.8s ease 0.08s, transform 0.8s ease 0.08s`,
       },
       leafId: 'd',
       flip:   true,
@@ -272,7 +257,7 @@ export default function PalmLeaves() {
           key={leaf.leafId}
           style={{
             position: 'fixed',
-            zIndex: -1,
+            zIndex: 1,
             pointerEvents: 'none',
             ...leaf.style,
           }}
