@@ -39,29 +39,32 @@ const globalStyles = `
   .cat-nav::-webkit-scrollbar { display: none; }
   .cat-nav { -ms-overflow-style: none; scrollbar-width: none; }
 
-  @keyframes bowlExitLeft  { from { transform: translateX(0) rotate(0deg);     opacity: 1; } to { transform: translateX(-120%) rotate(-180deg); opacity: 0; } }
-  @keyframes bowlExitRight { from { transform: translateX(0) rotate(0deg);     opacity: 1; } to { transform: translateX(120%)  rotate(180deg);  opacity: 0; } }
-  @keyframes rollInFromRight { 0% { transform: translateX(120%) rotate(180deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: translateX(0%) rotate(0deg); opacity: 1; } }
-  @keyframes rollInFromLeft  { 0% { transform: translateX(-120%) rotate(-180deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: translateX(0%) rotate(0deg); opacity: 1; } }
-  .hero-bowl { transform-origin: center center; }
+  @keyframes rollOutToLeft  { 0% { transform: translateX(0%)    rotate(0deg);    opacity: 1; } 100% { transform: translateX(-120%) rotate(-180deg); opacity: 0; } }
+  @keyframes rollOutToRight { 0% { transform: translateX(0%)    rotate(0deg);    opacity: 1; } 100% { transform: translateX(120%)  rotate(180deg);  opacity: 0; } }
+  @keyframes rollInFromRight{ 0% { transform: translateX(120%)  rotate(180deg);  opacity: 0; } 60% { opacity: 1; } 100% { transform: translateX(0%) rotate(0deg); opacity: 1; } }
+  @keyframes rollInFromLeft { 0% { transform: translateX(-120%) rotate(-180deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: translateX(0%) rotate(0deg); opacity: 1; } }
 
-  @keyframes wordExitLeft     { from { transform: translateX(0);   } to { transform: translateX(60%);  } }
-  @keyframes wordExitRight    { from { transform: translateX(0);   } to { transform: translateX(-60%); } }
-  @keyframes wordEnterFromRight { from { transform: translateX(-60%); } to { transform: translateX(0); } }
-  @keyframes wordEnterFromLeft  { from { transform: translateX(60%);  } to { transform: translateX(0); } }
+  @keyframes wordExitLeft       { from { transform: translateX(0);     } to { transform: translateX(140%);  } }
+  @keyframes wordExitRight      { from { transform: translateX(0);     } to { transform: translateX(-140%); } }
+  @keyframes wordEnterFromRight { from { transform: translateX(-140%); } to { transform: translateX(0);     } }
+  @keyframes wordEnterFromLeft  { from { transform: translateX(140%);  } to { transform: translateX(0);     } }
 
-  @keyframes infoFadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes floatDecor { 0%,100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-8px) rotate(5deg); } }
-  @keyframes decorAppear { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+  @keyframes infoSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes decorAppear { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
+  @keyframes bowlHint    { 0% { transform: translateX(0) rotate(0deg); } 25% { transform: translateX(12px) rotate(3deg); } 75% { transform: translateX(-12px) rotate(-3deg); } 100% { transform: translateX(0) rotate(0deg); } }
 
-  .hero-bowl { width: 55vmin; height: 55vmin; border-radius: 50%; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.55); flex-shrink: 0; }
-  .hero-word  { font-size: 18vw; font-weight: 900; color: rgba(255,255,255,0.18); text-transform: uppercase; letter-spacing: -0.03em; user-select: none; white-space: nowrap; line-height: 1; }
-  .hero-arrow { width: 56px; height: 56px; min-width: 48px; min-height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.35); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #fff; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
-  .hero-arrow:hover { background: rgba(0,0,0,0.6); }
+  @keyframes floatDecor0 { 0%,100% { transform: translateY(0px)  rotate(0deg); } 50% { transform: translateY(-6px)  rotate(4deg); } }
+  @keyframes floatDecor1 { 0%,100% { transform: translateY(0px)  rotate(0deg); } 50% { transform: translateY(-10px) rotate(6deg); } }
+  @keyframes floatDecor2 { 0%,100% { transform: translateY(0px)  rotate(0deg); } 50% { transform: translateY(-8px)  rotate(5deg); } }
+
+  .hero-bowl { width: 55vmin; height: 55vmin; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 2px rgba(255,255,255,0.08), 0 20px 60px rgba(0,0,0,0.4), 0 40px 100px rgba(0,0,0,0.25); flex-shrink: 0; transform-origin: center center; will-change: transform; }
+  .hero-word { font-size: 18vw; font-weight: 900; color: rgba(255,255,255,0.18); text-transform: uppercase; letter-spacing: 0.05em; user-select: none; white-space: nowrap; line-height: 1; mix-blend-mode: overlay; will-change: transform; }
   @media (max-width: 768px) {
     .hero-bowl { width: 80vw; height: 80vw; }
     .hero-word  { font-size: 22vw; }
-    .hero-arrow { width: 48px; height: 48px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-bowl, .hero-word { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 `;
 
@@ -363,66 +366,78 @@ function getNextOpeningTime() {
 
 function HeroSlider() {
   const SLIDES = [
-    { name: "Tahiti",            category: "POISSON",  price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",          bgColor: "#0d2a1a", image: "/froid-tahitien.jpg",  decorElements: ["🐟", "🌿", "🍋"] },
-    { name: "Hawaï",             category: "POISSON",  price: "22.90 CHF", description: "Thon rouge, mangue, ananas, sauce sésame",                bgColor: "#7a3d10", image: "/froid-kaikai.jpg",   decorElements: ["🍍", "🥭", "🌺"] },
-    { name: "Chao Men",          category: "CHAUD",    price: "18.90 CHF", description: "Nouilles sautées, wok de porc, sauce crevettes",           bgColor: "#4a1208", image: "/chaud-chaomen.jpg",  decorElements: ["🍜", "🥢", "🌶️"] },
-    { name: "Kai Fan",           category: "CHAUD",    price: "18.90 CHF", description: "Riz sauté, wok de porc, sauce champignons",                bgColor: "#1a2e0a", image: "/chaud-kaifan.jpg",   decorElements: ["🍚", "🥬", "🍄"] },
-    { name: "Coulant Chocolat",  category: "DESSERT",  price: "9.90 CHF",  description: "Coulant fondant, servi chaud",                             bgColor: "#200e03", image: "/dessert-coulant.jpg", decorElements: ["🍫", "🍮", "✨"] },
+    { name: "Tahiti",           category: "POISSON", price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",    bgColor: "#1a3a2a", image: "/froid-tahitien.jpg",  decorElements: ["🐟", "🌿", "🍋"] },
+    { name: "Hawaï",            category: "POISSON", price: "22.90 CHF", description: "Thon rouge, mangue, ananas, sauce sésame",          bgColor: "#c47a2a", image: "/froid-kaikai.jpg",   decorElements: ["🍍", "🥭", "🌺"] },
+    { name: "Chao Men",         category: "CHAUD",   price: "18.90 CHF", description: "Nouilles sautées, wok de porc, sauce crevettes",    bgColor: "#8b2a1a", image: "/chaud-chaomen.jpg",  decorElements: ["🍜", "🥢", "🌶️"] },
+    { name: "Kai Fan",          category: "CHAUD",   price: "18.90 CHF", description: "Riz sauté, wok de porc, sauce champignons",         bgColor: "#2a3a1a", image: "/chaud-kaifan.jpg",   decorElements: ["🍚", "🥬", "🍄"] },
+    { name: "Coulant Chocolat", category: "DESSERT", price: "9.90 CHF",  description: "Coulant fondant, servi chaud",                      bgColor: "#3a1a0a", image: "/dessert-coulant.jpg", decorElements: ["🍫", "🍮", "✨"] },
   ];
   const N = SLIDES.length;
+  const SP = 'cubic-bezier(0.34,1.56,0.64,1)';
+  const DECOR_POS = [{ top: '18%', right: '14%' }, { top: '60%', right: '7%' }, { top: '40%', right: '24%' }];
+  const FLOAT_KF   = ['floatDecor0', 'floatDecor1', 'floatDecor2'];
+  const FLOAT_DUR  = [2.8, 3.4, 4.1];
 
-  const [cur,       setCur]       = React.useState(0);
-  const [nxt,       setNxt]       = React.useState(null);
-  const [dir,       setDir]       = React.useState(null);
-  const [animating, setAnimating] = React.useState(false);
-  const [hoverPaused, setHoverPaused] = React.useState(false);
-  const [arrowPaused, setArrowPaused] = React.useState(false);
-  const [progress,  setProgress]  = React.useState(0);
+  // ── core state
+  const [cur,       setCur]         = React.useState(0);
+  const [nxt,       setNxt]         = React.useState(null);
+  const [dir,       setDir]         = React.useState(null);
+  const [animating, setAnimating]   = React.useState(false);
+  // ── autoplay
+  const [hoverPaused,     setHoverPaused]     = React.useState(false);
+  const [afterDragPaused, setAfterDragPaused] = React.useState(false);
+  const [progress,        setProgress]        = React.useState(0);
+  // ── drag
+  const [dragX,       setDragX]       = React.useState(0);
+  const [isDragging,  setIsDragging]  = React.useState(false);
+  const [isSpringBack,setIsSpringBack]= React.useState(false);
+  const [showHint,    setShowHint]    = React.useState(false);
+  // ── tilt
+  const [tilt,      setTilt]      = React.useState({ x: 0, y: 0 });
+  const [tiltTrans, setTiltTrans] = React.useState('transform 0.1s ease-out');
 
-  const animTimerRef    = React.useRef(null);
-  const pauseTimerRef   = React.useRef(null);
-  const rafRef          = React.useRef(null);
-  const progressStart   = React.useRef(null);
-  const stateRef        = React.useRef({ cur: 0, animating: false });
-  stateRef.current      = { cur, animating };
+  // ── refs
+  const heroRef       = React.useRef(null);
+  const animTimerRef  = React.useRef(null);
+  const pauseTimerRef = React.useRef(null);
+  const rafRef        = React.useRef(null);
+  const progressStart = React.useRef(null);
+  const hintShown     = React.useRef(false);
+  const dragStartX    = React.useRef(0);
+  const dragXRef      = React.useRef(0);
+  const isDraggingRef = React.useRef(false);
+  const curRef        = React.useRef(0);
+  const animatingRef  = React.useRef(false);
+  curRef.current      = cur;
+  animatingRef.current= animating;
+  isDraggingRef.current = isDragging;
 
-  const autoplayPaused = hoverPaused || arrowPaused;
+  const autoplayPaused = hoverPaused || isDragging || afterDragPaused;
 
-  const navigate = (nextIdx, direction) => {
-    if (stateRef.current.animating) return;
-    setAnimating(true);
-    setNxt(nextIdx);
-    setDir(direction);
+  // ── navigate
+  const navigate = React.useCallback((nextIdx, direction) => {
+    if (animatingRef.current) return;
+    setAnimating(true); animatingRef.current = true;
+    setNxt(nextIdx); setDir(direction);
     animTimerRef.current = setTimeout(() => {
-      setCur(nextIdx);
-      setNxt(null);
-      setDir(null);
-      setAnimating(false);
-    }, 520);
-  };
+      setCur(nextIdx); setNxt(null); setDir(null);
+      setAnimating(false); animatingRef.current = false;
+    }, 650);
+  }, []);
 
-  const goNext = () => navigate((stateRef.current.cur + 1) % N, 'next');
-  const goPrev = () => navigate((stateRef.current.cur - 1 + N) % N, 'prev');
-
-  const handleArrow = (fn) => {
-    fn();
-    setArrowPaused(true);
-    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
-    pauseTimerRef.current = setTimeout(() => {
-      setArrowPaused(false);
-      pauseTimerRef.current = null;
-    }, 8000);
-  };
-
+  const goNext = () => navigate((curRef.current + 1) % N, 'next');
+  const goPrev = () => navigate((curRef.current - 1 + N) % N, 'prev');
   const goNextRef = React.useRef(goNext);
   goNextRef.current = goNext;
 
+  // ── autoplay
   React.useEffect(() => {
     if (autoplayPaused) return;
     const id = setInterval(() => goNextRef.current(), 5000);
     return () => clearInterval(id);
   }, [autoplayPaused]);
 
+  // ── progress bar
   React.useEffect(() => {
     cancelAnimationFrame(rafRef.current);
     if (autoplayPaused) { setProgress(0); return; }
@@ -437,130 +452,198 @@ function HeroSlider() {
     return () => cancelAnimationFrame(rafRef.current);
   }, [cur, autoplayPaused]);
 
+  // ── hint oscillation (once at 2s)
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      if (hintShown.current || animatingRef.current || isDraggingRef.current) return;
+      hintShown.current = true;
+      setShowHint(true);
+      setTimeout(() => setShowHint(false), 700);
+    }, 2000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // ── drag
+  const getClientX = (e) => e.touches ? e.touches[0].clientX : e.clientX;
+
+  const onDragStart = (e) => {
+    if (animatingRef.current) return;
+    if (e.type === 'mousedown') e.preventDefault();
+    isDraggingRef.current = true;
+    setIsDragging(true);
+    setIsSpringBack(false);
+    setShowHint(false);
+    dragStartX.current = getClientX(e);
+    dragXRef.current = 0;
+    setDragX(0);
+  };
+
+  const onDragMove = (e) => {
+    if (!isDraggingRef.current) return;
+    const delta = (getClientX(e) - dragStartX.current) * 0.7;
+    dragXRef.current = delta;
+    setDragX(delta);
+  };
+
+  const onDragEnd = () => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    const dx = dragXRef.current;
+    dragXRef.current = 0;
+    setDragX(0);
+    if (Math.abs(dx) >= 80) {
+      setAfterDragPaused(true);
+      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+      pauseTimerRef.current = setTimeout(() => { setAfterDragPaused(false); pauseTimerRef.current = null; }, 8000);
+      if (dx < 0) goNext(); else goPrev();
+    } else {
+      setIsSpringBack(true);
+      setTimeout(() => setIsSpringBack(false), 500);
+    }
+  };
+
+  // ── tilt 3D (desktop only)
+  const onTiltMove = (e) => {
+    if (window.innerWidth < 768) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!heroRef.current) return;
+    const rect = heroRef.current.getBoundingClientRect();
+    setTilt({
+      x: ((e.clientY - rect.top)  / rect.height - 0.5) * -6,
+      y: ((e.clientX - rect.left) / rect.width  - 0.5) *  8,
+    });
+    setTiltTrans('transform 0.1s ease-out');
+  };
+
+  const handleMouseMove = (e) => { onDragMove(e); onTiltMove(e); };
+  const handleMouseLeave = () => {
+    onDragEnd();
+    setTilt({ x: 0, y: 0 });
+    setTiltTrans('transform 0.6s ease');
+    setHoverPaused(false);
+  };
+
+  // ── cleanup
   React.useEffect(() => () => {
     clearTimeout(animTimerRef.current);
     clearTimeout(pauseTimerRef.current);
     cancelAnimationFrame(rafRef.current);
   }, []);
 
-  const slide       = SLIDES[cur];
-  const nextSlide   = nxt !== null ? SLIDES[nxt] : null;
+  // ── derived
+  const slide        = SLIDES[cur];
+  const nextSlide    = nxt !== null ? SLIDES[nxt] : null;
   const displaySlide = animating && nextSlide ? nextSlide : slide;
   const bgColor      = animating && nextSlide ? nextSlide.bgColor : slide.bgColor;
 
-  const bowlExitAnim  = dir === 'next' ? 'bowlExitLeft 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards'      : 'bowlExitRight 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
-  const bowlEnterAnim = dir === 'next' ? 'rollInFromRight 0.6s cubic-bezier(0.25,0.46,0.45,0.94) forwards' : 'rollInFromLeft 0.6s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
-  const wordExitAnim  = dir === 'next' ? 'wordExitLeft 0.5s ease-in-out forwards'      : 'wordExitRight 0.5s ease-in-out forwards';
-  const wordEnterAnim = dir === 'next' ? 'wordEnterFromRight 0.5s ease-in-out forwards' : 'wordEnterFromLeft 0.5s ease-in-out forwards';
+  const bowlExitAnim  = dir === 'next' ? `rollOutToLeft 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards`  : `rollOutToRight 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards`;
+  const bowlEnterAnim = dir === 'next' ? `rollInFromRight 0.6s ${SP} 50ms forwards`                       : `rollInFromLeft 0.6s ${SP} 50ms forwards`;
+  const wordExitAnim  = dir === 'next' ? 'wordExitLeft 0.7s ease-out forwards'                            : 'wordExitRight 0.7s ease-out forwards';
+  const wordEnterAnim = dir === 'next' ? 'wordEnterFromRight 0.7s ease-out forwards'                      : 'wordEnterFromLeft 0.7s ease-out forwards';
 
-  const DECOR_POS = [
-    { top: '18%', right: '14%' },
-    { top: '60%', right: '7%'  },
-    { top: '40%', right: '24%' },
-  ];
+  // Bowl dynamic style (drag / spring / hint / idle)
+  let bowlStyle;
+  if (animating) {
+    bowlStyle = { animation: bowlEnterAnim };
+  } else if (isDragging) {
+    bowlStyle = { transform: `translateX(${dragX}px) rotate(${dragX * 0.25}deg)`, transition: 'none', cursor: 'grabbing' };
+  } else if (isSpringBack) {
+    bowlStyle = { transform: 'translateX(0) rotate(0deg)', transition: `transform 0.5s ${SP}`, cursor: 'grab' };
+  } else if (showHint) {
+    bowlStyle = { animation: 'bowlHint 0.6s ease-in-out forwards', cursor: 'grab' };
+  } else {
+    bowlStyle = { cursor: 'grab' };
+  }
 
   return (
     <div
-      style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', backgroundColor: bgColor, transition: 'background-color 0.5s ease-in-out' }}
+      ref={heroRef}
+      style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', backgroundColor: bgColor, transition: 'background-color 0.5s ease-in-out', userSelect: 'none', touchAction: 'pan-y' }}
       onMouseEnter={() => setHoverPaused(true)}
-      onMouseLeave={() => setHoverPaused(false)}
+      onMouseLeave={handleMouseLeave}
+      onMouseMove={handleMouseMove}
+      onMouseUp={onDragEnd}
     >
-      {/* ── EXITING SLIDE ── */}
-      {animating && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 1 }}>
-            <span className="hero-word" style={{ animation: wordExitAnim }}>{slide.category}</span>
-          </div>
-          <div className="hero-bowl" style={{ animation: bowlExitAnim, position: 'relative', zIndex: 2 }}>
-            <img src={slide.image} alt={slide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
-          </div>
-        </div>
-      )}
+      {/* ── 3D TILT CONTAINER ── */}
+      <div style={{ position: 'absolute', inset: 0, transform: `perspective(1200px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, transition: tiltTrans, transformStyle: 'preserve-3d' }}>
 
-      {/* ── ENTERING / IDLE SLIDE ── */}
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-        {/* Giant word — z-index 1 → derrière l'assiette */}
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 1 }}>
-          <span className="hero-word" style={animating ? { animation: wordEnterAnim } : {}}>
-            {displaySlide.category}
-          </span>
-        </div>
-
-        {/* Circular dish image — z-index 2 → devant le mot */}
-        <div className="hero-bowl" style={{ ...(animating ? { animation: bowlEnterAnim } : {}), position: 'relative', zIndex: 2 }}>
-          <img src={displaySlide.image} alt={displaySlide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
-        </div>
-
-        {/* Floating decorative elements — z-index 3 */}
-        {displaySlide.decorElements.map((emoji, i) => (
-          <div
-            key={`${animating ? nxt : cur}-decor-${i}`}
-            style={{
-              position: 'absolute',
-              ...DECOR_POS[i],
-              fontSize: 'clamp(1.4rem, 2.8vmin, 2.2rem)',
-              animation: `floatDecor 3s ease-in-out ${i * 0.7}s infinite, decorAppear 0.4s ease ${i * 0.15}s both`,
-              userSelect: 'none',
-              zIndex: 3,
-            }}
-          >
-            {emoji}
+        {/* EXITING slide */}
+        {animating && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 1 }}>
+              <span className="hero-word" style={{ animation: wordExitAnim }}>{slide.category}</span>
+            </div>
+            <div style={{ position: 'relative', zIndex: 2, transform: 'translateZ(60px)' }}>
+              <div className="hero-bowl" style={{ animation: bowlExitAnim }}>
+                <img src={slide.image} alt={slide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+              </div>
+            </div>
           </div>
-        ))}
+        )}
+
+        {/* ENTERING / IDLE slide — drag listeners here */}
+        <div
+          style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none' }}
+          onMouseDown={onDragStart}
+          onTouchStart={onDragStart}
+          onTouchMove={onDragMove}
+          onTouchEnd={onDragEnd}
+        >
+          {/* Mot géant — z:1, depth 20px */}
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 1, transform: 'translateZ(20px)', pointerEvents: 'none' }}>
+            <span className="hero-word" style={animating ? { animation: wordEnterAnim } : {}}>
+              {displaySlide.category}
+            </span>
+          </div>
+
+          {/* Bol — z:2, depth 60px */}
+          <div style={{ position: 'relative', zIndex: 2, transform: 'translateZ(60px)' }}>
+            <div className="hero-bowl" style={bowlStyle}>
+              <img src={displaySlide.image} alt={displaySlide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+            </div>
+          </div>
+
+          {/* Décos — z:3, depth 90px */}
+          {displaySlide.decorElements.map((emoji, i) => (
+            <div
+              key={`${animating ? nxt : cur}-d${i}`}
+              style={{
+                position: 'absolute', ...DECOR_POS[i],
+                fontSize: 'clamp(1.4rem, 2.8vmin, 2.2rem)',
+                animation: `${FLOAT_KF[i]} ${FLOAT_DUR[i]}s ease-in-out ${i * 0.7}s infinite, decorAppear 0.5s cubic-bezier(0.25,0.46,0.45,0.94) ${150 + i * 80}ms both`,
+                userSelect: 'none', zIndex: 3,
+                transform: 'translateZ(90px)',
+                filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
+                pointerEvents: 'none',
+              }}
+            >{emoji}</div>
+          ))}
+        </div>
       </div>
 
-      {/* ── INFO — bas gauche — z-index 4 ── */}
+      {/* ── INFO bas gauche — z:10 ── */}
       <div
         key={`info-${animating ? nxt : cur}`}
-        style={{ position: 'absolute', bottom: '12%', left: '5%', maxWidth: '52%', animation: 'infoFadeUp 0.4s ease 0.3s both', pointerEvents: 'none', zIndex: 4 }}
+        style={{ position: 'absolute', bottom: '12%', left: '5%', maxWidth: '52%', animation: 'infoSlideUp 0.4s ease-out 0.3s both', pointerEvents: 'none', zIndex: 10 }}
       >
-        <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', margin: '0 0 0.45rem' }}>
-          {displaySlide.category}
-        </p>
-        <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, color: '#fff', lineHeight: 1.05, margin: '0 0 0.35rem' }}>
-          {displaySlide.name}
-        </h2>
-        <p style={{ fontSize: 'clamp(1rem, 2.2vw, 1.4rem)', fontWeight: 700, color: 'rgba(255,255,255,0.85)', margin: '0 0 0.5rem' }}>
-          {displaySlide.price}
-        </p>
-        <p style={{ fontSize: 'clamp(0.78rem, 1.4vw, 0.9rem)', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, margin: 0 }}>
-          {displaySlide.description}
-        </p>
+        <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', margin: '0 0 0.45rem' }}>{displaySlide.category}</p>
+        <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, color: '#fff', lineHeight: 1.05, margin: '0 0 0.35rem' }}>{displaySlide.name}</h2>
+        <p style={{ fontSize: 'clamp(1rem, 2.2vw, 1.4rem)', fontWeight: 700, color: 'rgba(255,255,255,0.85)', margin: '0 0 0.5rem' }}>{displaySlide.price}</p>
+        <p style={{ fontSize: 'clamp(0.78rem, 1.4vw, 0.9rem)', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, margin: 0 }}>{displaySlide.description}</p>
       </div>
 
-      {/* ── FLÈCHES ── */}
-      <button
-        onClick={() => handleArrow(goPrev)}
-        className="hero-arrow"
-        style={{ position: 'absolute', left: '2%', top: '50%', transform: 'translateY(-50%)', zIndex: 3 }}
-        aria-label="Plat précédent"
-      >◀</button>
-      <button
-        onClick={() => handleArrow(goNext)}
-        className="hero-arrow"
-        style={{ position: 'absolute', right: '2%', top: '50%', transform: 'translateY(-50%)', zIndex: 3 }}
-        aria-label="Plat suivant"
-      >▶</button>
-
-      {/* ── DOTS ── */}
-      <div style={{ position: 'absolute', bottom: '4%', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px', alignItems: 'center', zIndex: 3 }}>
+      {/* ── BARRE SEGMENTÉE ── */}
+      <div style={{ position: 'absolute', bottom: '4%', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 10, pointerEvents: 'none' }}>
         {SLIDES.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => !animating && navigate(i, i > cur ? 'next' : 'prev')}
-            style={{ width: i === cur ? 24 : 8, height: 8, borderRadius: 4, background: i === cur ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)', border: 'none', cursor: 'pointer', transition: 'all 0.3s ease', padding: 0 }}
-            aria-label={`Slide ${i + 1}`}
-          />
+          <div key={i} style={{ width: 40, height: 2, borderRadius: 1, background: 'rgba(255,255,255,0.2)', overflow: 'hidden', transition: 'opacity 0.3s', opacity: i === cur ? 1 : 0.5 }}>
+            <div style={{ height: '100%', background: 'rgba(255,255,255,0.9)', width: i === cur ? `${progress * 100}%` : i < cur ? '100%' : '0%', transition: i === cur ? 'width 0.1s linear' : 'width 0.3s ease' }} />
+          </div>
         ))}
       </div>
 
-      {/* ── DÉGRADÉ TRANSITION HERO → MENU ── */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, background: 'linear-gradient(to bottom, transparent, #000)', zIndex: 2, pointerEvents: 'none' }} />
-
-      {/* ── BARRE DE PROGRESSION ── */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.1)', zIndex: 4 }}>
-        <div style={{ height: '100%', background: 'rgba(255,255,255,0.75)', width: `${progress * 100}%`, transition: 'width 0.1s linear' }} />
-      </div>
+      {/* ── DÉGRADÉ hero → menu ── */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, background: 'linear-gradient(to bottom, transparent, #000)', zIndex: 5, pointerEvents: 'none' }} />
     </div>
   );
 }
