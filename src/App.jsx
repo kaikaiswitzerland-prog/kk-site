@@ -627,9 +627,12 @@ function HeroSlider() {
           {/* Groupe sortant : mot + bol, même animation rollOut */}
           {animating && (
             <div style={{ position: 'absolute', animation: bowlExitAnim, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span className="hero-word" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 0 }}>
-                {slide.category}
-              </span>
+              <svg style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '540px', height: '540px', pointerEvents: 'none', zIndex: 0, overflow: 'visible' }} viewBox="0 0 540 540">
+                <defs><path id="circlePath-exit" d="M 270,270 m -220,0 a 220,220 0 1,1 440,0 a 220,220 0 1,1 -440,0" /></defs>
+                <text fontFamily="'Bebas Neue', sans-serif" fontSize="36" fill="rgba(255,255,255,0.13)" letterSpacing="22">
+                  <textPath href="#circlePath-exit" startOffset="50%" textAnchor="middle">{slide.category} · KAÏ KAÏ · {slide.category} · KAÏ KAÏ ·</textPath>
+                </text>
+              </svg>
               <div className="hero-bowl" style={{ position: 'relative', zIndex: 1 }}>
                 <img src={slide.image} alt={slide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
               </div>
@@ -637,9 +640,12 @@ function HeroSlider() {
           )}
           {/* Groupe entrant / idle : mot + bol, même animation rollIn ou drag */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', ...containerStyle }}>
-            <span className="hero-word" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 0 }}>
-              {displaySlide.category}
-            </span>
+            <svg style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '540px', height: '540px', pointerEvents: 'none', zIndex: 0, overflow: 'visible' }} viewBox="0 0 540 540">
+              <defs><path id="circlePath-main" d="M 270,270 m -220,0 a 220,220 0 1,1 440,0 a 220,220 0 1,1 -440,0" /></defs>
+              <text fontFamily="'Bebas Neue', sans-serif" fontSize="36" fill="rgba(255,255,255,0.13)" letterSpacing="22">
+                <textPath href="#circlePath-main" startOffset="50%" textAnchor="middle">{displaySlide.category} · KAÏ KAÏ · {displaySlide.category} · KAÏ KAÏ ·</textPath>
+              </text>
+            </svg>
             <div className="hero-bowl" style={{ position: 'relative', zIndex: 1, ...bowlInnerStyle }}>
               <img src={displaySlide.image} alt={displaySlide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
             </div>
