@@ -1098,8 +1098,13 @@ export default function KaiKaiApp() {
         <MiniCart cart={cart} items={items} total={total} discount={discount} onOpen={() => setStep("checkout")} />
       )}
 
+      {/* Mode Île — pastille membres */}
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '40px auto' }}>
+        <IslandModeToggle />
+      </div>
+
       {/* Footer */}
-      <footer className="mt-16 border-t border-white/10 py-10 text-center text-sm text-white/60">
+      <footer className="mt-0 border-t border-white/10 py-10 text-center text-sm text-white/60">
         <div className="mx-auto max-w-5xl px-4">
           <div className="flex justify-center gap-4 mb-4">
             <a href={RESTAURANT_INFO.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
@@ -1113,11 +1118,6 @@ export default function KaiKaiApp() {
           <div className="mt-1">📞 {RESTAURANT_INFO.phoneDisplay} · 🕐 {RESTAURANT_INFO.hours.lunch.start}-{RESTAURANT_INFO.hours.lunch.end} | {RESTAURANT_INFO.hours.dinner.start}-{RESTAURANT_INFO.hours.dinner.end}</div>
           <div className="mt-2">© {new Date().getFullYear()} KaïKaï — Tous droits réservés.</div>
 
-          {/* Mode Île — pastille membres */}
-          <div className="mt-8 flex flex-col items-center gap-3">
-            <p style={{color:'red',fontWeight:'bold',fontSize:'14px'}}>TEST MODE ILE</p>
-            <IslandModeToggle />
-          </div>
         </div>
       </footer>
     </div>
