@@ -366,40 +366,6 @@ function getNextOpeningTime() {
   }
 }
 
-function CurvedHeroWord({ text, curveY, animStyle, pathId }) {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const midY = vh / 2;
-  const d = `M 0,${midY} Q ${vw / 2},${midY + curveY} ${vw},${midY}`;
-  const isMobile = vw <= 768;
-  return (
-    <svg
-      style={{
-        position: 'absolute', inset: 0, width: '100%', height: '100%',
-        overflow: 'visible', pointerEvents: 'none', willChange: 'transform',
-        ...animStyle,
-      }}
-    >
-      <defs><path id={pathId} d={d} fill="none" /></defs>
-      <text
-        fill="rgba(255,255,255,0.13)"
-        textAnchor="middle"
-        style={{
-          fontSize: isMobile ? 'max(26vw, 80px)' : 'clamp(120px, 22vw, 280px)',
-          fontFamily: "'Bebas Neue', Impact, 'Arial Black', sans-serif",
-          fontWeight: 900,
-          textTransform: 'uppercase',
-          letterSpacing: '0.35em',
-          userSelect: 'none',
-          mixBlendMode: 'overlay',
-        }}
-      >
-        <textPath href={`#${pathId}`} startOffset="50%">{text}</textPath>
-      </text>
-    </svg>
-  );
-}
-
 function HeroSlider() {
   const SLIDES = [
     { name: "Tahiti",           category: "POISSON", price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",  bgColor: "#0e2a1a", accentColor: "#2a6644", image: "/froid-tahitien.jpg"  },
@@ -613,24 +579,27 @@ function HeroSlider() {
   const displaySlide = animating && nextSlide ? nextSlide : slide;
   const bgColor      = animating && nextSlide ? nextSlide.bgColor : slide.bgColor;
 
-  const EZ = 'cubic-bezier(0.16,1,0.3,1)';
-  const bowlExitAnim  = dir === 'next' ? `rollOutToLeft 1.2s ${SP} forwards`  : `rollOutToRight 1.2s ${SP} forwards`;
+  const bowlExitAnim  = dir === 'next' ? `rollOutToLeft 1.2s ${SP} forwards`        : `rollOutToRight 1.2s ${SP} forwards`;
   const bowlEnterAnim = dir === 'next' ? `rollInFromRight 1.2s ${SP} 60ms forwards` : `rollInFromLeft 1.2s ${SP} 60ms forwards`;
-  const wordExitAnim  = dir === 'next' ? `wordExitLeft 0.75s ${EZ} forwards`                              : `wordExitRight 0.75s ${EZ} forwards`;
-  const wordEnterAnim = dir === 'next' ? `wordEnterFromRight 0.75s ${EZ} forwards`                        : `wordEnterFromLeft 0.75s ${EZ} forwards`;
 
-  // Bowl dynamic style (drag / spring / hint / idle)
-  let bowlStyle;
+  // Container (mot + bol solidaires) — translate. Bowl inner — rotate seul pendant le drag.
+  let containerStyle;
+  let bowlInnerStyle;
   if (animating) {
-    bowlStyle = { animation: bowlEnterAnim };
+    containerStyle = { animation: bowlEnterAnim };
+    bowlInnerStyle = {};
   } else if (isDragging) {
-    bowlStyle = { transform: `translateX(${dragX}px) rotate(${dragX * 0.25}deg)`, transition: 'none', cursor: 'grabbing' };
+    containerStyle = { transform: `translateX(${dragX}px)`, transition: 'none', cursor: 'grabbing' };
+    bowlInnerStyle = { transform: `rotate(${dragX * 0.25}deg)`, transition: 'none' };
   } else if (isSpringBack) {
-    bowlStyle = { transform: 'translateX(0) rotate(0deg)', transition: `transform 0.5s ${SP}`, cursor: 'grab' };
+    containerStyle = { transform: 'translateX(0)', transition: `transform 0.5s ${SP}`, cursor: 'grab' };
+    bowlInnerStyle = { transform: 'rotate(0deg)', transition: `transform 0.5s ${SP}` };
   } else if (showHint) {
-    bowlStyle = { animation: 'bowlHint 0.6s ease-in-out forwards', cursor: 'grab' };
+    containerStyle = { animation: 'bowlHint 0.6s ease-in-out forwards', cursor: 'grab' };
+    bowlInnerStyle = {};
   } else {
-    bowlStyle = { cursor: 'grab' };
+    containerStyle = { cursor: 'grab' };
+    bowlInnerStyle = {};
   }
 
   return (
@@ -647,23 +616,7 @@ function HeroSlider() {
       {/* ── 3D TILT CONTAINER ── */}
       <div style={{ position: 'absolute', inset: 0, transform: `perspective(1400px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, transition: tiltTrans, transformStyle: 'preserve-3d' }}>
 
-        {/* COUCHE 2 : MOT GÉANT EXITING */}
-        {animating && (
-          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 2, transform: 'translateZ(18px)', pointerEvents: 'none' }}>
-            <CurvedHeroWord text={slide.category} curveY={0} animStyle={{ animation: wordExitAnim }} pathId="hero-word-exit" />
-          </div>
-        )}
-        {/* COUCHE 2 : MOT GÉANT ENTERING/IDLE */}
-        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 2, transform: 'translateZ(18px)', pointerEvents: 'none' }}>
-          <CurvedHeroWord
-            text={displaySlide.category}
-            curveY={dragX * 0.3}
-            animStyle={animating ? { animation: wordEnterAnim } : {}}
-            pathId="hero-word-main"
-          />
-        </div>
-
-        {/* COUCHE 3 : BOL — drag listeners ici */}
+        {/* COUCHE 3 : MOT GÉANT + BOL solidaires — drag listeners ici */}
         <div
           style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3, transform: 'translateZ(55px)', touchAction: 'pan-y' }}
           onMouseDown={onDragStart}
@@ -671,15 +624,25 @@ function HeroSlider() {
           onTouchMove={onDragMove}
           onTouchEnd={onDragEnd}
         >
-          {/* Bol sortant */}
+          {/* Groupe sortant : mot + bol, même animation rollOut */}
           {animating && (
-            <div className="hero-bowl" style={{ animation: bowlExitAnim, position: 'absolute' }}>
-              <img src={slide.image} alt={slide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+            <div style={{ position: 'absolute', animation: bowlExitAnim, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span className="hero-word" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 0 }}>
+                {slide.category}
+              </span>
+              <div className="hero-bowl" style={{ position: 'relative', zIndex: 1 }}>
+                <img src={slide.image} alt={slide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+              </div>
             </div>
           )}
-          {/* Bol entrant / idle */}
-          <div className="hero-bowl" style={bowlStyle}>
-            <img src={displaySlide.image} alt={displaySlide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+          {/* Groupe entrant / idle : mot + bol, même animation rollIn ou drag */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', ...containerStyle }}>
+            <span className="hero-word" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 0 }}>
+              {displaySlide.category}
+            </span>
+            <div className="hero-bowl" style={{ position: 'relative', zIndex: 1, ...bowlInnerStyle }}>
+              <img src={displaySlide.image} alt={displaySlide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+            </div>
           </div>
         </div>
 
