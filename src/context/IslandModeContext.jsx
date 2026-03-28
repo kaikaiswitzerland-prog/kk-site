@@ -46,20 +46,24 @@ export function IslandModeProvider({ children }) {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) fetchProfile(currentUser.id);
-    });
+    }).catch(() => { /* Supabase non configuré — mode dégradé */ });
 
     // Écouter les changements d'état d'authentification
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        fetchProfile(currentUser.id);
-      } else {
-        setUserProfile(null);
-      }
-    });
+    let subscription = null;
+    try {
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        if (currentUser) {
+          fetchProfile(currentUser.id);
+        } else {
+          setUserProfile(null);
+        }
+      });
+      subscription = data?.subscription ?? null;
+    } catch { /* Supabase non configuré — pas d'écoute auth */ }
 
-    return () => subscription.unsubscribe();
+    return () => { try { subscription?.unsubscribe(); } catch { /* ignore */ } };
   }, [fetchProfile]);
 
   // ── Bascule le Mode Île (connecté ou non)

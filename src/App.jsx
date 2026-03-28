@@ -60,9 +60,11 @@ const globalStyles = `
   @keyframes floatDecor2 { 0%,100% { transform: translateY(0px);  } 50% { transform: translateY(-6px);  } }
   @keyframes decorAppear { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
   @keyframes bowlHint    { 0% { transform: translateX(0); } 25% { transform: translateX(14px) rotate(3deg); } 75% { transform: translateX(-14px) rotate(-3deg); } 100% { transform: translateX(0); } }
+  @keyframes bowlFloat   { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
+  .is-floating { animation: bowlFloat 4s ease-in-out infinite; }
 
-  .hero-bowl { width: clamp(280px, 52vmin, 560px); height: clamp(280px, 52vmin, 560px); border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 0 80px rgba(0,0,0,0.5), 0 40px 120px rgba(0,0,0,0.4); flex-shrink: 0; transform-origin: center center; will-change: transform; }
-  .hero-word { font-size: clamp(120px, 22vw, 280px); font-family: 'Bebas Neue', Impact, 'Arial Black', sans-serif; font-weight: 900; color: rgba(255,255,255,0.13); text-transform: uppercase; letter-spacing: 0.35em; user-select: none; white-space: nowrap; line-height: 1; mix-blend-mode: overlay; will-change: transform; }
+  .hero-bowl { width: clamp(280px, 52vmin, 560px); height: clamp(280px, 52vmin, 560px); border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 0 80px rgba(0,0,0,0.5), 0 40px 120px rgba(0,0,0,0.4); flex-shrink: 0; transform-origin: center center; will-change: transform; filter: drop-shadow(0 30px 40px rgba(0,0,0,0.5)); }
+  .hero-word { font-size: clamp(120px, 22vw, 220px); font-family: 'Bebas Neue', Impact, 'Arial Black', sans-serif; font-weight: 900; color: rgba(255,255,255,0.10); text-transform: uppercase; letter-spacing: 0.3em; user-select: none; white-space: nowrap; line-height: 1; mix-blend-mode: overlay; will-change: transform; filter: blur(1.5px); }
   @media (max-width: 768px) {
     .hero-bowl { width: min(78vw, 340px); height: min(78vw, 340px); }
     .hero-word  { font-size: max(26vw, 80px); }
@@ -370,12 +372,12 @@ function getNextOpeningTime() {
 
 function HeroSlider() {
   const SLIDES = [
-    { name: "Tahiti",           category: "POISSON", price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",  bgColor: "#0e2a1a", accentColor: "#2a6644", image: "/froid-tahitien.jpg"  },
-    { name: "Hawaï",            category: "POISSON", price: "22.90 CHF", description: "Thon rouge, mangue, ananas, sauce sésame",        bgColor: "#2a1800", accentColor: "#c47a2a", image: "/froid-kaikai.jpg"   },
-    { name: "Manoa",            category: "POISSON", price: "24.90 CHF", description: "Thon rouge, sauce arachide, guacamole maison",    bgColor: "#1a1200", accentColor: "#a0832a", image: "/froid-mokai.jpg"    },
-    { name: "Chao Men",         category: "CHAUD",   price: "18.90 CHF", description: "Nouilles sautées, wok de porc, sauce crevettes",  bgColor: "#200a0a", accentColor: "#8b2a1a", image: "/chaud-chaomen.jpg"  },
-    { name: "Kai Fan",          category: "CHAUD",   price: "18.90 CHF", description: "Riz sauté, wok de porc, sauce champignons",       bgColor: "#0a1a0a", accentColor: "#2a5a1a", image: "/chaud-kaifan.jpg"   },
-    { name: "Coulant Chocolat", category: "DESSERT", price: "9.90 CHF",  description: "Coulant fondant, servi chaud",                    bgColor: "#100a00", accentColor: "#5a2a00", image: "/dessert-coulant.jpg" },
+    { name: "Tahiti",           category: "POISSON", price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",  bgColor: "#0e2a1a", bgGradient: "radial-gradient(ellipse at 50% 50%, #1a4a2e 0%, #0e2a1a 55%, #061208 100%)", accentColor: "#2a6644", image: "/froid-tahitien.jpg"  },
+    { name: "Hawaï",            category: "POISSON", price: "22.90 CHF", description: "Thon rouge, mangue, ananas, sauce sésame",        bgColor: "#2a1800", bgGradient: "radial-gradient(ellipse at 50% 50%, #4a2e00 0%, #2a1800 55%, #100800 100%)", accentColor: "#c47a2a", image: "/froid-kaikai.jpg"   },
+    { name: "Manoa",            category: "POISSON", price: "24.90 CHF", description: "Thon rouge, sauce arachide, guacamole maison",    bgColor: "#1a1200", bgGradient: "radial-gradient(ellipse at 50% 50%, #302000 0%, #1a1200 55%, #0a0800 100%)", accentColor: "#a0832a", image: "/froid-mokai.jpg"    },
+    { name: "Chao Men",         category: "CHAUD",   price: "18.90 CHF", description: "Nouilles sautées, wok de porc, sauce crevettes",  bgColor: "#200a0a", bgGradient: "radial-gradient(ellipse at 50% 50%, #3a1010 0%, #200a0a 55%, #0e0404 100%)", accentColor: "#8b2a1a", image: "/chaud-chaomen.jpg"  },
+    { name: "Kai Fan",          category: "CHAUD",   price: "18.90 CHF", description: "Riz sauté, wok de porc, sauce champignons",       bgColor: "#0a1a0a", bgGradient: "radial-gradient(ellipse at 50% 50%, #142a14 0%, #0a1a0a 55%, #040a04 100%)", accentColor: "#2a5a1a", image: "/chaud-kaifan.jpg"   },
+    { name: "Coulant Chocolat", category: "DESSERT", price: "9.90 CHF",  description: "Coulant fondant, servi chaud",                    bgColor: "#100a00", bgGradient: "radial-gradient(ellipse at 50% 50%, #241200 0%, #100a00 55%, #080400 100%)", accentColor: "#5a2a00", image: "/dessert-coulant.jpg" },
   ];
   // SVG géométriques par slide — 3 formes, colorées avec accentColor
   // Chaque entrée : fonction (c: accentColor) => JSX SVG
@@ -414,9 +416,9 @@ function HeroSlider() {
   const N = SLIDES.length;
   const SP = 'cubic-bezier(0.4,0.0,0.2,1)';
   const DECOR_POS = [
-    { top: '30%',  left: '8%'  },
-    { top: '20%',  right: '9%' },
-    { top: '58%',  right: '7%' },
+    { top: '-15%',    left: '-18%'  },
+    { top: '-20%',    right: '-15%' },
+    { bottom: '-10%', right: '-20%' },
   ];
   const FLOAT_DUR = [3.1, 3.8, 4.4];
   const FLOAT_DEL = [0, 0.6, 1.2];
@@ -579,7 +581,7 @@ function HeroSlider() {
   const slide        = SLIDES[cur];
   const nextSlide    = nxt !== null ? SLIDES[nxt] : null;
   const displaySlide = animating && nextSlide ? nextSlide : slide;
-  const bgColor      = animating && nextSlide ? nextSlide.bgColor : slide.bgColor;
+  const bgGradient   = animating && nextSlide ? nextSlide.bgGradient : slide.bgGradient;
 
   const bowlExitAnim  = dir === 'next' ? `rollOutToLeft 1.2s ${SP} forwards`        : `rollOutToRight 1.2s ${SP} forwards`;
   const bowlEnterAnim = dir === 'next' ? `rollInFromRight 1.2s ${SP} 60ms forwards` : `rollInFromLeft 1.2s ${SP} 60ms forwards`;
@@ -607,7 +609,7 @@ function HeroSlider() {
   return (
     <div
       ref={heroRef}
-      style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', backgroundColor: bgColor, transition: 'background-color 0.6s ease-in-out', userSelect: 'none', touchAction: 'pan-y' }}
+      style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', background: bgGradient, transition: 'background 0.6s ease-in-out', userSelect: 'none', touchAction: 'pan-y' }}
       onMouseEnter={() => setHoverPaused(true)}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
@@ -642,34 +644,32 @@ function HeroSlider() {
           )}
           {/* Groupe entrant / idle : mot + bol, même animation rollIn ou drag */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', ...containerStyle }}>
+            {/* Halo de lumière colorée derrière le bol */}
+            <div style={{ position: 'absolute', width: '500px', height: '500px', borderRadius: '50%', background: `radial-gradient(circle, ${displaySlide.accentColor}33 0%, transparent 70%)`, top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 0, transition: 'background 0.6s ease' }} />
             <svg style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '540px', height: '540px', pointerEvents: 'none', zIndex: 0, overflow: 'visible', mixBlendMode: 'overlay' }} viewBox="0 0 540 540">
               <defs><path id="circlePath-current" d="M 270,270 m -220,0 a 220,220 0 1,1 440,0 a 220,220 0 1,1 -440,0" /></defs>
               <text fontFamily="'Bebas Neue', sans-serif" fontSize="36" fill="rgba(255,255,255,0.55)" letterSpacing="22">
                 <textPath href="#circlePath-current" startOffset="50%" textAnchor="middle">{displaySlide.category} · KAÏ KAÏ · {displaySlide.category} · KAÏ KAÏ ·</textPath>
               </text>
             </svg>
-            <div className="hero-bowl" style={{ position: 'relative', zIndex: 1, ...bowlInnerStyle }}>
+            {/* Mot géant en fond */}
+            <div className="hero-word" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }}>
+              {displaySlide.category}
+            </div>
+            {/* Éléments décoratifs en orbite autour du bol */}
+            {SHAPE_DECORS[animating && nxt !== null ? nxt : cur].map((renderShape, i) => (
+              <div key={`${animating ? nxt : cur}-s${i}`} style={{ position: 'absolute', ...DECOR_POS[i], transform: 'scale(1.3)', transformOrigin: 'center' }}>
+                <div style={{ animation: `floatDecor${i} ${FLOAT_DUR[i]}s ease-in-out ${FLOAT_DEL[i]}s infinite, decorAppear 0.52s cubic-bezier(0.25,0.46,0.45,0.94) ${i * 180}ms both`, filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.4))' }}>
+                  {renderShape(displaySlide.accentColor)}
+                </div>
+              </div>
+            ))}
+            <div className={`hero-bowl${!isDragging && !animating && !isSpringBack ? ' is-floating' : ''}`} style={{ position: 'relative', zIndex: 1, ...bowlInnerStyle }}>
               <img src={displaySlide.image} alt={displaySlide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
             </div>
           </div>
         </div>
 
-        {/* COUCHE 4 : FORMES SVG GÉOMÉTRIQUES */}
-        <div style={{ position: 'absolute', inset: 0, zIndex: 4, transform: 'translateZ(85px)', pointerEvents: 'none' }}>
-          {SHAPE_DECORS[animating && nxt !== null ? nxt : cur].map((renderShape, i) => (
-            <div
-              key={`${animating ? nxt : cur}-s${i}`}
-              style={{
-                position: 'absolute',
-                ...DECOR_POS[i],
-                animation: `floatDecor${i} ${FLOAT_DUR[i]}s ease-in-out ${FLOAT_DEL[i]}s infinite, decorAppear 0.52s cubic-bezier(0.25,0.46,0.45,0.94) ${i * 180}ms both`,
-                filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.4))',
-              }}
-            >
-              {renderShape(displaySlide.accentColor)}
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* ── COUCHE 5 : TEXTE NOM + ACCROCHE (bas gauche, z:5) ── */}
@@ -1114,7 +1114,8 @@ export default function KaiKaiApp() {
           <div className="mt-2">© {new Date().getFullYear()} KaïKaï — Tous droits réservés.</div>
 
           {/* Mode Île — pastille membres */}
-          <div className="mt-8 flex justify-center">
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <p style={{color:'red',fontWeight:'bold',fontSize:'14px'}}>TEST MODE ILE</p>
             <IslandModeToggle />
           </div>
         </div>
