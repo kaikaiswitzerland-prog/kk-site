@@ -39,10 +39,10 @@ const globalStyles = `
   .cat-nav::-webkit-scrollbar { display: none; }
   .cat-nav { -ms-overflow-style: none; scrollbar-width: none; }
 
-  @keyframes rollOutToLeft  { 0% { transform: translateX(0%) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translateX(-130%) rotate(-200deg) scale(0.85); opacity: 0; } }
-  @keyframes rollOutToRight { 0% { transform: translateX(0%) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translateX(130%) rotate(200deg) scale(0.85); opacity: 0; } }
-  @keyframes rollInFromRight{ 0% { transform: translateX(130%) rotate(200deg) scale(0.85); opacity: 0; } 55% { opacity: 1; } 80% { transform: translateX(-3%) rotate(-5deg) scale(1.02); } 100% { transform: translateX(0%) rotate(0deg) scale(1); opacity: 1; } }
-  @keyframes rollInFromLeft { 0% { transform: translateX(-130%) rotate(-200deg) scale(0.85); opacity: 0; } 55% { opacity: 1; } 80% { transform: translateX(3%) rotate(5deg) scale(1.02); } 100% { transform: translateX(0%) rotate(0deg) scale(1); opacity: 1; } }
+  @keyframes rollOutToLeft  { 0% { transform: translateX(0%) rotate(0deg); opacity: 1; } 100% { transform: translateX(-55%) rotate(-120deg); opacity: 0; } }
+  @keyframes rollOutToRight { 0% { transform: translateX(0%) rotate(0deg); opacity: 1; } 100% { transform: translateX(55%) rotate(120deg); opacity: 0; } }
+  @keyframes rollInFromRight{ 0% { transform: translateX(55%) rotate(120deg); opacity: 0; } 100% { transform: translateX(0%) rotate(0deg); opacity: 1; } }
+  @keyframes rollInFromLeft { 0% { transform: translateX(-55%) rotate(-120deg); opacity: 0; } 100% { transform: translateX(0%) rotate(0deg); opacity: 1; } }
 
   @keyframes wordExitLeft       { from { transform: translateX(0);      } to { transform: translateX(160vw);  } }
   @keyframes wordExitRight      { from { transform: translateX(0);      } to { transform: translateX(-160vw); } }
@@ -376,7 +376,7 @@ function HeroSlider() {
     { name: "Coulant Chocolat", category: "DESSERT", price: "9.90 CHF",  description: "Coulant fondant, servi chaud",                      bgColor: "#100a00", accentColor: "#5a2a00", image: "/dessert-coulant.jpg", decorElements: ["🍫", "🍮", "✨"] },
   ];
   const N = SLIDES.length;
-  const SP = 'cubic-bezier(0.34,1.56,0.64,1)';
+  const SP = 'cubic-bezier(0.4,0.0,0.2,1)';
   const DECOR_POS = [
     { top: '30%',  left: '8%'  },
     { top: '20%',  right: '9%' },
@@ -546,8 +546,8 @@ function HeroSlider() {
   const bgColor      = animating && nextSlide ? nextSlide.bgColor : slide.bgColor;
 
   const EZ = 'cubic-bezier(0.16,1,0.3,1)';
-  const bowlExitAnim  = dir === 'next' ? `rollOutToLeft 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards`  : `rollOutToRight 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards`;
-  const bowlEnterAnim = dir === 'next' ? `rollInFromRight 0.65s ${SP} 60ms forwards`                      : `rollInFromLeft 0.65s ${SP} 60ms forwards`;
+  const bowlExitAnim  = dir === 'next' ? `rollOutToLeft 1.2s ${SP} forwards`  : `rollOutToRight 1.2s ${SP} forwards`;
+  const bowlEnterAnim = dir === 'next' ? `rollInFromRight 1.2s ${SP} 60ms forwards` : `rollInFromLeft 1.2s ${SP} 60ms forwards`;
   const wordExitAnim  = dir === 'next' ? `wordExitLeft 0.75s ${EZ} forwards`                              : `wordExitRight 0.75s ${EZ} forwards`;
   const wordEnterAnim = dir === 'next' ? `wordEnterFromRight 0.75s ${EZ} forwards`                        : `wordEnterFromLeft 0.75s ${EZ} forwards`;
 
