@@ -643,9 +643,9 @@ function HeroSlider() {
           {/* Groupe entrant / idle : mot + bol, même animation rollIn ou drag */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', ...containerStyle }}>
             <svg style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '540px', height: '540px', pointerEvents: 'none', zIndex: 0, overflow: 'visible', mixBlendMode: 'overlay' }} viewBox="0 0 540 540">
-              <defs><path id="circlePath-main" d="M 270,270 m -220,0 a 220,220 0 1,1 440,0 a 220,220 0 1,1 -440,0" /></defs>
+              <defs><path id="circlePath-current" d="M 270,270 m -220,0 a 220,220 0 1,1 440,0 a 220,220 0 1,1 -440,0" /></defs>
               <text fontFamily="'Bebas Neue', sans-serif" fontSize="36" fill="rgba(255,255,255,0.55)" letterSpacing="22">
-                <textPath href="#circlePath-main" startOffset="50%" textAnchor="middle">{displaySlide.category} · KAÏ KAÏ · {displaySlide.category} · KAÏ KAÏ ·</textPath>
+                <textPath href="#circlePath-current" startOffset="50%" textAnchor="middle">{displaySlide.category} · KAÏ KAÏ · {displaySlide.category} · KAÏ KAÏ ·</textPath>
               </text>
             </svg>
             <div className="hero-bowl" style={{ position: 'relative', zIndex: 1, ...bowlInnerStyle }}>
