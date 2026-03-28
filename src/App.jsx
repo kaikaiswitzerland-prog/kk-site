@@ -1,6 +1,8 @@
 // src/App.jsx - VERSION AVEC TOUS LES MODALS DE VARIANTES
 import React, { useMemo, useState, useEffect } from "react";
 import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight } from "lucide-react";
+import IslandModeToggle from "./components/IslandModeToggle.jsx";
+import PalmLeaves from "./components/PalmLeaves.jsx";
 
 // MODIFICATION 1: Logo PNG au lieu du SVG
 const LOGO_SRC = "/logo_kaikai.png";
@@ -961,6 +963,8 @@ export default function KaiKaiApp() {
   return (
     <>
       <style>{globalStyles}</style>
+      {/* Feuilles de palmier — Mode Île (position fixed, z-index -1) */}
+      <PalmLeaves />
       <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur">
@@ -1108,6 +1112,11 @@ export default function KaiKaiApp() {
           <div>KaïKaï — restaurant tahitien · {RESTAURANT_INFO.address}</div>
           <div className="mt-1">📞 {RESTAURANT_INFO.phoneDisplay} · 🕐 {RESTAURANT_INFO.hours.lunch.start}-{RESTAURANT_INFO.hours.lunch.end} | {RESTAURANT_INFO.hours.dinner.start}-{RESTAURANT_INFO.hours.dinner.end}</div>
           <div className="mt-2">© {new Date().getFullYear()} KaïKaï — Tous droits réservés.</div>
+
+          {/* Mode Île — pastille membres */}
+          <div className="mt-8 flex justify-center">
+            <IslandModeToggle />
+          </div>
         </div>
       </footer>
     </div>
