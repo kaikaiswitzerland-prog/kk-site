@@ -969,7 +969,7 @@ export default function KaiKaiApp() {
             {logoVisible && <img src={LOGO_SRC} alt="KaïKaï" className="h-8" style={{ mixBlendMode: 'screen' }} onError={() => setLogoVisible(false)} />}
             <h1 className="text-xl font-semibold">KaïKaï</h1>
           </div>
-          <div className="flex justify-center">
+          <div className="flex justify-center -translate-x-6">
             <OpenStatus />
           </div>
           <div className="flex items-center justify-end gap-2">
