@@ -39,10 +39,11 @@ const globalStyles = `
   .cat-nav::-webkit-scrollbar { display: none; }
   .cat-nav { -ms-overflow-style: none; scrollbar-width: none; }
 
-  @keyframes bowlExitLeft  { from { transform: translateX(0);     opacity: 1; } to { transform: translateX(-120%); opacity: 0; } }
-  @keyframes bowlExitRight { from { transform: translateX(0);     opacity: 1; } to { transform: translateX(120%);  opacity: 0; } }
-  @keyframes bowlEnterRight{ from { transform: translateX(120%);  opacity: 0; } to { transform: translateX(0);     opacity: 1; } }
-  @keyframes bowlEnterLeft { from { transform: translateX(-120%); opacity: 0; } to { transform: translateX(0);     opacity: 1; } }
+  @keyframes bowlExitLeft  { from { transform: translateX(0) rotate(0deg);     opacity: 1; } to { transform: translateX(-120%) rotate(-180deg); opacity: 0; } }
+  @keyframes bowlExitRight { from { transform: translateX(0) rotate(0deg);     opacity: 1; } to { transform: translateX(120%)  rotate(180deg);  opacity: 0; } }
+  @keyframes rollInFromRight { 0% { transform: translateX(120%) rotate(180deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: translateX(0%) rotate(0deg); opacity: 1; } }
+  @keyframes rollInFromLeft  { 0% { transform: translateX(-120%) rotate(-180deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: translateX(0%) rotate(0deg); opacity: 1; } }
+  .hero-bowl { transform-origin: center center; }
 
   @keyframes wordExitLeft     { from { transform: translateX(0);   } to { transform: translateX(60%);  } }
   @keyframes wordExitRight    { from { transform: translateX(0);   } to { transform: translateX(-60%); } }
@@ -447,8 +448,8 @@ function HeroSlider() {
   const displaySlide = animating && nextSlide ? nextSlide : slide;
   const bgColor      = animating && nextSlide ? nextSlide.bgColor : slide.bgColor;
 
-  const bowlExitAnim  = dir === 'next' ? 'bowlExitLeft 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards'  : 'bowlExitRight 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
-  const bowlEnterAnim = dir === 'next' ? 'bowlEnterRight 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards' : 'bowlEnterLeft 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
+  const bowlExitAnim  = dir === 'next' ? 'bowlExitLeft 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards'      : 'bowlExitRight 0.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
+  const bowlEnterAnim = dir === 'next' ? 'rollInFromRight 0.6s cubic-bezier(0.25,0.46,0.45,0.94) forwards' : 'rollInFromLeft 0.6s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
   const wordExitAnim  = dir === 'next' ? 'wordExitLeft 0.5s ease-in-out forwards'      : 'wordExitRight 0.5s ease-in-out forwards';
   const wordEnterAnim = dir === 'next' ? 'wordEnterFromRight 0.5s ease-in-out forwards' : 'wordEnterFromLeft 0.5s ease-in-out forwards';
 
