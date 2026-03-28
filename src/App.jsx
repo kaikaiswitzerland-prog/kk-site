@@ -60,7 +60,7 @@ const globalStyles = `
   @keyframes bowlHint    { 0% { transform: translateX(0); } 25% { transform: translateX(14px) rotate(3deg); } 75% { transform: translateX(-14px) rotate(-3deg); } 100% { transform: translateX(0); } }
 
   .hero-bowl { width: clamp(280px, 52vmin, 560px); height: clamp(280px, 52vmin, 560px); border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 0 80px rgba(0,0,0,0.5), 0 40px 120px rgba(0,0,0,0.4); flex-shrink: 0; transform-origin: center center; will-change: transform; }
-  .hero-word { font-size: clamp(120px, 22vw, 280px); font-family: 'Bebas Neue', Impact, 'Arial Black', sans-serif; font-weight: 900; color: rgba(255,255,255,0.13); text-transform: uppercase; letter-spacing: 0.04em; user-select: none; white-space: nowrap; line-height: 1; mix-blend-mode: overlay; will-change: transform; }
+  .hero-word { font-size: clamp(120px, 22vw, 280px); font-family: 'Bebas Neue', Impact, 'Arial Black', sans-serif; font-weight: 900; color: rgba(255,255,255,0.13); text-transform: uppercase; letter-spacing: 0.35em; user-select: none; white-space: nowrap; line-height: 1; mix-blend-mode: overlay; will-change: transform; }
   @media (max-width: 768px) {
     .hero-bowl { width: min(78vw, 340px); height: min(78vw, 340px); }
     .hero-word  { font-size: max(26vw, 80px); }
@@ -368,12 +368,46 @@ function getNextOpeningTime() {
 
 function HeroSlider() {
   const SLIDES = [
-    { name: "Tahiti",           category: "POISSON", price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",    bgColor: "#0e2a1a", accentColor: "#2a6644", image: "/froid-tahitien.jpg",  decorElements: ["🐟", "🌿", "🍋"] },
-    { name: "Hawaï",            category: "POISSON", price: "22.90 CHF", description: "Thon rouge, mangue, ananas, sauce sésame",          bgColor: "#2a1800", accentColor: "#c47a2a", image: "/froid-kaikai.jpg",   decorElements: ["🍍", "🥭", "🌺"] },
-    { name: "Manoa",            category: "POISSON", price: "24.90 CHF", description: "Thon rouge, sauce arachide, guacamole maison",      bgColor: "#1a1200", accentColor: "#a0832a", image: "/froid-mokai.jpg",    decorElements: ["🥑", "🌾", "🍋"] },
-    { name: "Chao Men",         category: "CHAUD",   price: "18.90 CHF", description: "Nouilles sautées, wok de porc, sauce crevettes",    bgColor: "#200a0a", accentColor: "#8b2a1a", image: "/chaud-chaomen.jpg",  decorElements: ["🍜", "🥢", "🌶️"] },
-    { name: "Kai Fan",          category: "CHAUD",   price: "18.90 CHF", description: "Riz sauté, wok de porc, sauce champignons",         bgColor: "#0a1a0a", accentColor: "#2a5a1a", image: "/chaud-kaifan.jpg",   decorElements: ["🍚", "🥬", "🍄"] },
-    { name: "Coulant Chocolat", category: "DESSERT", price: "9.90 CHF",  description: "Coulant fondant, servi chaud",                      bgColor: "#100a00", accentColor: "#5a2a00", image: "/dessert-coulant.jpg", decorElements: ["🍫", "🍮", "✨"] },
+    { name: "Tahiti",           category: "POISSON", price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",  bgColor: "#0e2a1a", accentColor: "#2a6644", image: "/froid-tahitien.jpg"  },
+    { name: "Hawaï",            category: "POISSON", price: "22.90 CHF", description: "Thon rouge, mangue, ananas, sauce sésame",        bgColor: "#2a1800", accentColor: "#c47a2a", image: "/froid-kaikai.jpg"   },
+    { name: "Manoa",            category: "POISSON", price: "24.90 CHF", description: "Thon rouge, sauce arachide, guacamole maison",    bgColor: "#1a1200", accentColor: "#a0832a", image: "/froid-mokai.jpg"    },
+    { name: "Chao Men",         category: "CHAUD",   price: "18.90 CHF", description: "Nouilles sautées, wok de porc, sauce crevettes",  bgColor: "#200a0a", accentColor: "#8b2a1a", image: "/chaud-chaomen.jpg"  },
+    { name: "Kai Fan",          category: "CHAUD",   price: "18.90 CHF", description: "Riz sauté, wok de porc, sauce champignons",       bgColor: "#0a1a0a", accentColor: "#2a5a1a", image: "/chaud-kaifan.jpg"   },
+    { name: "Coulant Chocolat", category: "DESSERT", price: "9.90 CHF",  description: "Coulant fondant, servi chaud",                    bgColor: "#100a00", accentColor: "#5a2a00", image: "/dessert-coulant.jpg" },
+  ];
+  // SVG géométriques par slide — 3 formes, colorées avec accentColor
+  // Chaque entrée : fonction (c: accentColor) => JSX SVG
+  const SHAPE_DECORS = [
+    [ // Tahiti — ring + 3 points + diagonale
+      (c) => <svg width="28" height="28" fill="none" viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" stroke={c} strokeWidth="1.5" opacity="0.9"/></svg>,
+      (c) => <svg width="34" height="8"  fill="none" viewBox="0 0 34 8"><circle cx="4" cy="4" r="3" fill={c} opacity="0.8"/><circle cx="17" cy="4" r="3" fill={c} opacity="0.8"/><circle cx="30" cy="4" r="3" fill={c} opacity="0.8"/></svg>,
+      (c) => <svg width="38" height="38" fill="none" viewBox="0 0 38 38"><line x1="1" y1="37" x2="37" y2="1" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/></svg>,
+    ],
+    [ // Hawaï — diamant + point plein + croix
+      (c) => <svg width="26" height="26" fill="none" viewBox="0 0 26 26"><rect x="13" y="2" width="15" height="15" rx="1" transform="rotate(45 13 13)" stroke={c} strokeWidth="1.5" opacity="0.9"/></svg>,
+      (c) => <svg width="14" height="14" fill="none" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill={c} opacity="0.75"/></svg>,
+      (c) => <svg width="22" height="22" fill="none" viewBox="0 0 22 22"><line x1="11" y1="1" x2="11" y2="21" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/><line x1="1" y1="11" x2="21" y2="11" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/></svg>,
+    ],
+    [ // Manoa — diagonale + ring fin + point
+      (c) => <svg width="38" height="38" fill="none" viewBox="0 0 38 38"><line x1="1" y1="1" x2="37" y2="37" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/></svg>,
+      (c) => <svg width="32" height="32" fill="none" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" stroke={c} strokeWidth="1" opacity="0.65"/></svg>,
+      (c) => <svg width="10" height="10" fill="none" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill={c} opacity="0.8"/></svg>,
+    ],
+    [ // Chao Men — croix + ring + 3 points verticaux
+      (c) => <svg width="22" height="22" fill="none" viewBox="0 0 22 22"><line x1="11" y1="1" x2="11" y2="21" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/><line x1="1" y1="11" x2="21" y2="11" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/></svg>,
+      (c) => <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke={c} strokeWidth="1.5" opacity="0.85"/></svg>,
+      (c) => <svg width="8"  height="34" fill="none" viewBox="0 0 8 34"><circle cx="4" cy="4"  r="3" fill={c} opacity="0.8"/><circle cx="4" cy="17" r="3" fill={c} opacity="0.8"/><circle cx="4" cy="30" r="3" fill={c} opacity="0.8"/></svg>,
+    ],
+    [ // Kai Fan — diagonale + diamant + point
+      (c) => <svg width="38" height="38" fill="none" viewBox="0 0 38 38"><line x1="1" y1="37" x2="37" y2="1" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/></svg>,
+      (c) => <svg width="26" height="26" fill="none" viewBox="0 0 26 26"><rect x="13" y="2" width="15" height="15" rx="1" transform="rotate(45 13 13)" stroke={c} strokeWidth="1.5" opacity="0.85"/></svg>,
+      (c) => <svg width="12" height="12" fill="none" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill={c} opacity="0.75"/></svg>,
+    ],
+    [ // Coulant — ring + 3 points + croix
+      (c) => <svg width="30" height="30" fill="none" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" stroke={c} strokeWidth="1.5" opacity="0.85"/></svg>,
+      (c) => <svg width="34" height="8"  fill="none" viewBox="0 0 34 8"><circle cx="4" cy="4" r="3" fill={c} opacity="0.75"/><circle cx="17" cy="4" r="3" fill={c} opacity="0.75"/><circle cx="30" cy="4" r="3" fill={c} opacity="0.75"/></svg>,
+      (c) => <svg width="22" height="22" fill="none" viewBox="0 0 22 22"><line x1="11" y1="1" x2="11" y2="21" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/><line x1="1" y1="11" x2="21" y2="11" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/></svg>,
+    ],
   ];
   const N = SLIDES.length;
   const SP = 'cubic-bezier(0.4,0.0,0.2,1)';
@@ -612,20 +646,20 @@ function HeroSlider() {
           </div>
         </div>
 
-        {/* COUCHE 4 : DÉCORATIFS FLOTTANTS */}
+        {/* COUCHE 4 : FORMES SVG GÉOMÉTRIQUES */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 4, transform: 'translateZ(85px)', pointerEvents: 'none' }}>
-          {displaySlide.decorElements.map((emoji, i) => (
+          {SHAPE_DECORS[animating && nxt !== null ? nxt : cur].map((renderShape, i) => (
             <div
-              key={`${animating ? nxt : cur}-d${i}`}
+              key={`${animating ? nxt : cur}-s${i}`}
               style={{
                 position: 'absolute',
                 ...DECOR_POS[i],
-                fontSize: 'clamp(1.4rem, 2.6vmin, 2rem)',
                 animation: `floatDecor${i} ${FLOAT_DUR[i]}s ease-in-out ${FLOAT_DEL[i]}s infinite, decorAppear 0.52s cubic-bezier(0.25,0.46,0.45,0.94) ${i * 180}ms both`,
-                filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.35))',
-                userSelect: 'none',
+                filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.4))',
               }}
-            >{emoji}</div>
+            >
+              {renderShape(displaySlide.accentColor)}
+            </div>
           ))}
         </div>
       </div>
@@ -657,6 +691,16 @@ function HeroSlider() {
           </div>
         ))}
       </div>
+
+      {/* ── CTA Commander ── */}
+      <button
+        onClick={() => { const el = document.getElementById('section-entrees'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
+        style={{ position: 'absolute', bottom: '12%', right: '5%', zIndex: 6, padding: '10px 24px', borderRadius: 999, border: '1.5px solid #C9A96E', background: 'transparent', color: '#C9A96E', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', transition: 'background 0.2s ease, color 0.2s ease' }}
+        onMouseEnter={e => { e.currentTarget.style.background = '#C9A96E'; e.currentTarget.style.color = '#000'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#C9A96E'; }}
+      >
+        Commander
+      </button>
 
       {/* ── DÉGRADÉ hero → menu ── */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 140, background: 'linear-gradient(to bottom, transparent, #000)', zIndex: 5, pointerEvents: 'none' }} />
