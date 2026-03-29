@@ -3,6 +3,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight } from "lucide-react";
 import IslandModeToggle from "./components/IslandModeToggle.jsx";
 import PalmLeaves from "./components/PalmLeaves.jsx";
+import HeroSliderV2 from "./components/HeroSliderV2.jsx";
 
 // MODIFICATION 1: Logo PNG au lieu du SVG
 const LOGO_SRC = "/logo_kaikai.png";
@@ -370,7 +371,7 @@ function getNextOpeningTime() {
   }
 }
 
-function HeroSlider() {
+function HeroSliderLegacy() {
   const SLIDES = [
     { name: "Tahiti",           category: "POISSON", price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",  bgColor: "#0e2a1a", bgGradient: "radial-gradient(ellipse at 50% 50%, #1a4a2e 0%, #0e2a1a 55%, #061208 100%)", accentColor: "#2a6644", image: "/froid-tahitien.jpg"  },
     { name: "Hawaï",            category: "POISSON", price: "22.90 CHF", description: "Thon rouge, mangue, ananas, sauce sésame",        bgColor: "#2a1800", bgGradient: "radial-gradient(ellipse at 50% 50%, #4a2e00 0%, #2a1800 55%, #100800 100%)", accentColor: "#c47a2a", image: "/froid-kaikai.jpg"   },
@@ -1010,7 +1011,7 @@ export default function KaiKaiApp() {
       {/* Menu principal */}
       {step === "menu" && (
         <>
-          <HeroSlider />
+          <HeroSliderV2 />
           <section className="mx-auto max-w-5xl px-4 py-10">
             {/* Grille de plats */}
             <div className="grid gap-6 sm:grid-cols-2">
