@@ -281,29 +281,6 @@ export default function HeroSliderV2() {
           </AnimatePresence>
         </div>
 
-        {/* Logo KaïKaï en haut au centre */}
-        <div className="absolute top-12 left-0 right-0 flex justify-center z-30 pointer-events-none">
-          <motion.h1
-            style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: '48px',
-              color: 'white',
-              letterSpacing: '0.1em',
-              textShadow: '0 0 20px rgba(201,169,110,0.3)',
-            }}
-            animate={{
-              textShadow: [
-                '0 0 20px rgba(201,169,110,0.3)',
-                '0 0 30px rgba(201,169,110,0.5)',
-                '0 0 20px rgba(201,169,110,0.3)',
-              ],
-            }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            KaïKaï
-          </motion.h1>
-        </div>
-
         {/* Infos du plat en bas à gauche */}
         <div className="absolute bottom-24 left-6 md:left-12 z-30 pointer-events-none max-w-[50%] md:max-w-none">
           <AnimatePresence mode="wait">
