@@ -438,6 +438,8 @@ function HeroSliderLegacy() {
   const [isDragging,  setIsDragging]  = React.useState(false);
   const [isSpringBack,setIsSpringBack]= React.useState(false);
   const [showHint,    setShowHint]    = React.useState(false);
+  const [prevSlide, setPrevSlide] = React.useState(null);
+  const [prevDir,   setPrevDir]   = React.useState(null);
   // ── tilt
   const [tilt,      setTilt]      = React.useState({ x: 0, y: 0 });
   const [tiltTrans, setTiltTrans] = React.useState('transform 0.1s ease-out');
@@ -463,11 +465,20 @@ function HeroSliderLegacy() {
   // ── navigate
   const navigate = React.useCallback((nextIdx, direction) => {
     if (animatingRef.current) return;
+    // Capture l'état courant AVANT tout setState
+    const currentSlide = SLIDES[curRef.current];
+    setPrevSlide(currentSlide);
+    setPrevDir(direction);
     setAnimating(true); animatingRef.current = true;
     setNxt(nextIdx); setDir(direction);
     animTimerRef.current = setTimeout(() => {
-      setCur(nextIdx); setNxt(null); setDir(null);
-      setAnimating(false); animatingRef.current = false;
+      setCur(nextIdx);
+      setNxt(null);
+      setDir(null);
+      setPrevSlide(null);
+      setPrevDir(null);
+      setAnimating(false);
+      animatingRef.current = false;
     }, 650);
   }, []);
 
@@ -584,8 +595,10 @@ function HeroSliderLegacy() {
   const displaySlide = animating && nextSlide ? nextSlide : slide;
   const bgGradient   = animating && nextSlide ? nextSlide.bgGradient : slide.bgGradient;
 
-  const bowlExitAnim  = dir === 'next' ? `rollOutToLeft 1.2s ${SP} forwards`        : `rollOutToRight 1.2s ${SP} forwards`;
-  const bowlEnterAnim = dir === 'next' ? `rollInFromRight 1.2s ${SP} 60ms forwards` : `rollInFromLeft 1.2s ${SP} 60ms forwards`;
+  // Utilise prevDir capturé avant le premier setState pour garantir la cohérence
+  const exitDir  = prevDir || dir;
+  const bowlExitAnim  = exitDir === 'next' ? `rollOutToLeft 1.2s ${SP} forwards`        : `rollOutToRight 1.2s ${SP} forwards`;
+  const bowlEnterAnim = exitDir === 'next' ? `rollInFromRight 1.2s ${SP} 60ms forwards` : `rollInFromLeft 1.2s ${SP} 60ms forwards`;
 
   // Container (mot + bol solidaires) — translate. Bowl inner — rotate seul pendant le drag.
   let containerStyle;
@@ -631,20 +644,20 @@ function HeroSliderLegacy() {
         >
           {/* Groupe sortant : mot + bol, même animation rollOut */}
           {animating && (
-            <div style={{ position: 'absolute', animation: bowlExitAnim, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'absolute', animation: bowlExitAnim, display: 'flex', alignItems: 'center', justifyContent: 'center', willChange: 'transform, opacity', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
               <svg style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '540px', height: '540px', pointerEvents: 'none', zIndex: 0, overflow: 'visible', mixBlendMode: 'overlay' }} viewBox="0 0 540 540">
                 <defs><path id="circlePath-exit" d="M 270,270 m -220,0 a 220,220 0 1,1 440,0 a 220,220 0 1,1 -440,0" /></defs>
                 <text fontFamily="'Bebas Neue', sans-serif" fontSize="36" fill="rgba(255,255,255,0.55)" letterSpacing="22">
-                  <textPath href="#circlePath-exit" startOffset="50%" textAnchor="middle">{slide.category} · KAÏ KAÏ · {slide.category} · KAÏ KAÏ ·</textPath>
+                  <textPath href="#circlePath-exit" startOffset="50%" textAnchor="middle">{(prevSlide || slide).category} · KAÏ KAÏ · {(prevSlide || slide).category} · KAÏ KAÏ ·</textPath>
                 </text>
               </svg>
               <div className="hero-bowl" style={{ position: 'relative', zIndex: 1 }}>
-                <img src={slide.image} alt={slide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+                <img src={(prevSlide || slide).image} alt={(prevSlide || slide).name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
               </div>
             </div>
           )}
           {/* Groupe entrant / idle : mot + bol, même animation rollIn ou drag */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', ...containerStyle }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', willChange: 'transform, opacity', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', ...containerStyle }}>
             {/* Halo de lumière colorée derrière le bol */}
             <div style={{ position: 'absolute', width: '500px', height: '500px', borderRadius: '50%', background: `radial-gradient(circle, ${displaySlide.accentColor}33 0%, transparent 70%)`, top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 0, transition: 'background 0.6s ease' }} />
             <svg style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '540px', height: '540px', pointerEvents: 'none', zIndex: 0, overflow: 'visible', mixBlendMode: 'overlay' }} viewBox="0 0 540 540">
