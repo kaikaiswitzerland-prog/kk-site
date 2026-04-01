@@ -1,5 +1,5 @@
 // src/components/HeroSliderV2.jsx — adapté depuis Figma Make
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback.jsx";
 import { ChevronDown } from "lucide-react";
@@ -12,16 +12,16 @@ const SLIDES = [
   { name: "Coulant Chocolat", category: "DESSERT", price: "9.90 CHF",  description: "Coulant fondant, servi chaud",                    bgGradient: "radial-gradient(ellipse at 50% 50%, #241200 0%, #100a00 55%, #080400 100%)", accentColor: "#5a2a00", image: "/dessert-coulant.jpg" },
 ];
 
-// Floating particles component
+// Floating particles component — fix 4: useMemo pour stabiliser les positions aléatoires
 function FloatingParticles({ accentColor }) {
-  const particles = Array.from({ length: 20 }, (_, i) => ({
+  const particles = useMemo(() => Array.from({ length: 20 }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
     y: Math.random() * 100,
     size: Math.random() * 3 + 1,
     duration: Math.random() * 8 + 6,
     delay: Math.random() * 4,
-  }));
+  })), []);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-[2]">
@@ -77,9 +77,12 @@ export default function HeroSliderV2() {
   const [cur, setCur] = useState(0);
   const [progress, setProgress] = useState(0);
   const [hoverPaused, setHoverPaused] = useState(false);
+  const [swipePaused, setSwipePaused] = useState(false);
   const [direction, setDirection] = useState(1);
   const progressStart = useRef(Date.now());
   const rafRef = useRef(0);
+  const swipePauseRef = useRef(null);
+  const touchStartX = useRef(null);
 
   const goTo = useCallback((idx) => {
     setDirection(idx > cur ? 1 : -1);
@@ -93,15 +96,39 @@ export default function HeroSliderV2() {
     progressStart.current = Date.now();
   }, [N]);
 
+  const goPrev = useCallback(() => {
+    setDirection(-1);
+    setCur((c) => (c - 1 + N) % N);
+    progressStart.current = Date.now();
+  }, [N]);
+
+  // Fix 1 : support touch swipe
+  const handleTouchStart = useCallback((e) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (touchStartX.current === null) return;
+    const delta = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(delta) >= 60) {
+      if (delta > 0) goNext();
+      else goPrev();
+      clearTimeout(swipePauseRef.current);
+      setSwipePaused(true);
+      swipePauseRef.current = setTimeout(() => setSwipePaused(false), 8000);
+    }
+    touchStartX.current = null;
+  }, [goNext, goPrev]);
+
   useEffect(() => {
-    if (hoverPaused) return;
+    if (hoverPaused || swipePaused) return;
     const id = setInterval(goNext, 5000);
     return () => clearInterval(id);
-  }, [hoverPaused, goNext]);
+  }, [hoverPaused, swipePaused, goNext]);
 
   useEffect(() => {
     cancelAnimationFrame(rafRef.current);
-    if (hoverPaused) { setProgress(0); return; }
+    if (hoverPaused || swipePaused) { setProgress(0); return; }
     progressStart.current = Date.now();
     setProgress(0);
     const tick = () => {
@@ -111,7 +138,7 @@ export default function HeroSliderV2() {
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [cur, hoverPaused]);
+  }, [cur, hoverPaused, swipePaused]);
 
   const slide = SLIDES[cur];
 
@@ -126,6 +153,8 @@ export default function HeroSliderV2() {
       style={{ height: "100vh" }}
       onMouseEnter={() => setHoverPaused(true)}
       onMouseLeave={() => setHoverPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Animated background */}
       <AnimatePresence mode="popLayout">
@@ -168,12 +197,12 @@ export default function HeroSliderV2() {
 
       {/* Central image with 3D effect */}
       <div className="absolute inset-0 flex items-center justify-center z-[3]">
-        {/* Orbiting ring */}
+        {/* Orbiting ring — fix 5: clamp min réduit à 260px */}
         <motion.div
           className="absolute rounded-full border pointer-events-none"
           style={{
-            width: "clamp(340px, 58vmin, 640px)",
-            height: "clamp(340px, 58vmin, 640px)",
+            width: "clamp(260px, 58vmin, 640px)",
+            height: "clamp(260px, 58vmin, 640px)",
             borderColor: `${slide.accentColor}22`,
           }}
           animate={{ rotate: 360 }}
@@ -278,10 +307,10 @@ export default function HeroSliderV2() {
         </AnimatePresence>
       </div>
 
-      {/* Text info — bottom left */}
+      {/* Text info + CTA mobile — bottom left */}
       <div className="absolute bottom-[12%] left-[5%] max-w-[55%] z-10 pointer-events-none">
         <AnimatePresence mode="wait">
-          <motion.div key={`info-${cur}`}>
+          <motion.div key={`info-${cur}`} className="flex flex-col">
             {/* Category tag */}
             <MaskRevealText delay={0.1}>
               <div className="inline-flex items-center gap-2 mb-3">
@@ -338,13 +367,41 @@ export default function HeroSliderV2() {
                 {slide.description}
               </p>
             </MaskRevealText>
+
+            {/* Fix 2 : CTA mobile — sous le texte, colonne, visible uniquement mobile */}
+            <div className="mt-5 md:hidden pointer-events-auto">
+              <motion.button
+                onClick={scrollToMenu}
+                className="group relative px-8 py-3 rounded-full cursor-pointer overflow-hidden"
+                style={{ border: "1.5px solid #C9A96E", background: "transparent", color: "#C9A96E" }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <motion.div
+                  className="absolute inset-0 bg-[#C9A96E]"
+                  initial={{ x: "-100%" }}
+                  whileHover={{ x: "0%" }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  style={{ zIndex: 0 }}
+                />
+                <span
+                  className="relative z-10 uppercase group-hover:text-black transition-colors duration-300"
+                  style={{ fontSize: "0.8rem", letterSpacing: "0.2em" }}
+                >
+                  Commander
+                </span>
+              </motion.button>
+            </div>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* CTA — bottom right */}
+      {/* CTA — bottom right (desktop uniquement) */}
       <motion.div
-        className="absolute bottom-[12%] right-[5%] z-10 flex flex-col items-end gap-4"
+        className="absolute bottom-[12%] right-[5%] z-10 hidden md:flex flex-col items-end gap-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}
@@ -360,7 +417,6 @@ export default function HeroSliderV2() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
         >
-          {/* Hover fill animation */}
           <motion.div
             className="absolute inset-0 bg-[#C9A96E]"
             initial={{ x: "-100%" }}
@@ -377,7 +433,7 @@ export default function HeroSliderV2() {
         </motion.button>
       </motion.div>
 
-      {/* Slide indicators — vertical right side */}
+      {/* Slide indicators — vertical right side (desktop uniquement) */}
       <div className="absolute right-[5%] top-1/2 -translate-y-1/2 z-10 flex flex-col gap-3 max-md:hidden">
         {SLIDES.map((_, i) => (
           <button
@@ -388,19 +444,42 @@ export default function HeroSliderV2() {
           >
             <motion.div
               className="rounded-full"
-              style={{
-                background: i === cur ? "#C9A96E" : "rgba(255,255,255,0.25)",
-              }}
-              animate={{
-                width: i === cur ? 10 : 5,
-                height: i === cur ? 10 : 5,
-              }}
+              style={{ background: i === cur ? "#C9A96E" : "rgba(255,255,255,0.25)" }}
+              animate={{ width: i === cur ? 10 : 5, height: i === cur ? 10 : 5 }}
               transition={{ duration: 0.3 }}
             />
             {i === cur && (
               <motion.div
                 className="absolute rounded-full border border-[#C9A96E]/40"
                 style={{ width: 18, height: 18 }}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Fix 3 : Dots horizontaux mobile (au-dessus de la progress bar) */}
+      <div className="absolute bottom-[6px] left-1/2 -translate-x-1/2 z-10 flex gap-3 md:hidden">
+        {SLIDES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            className="relative flex items-center justify-center cursor-pointer"
+            style={{ width: 16, height: 16 }}
+          >
+            <motion.div
+              className="rounded-full"
+              style={{ background: i === cur ? "#C9A96E" : "rgba(255,255,255,0.25)" }}
+              animate={{ width: i === cur ? 8 : 5, height: i === cur ? 8 : 5 }}
+              transition={{ duration: 0.3 }}
+            />
+            {i === cur && (
+              <motion.div
+                className="absolute rounded-full border border-[#C9A96E]/40"
+                style={{ width: 14, height: 14 }}
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.3 }}
