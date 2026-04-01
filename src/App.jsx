@@ -623,7 +623,7 @@ function HeroSliderLegacy() {
   return (
     <div
       ref={heroRef}
-      style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', background: bgGradient, transition: 'background 0.6s ease-in-out', userSelect: 'none', touchAction: 'pan-y' }}
+      style={{ position: 'relative', width: '100%', height: 'calc(100vh - 110px)', overflow: 'hidden', background: bgGradient, transition: 'background 0.6s ease-in-out', userSelect: 'none', touchAction: 'pan-y' }}
       onMouseEnter={() => setHoverPaused(true)}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
