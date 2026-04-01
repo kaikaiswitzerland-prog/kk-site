@@ -1025,7 +1025,7 @@ export default function KaiKaiApp() {
       {step === "menu" && (
         <>
           <HeroSliderV2 />
-          <section className="mx-auto max-w-5xl px-4 pt-4 pb-10 md:pt-10">
+          <section className="mx-auto max-w-5xl px-4 pt-0 pb-10 md:pt-10">
             {/* Grille de plats */}
             <div className="grid gap-6 sm:grid-cols-2">
               <h3 id="section-entrees" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🥗 Entrées</h3>
