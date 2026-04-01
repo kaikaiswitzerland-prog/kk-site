@@ -150,7 +150,7 @@ export default function HeroSliderV2() {
   return (
     <div
       className="relative w-full overflow-hidden select-none"
-      style={{ height: "100vh" }}
+      style={{ height: "calc(100vh - 60px)" }}
       onMouseEnter={() => setHoverPaused(true)}
       onMouseLeave={() => setHoverPaused(false)}
       onTouchStart={handleTouchStart}
