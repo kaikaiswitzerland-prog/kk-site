@@ -689,7 +689,7 @@ function HeroSliderLegacy() {
       {/* ── COUCHE 5 : TEXTE NOM + ACCROCHE (bas gauche, z:5) ── */}
       <div
         key={`info-${animating ? nxt : cur}`}
-        style={{ position: 'absolute', bottom: '12%', left: '5%', maxWidth: '55%', pointerEvents: 'none', zIndex: 5, transform: 'translateZ(35px)' }}
+        style={{ position: 'absolute', bottom: '8%', left: '5%', maxWidth: '55%', pointerEvents: 'none', zIndex: 5, transform: 'translateZ(35px)' }}
       >
         <p style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', margin: '0 0 0.4rem', animation: 'textUpCat 0.35s ease-out 0.28s both' }}>
           {displaySlide.category}
@@ -717,7 +717,7 @@ function HeroSliderLegacy() {
       {/* ── CTA Commander ── */}
       <button
         onClick={() => { const el = document.getElementById('section-entrees'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
-        style={{ position: 'absolute', bottom: '12%', right: '5%', zIndex: 6, padding: '10px 24px', borderRadius: 999, border: '1.5px solid #C9A96E', background: 'transparent', color: '#C9A96E', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', transition: 'background 0.2s ease, color 0.2s ease' }}
+        style={{ position: 'absolute', bottom: '8%', right: '5%', zIndex: 6, padding: '10px 24px', borderRadius: 999, border: '1.5px solid #C9A96E', background: 'transparent', color: '#C9A96E', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', transition: 'background 0.2s ease, color 0.2s ease' }}
         onMouseEnter={e => { e.currentTarget.style.background = '#C9A96E'; e.currentTarget.style.color = '#000'; }}
         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#C9A96E'; }}
       >
