@@ -781,6 +781,7 @@ function CategoryNav({ activeCategory }) {
   const activeRef = React.useRef(null);
   const [scrolled, setScrolled] = React.useState(false);
   const [headerH, setHeaderH] = React.useState(0);
+  const [heroGone, setHeroGone] = React.useState(false);
 
   useEffect(() => {
     const measure = () => {
@@ -795,9 +796,14 @@ function CategoryNav({ activeCategory }) {
 
   useEffect(() => {
     if (headerH === 0) return;
-    const handleScroll = () => setScrolled(window.scrollY > headerH);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    const heroH = window.innerHeight - headerH;
+    const check = () => {
+      setScrolled(window.scrollY > headerH);
+      setHeroGone(window.scrollY >= heroH);
+    };
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    return () => window.removeEventListener("scroll", check);
   }, [headerH]);
 
   useEffect(() => {
@@ -840,7 +846,10 @@ function CategoryNav({ activeCategory }) {
           backdropFilter: "none",
           WebkitBackdropFilter: "none",
           borderBottom: "none",
-          transition: "top 0.25s ease, padding 0.2s ease, background 0.25s ease",
+          opacity: heroGone ? 1 : 0,
+          transform: heroGone ? "translateY(0)" : "translateY(-6px)",
+          pointerEvents: heroGone ? "auto" : "none",
+          transition: "top 0.25s ease, padding 0.2s ease, background 0.25s ease, opacity 0.3s ease, transform 0.3s ease",
         }}
       >
         {CATEGORIES.map(cat => {
