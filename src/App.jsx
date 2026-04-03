@@ -776,12 +776,11 @@ const CATEGORIES = [
   { id: "boissons", label: "🧉 Boissons" },
 ];
 
-function CategoryNav({ activeCategory, heroRef }) {
+function CategoryNav({ activeCategory }) {
   const navRef = React.useRef(null);
   const activeRef = React.useRef(null);
   const [scrolled, setScrolled] = React.useState(false);
   const [headerH, setHeaderH] = React.useState(0);
-  const [heroVisible, setHeroVisible] = React.useState(true);
 
   useEffect(() => {
     const measure = () => {
@@ -800,16 +799,6 @@ function CategoryNav({ activeCategory, heroRef }) {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [headerH]);
-
-  useEffect(() => {
-    if (!heroRef?.current) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setHeroVisible(entry.isIntersecting),
-      { threshold: 0 }
-    );
-    observer.observe(heroRef.current);
-    return () => observer.disconnect();
-  }, [heroRef]);
 
   useEffect(() => {
     if (activeRef.current && navRef.current) {
@@ -851,10 +840,7 @@ function CategoryNav({ activeCategory, heroRef }) {
           backdropFilter: "none",
           WebkitBackdropFilter: "none",
           borderBottom: "none",
-          opacity: heroVisible ? 0 : 1,
-          transform: heroVisible ? "translateY(-8px)" : "translateY(0)",
-          pointerEvents: heroVisible ? "none" : "auto",
-          transition: "top 0.25s ease, padding 0.2s ease, background 0.25s ease, opacity 0.3s ease, transform 0.3s ease",
+          transition: "top 0.25s ease, padding 0.2s ease, background 0.25s ease",
         }}
       >
         {CATEGORIES.map(cat => {
@@ -920,7 +906,6 @@ export default function KaiKaiApp() {
   const [showAbout, setShowAbout] = useState(false);
 
   const activeCategory = useActiveCategory();
-  const heroRef = useRef(null);
 
   const items = useMemo(() => MENU_SORTED.map(m => ({ ...m, qty: cart[m.id] || 0 })), [cart]);
   const subtotal = useMemo(() => items.reduce((s, it) => s + it.price * it.qty, 0), [items]);
@@ -1034,12 +1019,12 @@ export default function KaiKaiApp() {
 
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
 
-      {step === "menu" && <CategoryNav activeCategory={activeCategory} heroRef={heroRef} />}
+      {step === "menu" && <CategoryNav activeCategory={activeCategory} />}
 
       {/* Menu principal */}
       {step === "menu" && (
         <>
-          <div ref={heroRef}><HeroSliderV2 /></div>
+          <HeroSliderV2 />
           <section className="mx-auto max-w-5xl px-4 pt-0 pb-10 md:pt-10">
             {/* Grille de plats */}
             <div className="grid gap-6 sm:grid-cols-2">
