@@ -819,7 +819,7 @@ function CategoryNav({ activeCategory }) {
     }
   };
 
-  const topPos = headerH === 0 ? -200 : scrolled ? 0 : headerH;
+  const topPos = headerH === 0 ? -200 : headerH;
 
   return (
     <>
