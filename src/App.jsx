@@ -779,106 +779,88 @@ const CATEGORIES = [
 function CategoryNav({ activeCategory }) {
   const navRef = React.useRef(null);
   const activeRef = React.useRef(null);
-  const [scrolled, setScrolled] = React.useState(false);
-  const [headerH, setHeaderH] = React.useState(0);
-  const [heroGone, setHeroGone] = React.useState(false);
+  const [visible, setVisible] = React.useState(false);
 
-  useEffect(() => {
-    const measure = () => {
-      const h = document.querySelector("header");
-      if (h) setHeaderH(h.offsetHeight);
-    };
-    measure();
-    const t = setTimeout(measure, 100);
-    window.addEventListener("resize", measure);
-    return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
-  }, []);
-
-  useEffect(() => {
-    if (headerH === 0) return;
+  React.useEffect(() => {
     const check = () => {
-      setScrolled(window.scrollY > headerH);
       const sentinel = document.getElementById("hero-end");
-      if (sentinel) setHeroGone(sentinel.getBoundingClientRect().top <= headerH);
+      if (!sentinel) return;
+      setVisible(sentinel.getBoundingClientRect().top < 1);
     };
     check();
     window.addEventListener("scroll", check, { passive: true });
     return () => window.removeEventListener("scroll", check);
-  }, [headerH]);
+  }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (activeRef.current && navRef.current) {
       const nav = navRef.current;
       const btn = activeRef.current;
-      const scrollLeft = btn.offsetLeft - nav.offsetWidth / 2 + btn.offsetWidth / 2;
-      nav.scrollTo({ left: scrollLeft, behavior: "smooth" });
+      nav.scrollTo({
+        left: btn.offsetLeft - nav.offsetWidth / 2 + btn.offsetWidth / 2,
+        behavior: "smooth",
+      });
     }
   }, [activeCategory]);
 
   const scrollToCategory = (id) => {
     const el = document.getElementById(`section-${id}`);
-    if (el) {
-      const navH = navRef.current ? navRef.current.offsetHeight : 36;
-      const offset = (scrolled ? 0 : headerH) + navH + 8;
-      const top = el.getBoundingClientRect().top + window.scrollY - offset;
-      window.scrollTo({ top, behavior: "smooth" });
-    }
+    if (!el) return;
+    const navH = navRef.current ? navRef.current.offsetHeight : 44;
+    const top = el.getBoundingClientRect().top + window.scrollY - navH - 8;
+    window.scrollTo({ top, behavior: "smooth" });
   };
 
-  const topPos = headerH === 0 ? -200 : headerH;
-
   return (
-    <>
-      <div
-        ref={navRef}
-        className="cat-nav"
-        style={{
-          position: "fixed",
-          top: topPos,
-          left: 0,
-          right: 0,
-          zIndex: 35,
-          display: "flex",
-          gap: "8px",
-          overflowX: "auto",
-          padding: scrolled ? "5px 16px" : "8px 16px",
-          background: "transparent",
-          backdropFilter: "none",
-          WebkitBackdropFilter: "none",
-          borderBottom: "none",
-          opacity: heroGone ? 1 : 0,
-          transform: heroGone ? "translateY(0)" : "translateY(-6px)",
-          pointerEvents: heroGone ? "auto" : "none",
-          transition: "top 0.25s ease, padding 0.2s ease, background 0.25s ease, opacity 0.3s ease, transform 0.3s ease",
-        }}
-      >
-        {CATEGORIES.map(cat => {
-          const isActive = activeCategory === cat.id;
-          return (
-            <button
-              key={cat.id}
-              ref={isActive ? activeRef : null}
-              onClick={() => scrollToCategory(cat.id)}
-              style={{
-                flexShrink: 0,
-                whiteSpace: "nowrap",
-                borderRadius: "999px",
-                padding: scrolled ? "3px 12px" : "6px 16px",
-                fontSize: scrolled ? "13px" : "15px",
-                fontWeight: 500,
-                transition: "all 0.2s ease",
-                background: isActive ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.10)",
-                color: isActive ? "#ffffff" : "rgba(255,255,255,0.85)",
-                border: isActive ? "1px solid rgba(255,255,255,0.45)" : "1px solid rgba(255,255,255,0.20)",
-                cursor: "pointer",
-              }}
-            >
-              {cat.label}
-            </button>
-          );
-        })}
-      </div>
-    </>
+    <div
+      ref={navRef}
+      className="cat-nav"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        display: "flex",
+        gap: "8px",
+        overflowX: "auto",
+        padding: "10px 16px",
+        background: "rgba(0,0,0,0.92)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? "auto" : "none",
+        transform: visible ? "translateY(0)" : "translateY(-100%)",
+        transition: "opacity 0.3s ease, transform 0.3s ease",
+      }}
+    >
+      {CATEGORIES.map(cat => {
+        const isActive = activeCategory === cat.id;
+        return (
+          <button
+            key={cat.id}
+            ref={isActive ? activeRef : null}
+            onClick={() => scrollToCategory(cat.id)}
+            style={{
+              flexShrink: 0,
+              whiteSpace: "nowrap",
+              borderRadius: "999px",
+              padding: "5px 14px",
+              fontSize: "14px",
+              fontWeight: 500,
+              transition: "all 0.2s ease",
+              background: isActive ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.08)",
+              color: isActive ? "#ffffff" : "rgba(255,255,255,0.75)",
+              border: isActive ? "1px solid rgba(255,255,255,0.40)" : "1px solid rgba(255,255,255,0.15)",
+              cursor: "pointer",
+            }}
+          >
+            {cat.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -990,7 +972,7 @@ export default function KaiKaiApp() {
       <PalmLeaves />
       <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur">
+      <header className="sticky top-0 z-49 border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             {logoVisible && <img src={LOGO_SRC} alt="KaïKaï" className="h-8" style={{ mixBlendMode: 'screen' }} onError={() => setLogoVisible(false)} />}
@@ -1028,11 +1010,10 @@ export default function KaiKaiApp() {
 
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
 
-      {step === "menu" && <CategoryNav activeCategory={activeCategory} />}
-
       {/* Menu principal */}
       {step === "menu" && (
         <>
+          <CategoryNav activeCategory={activeCategory} />
           <HeroSliderV2 />
           <div id="hero-end" />
           <section className="mx-auto max-w-5xl px-4 pt-0 pb-10 md:pt-10">
