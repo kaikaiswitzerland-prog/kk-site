@@ -3,7 +3,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight } from "lucide-react";
 import IslandModeToggle from "./components/IslandModeToggle.jsx";
 import PalmLeaves from "./components/PalmLeaves.jsx";
-import { HeroSlider } from "./components/HeroSlider.jsx";
+import HeroSliderV2 from "./components/HeroSliderV2.jsx";
 
 // MODIFICATION 1: Logo PNG au lieu du SVG
 const LOGO_SRC = "/logo_kaikai.png";
@@ -1024,7 +1024,7 @@ export default function KaiKaiApp() {
       {/* Menu principal */}
       {step === "menu" && (
         <>
-          <HeroSlider />
+          <HeroSliderV2 />
           <section className="mx-auto max-w-5xl px-4 pt-0 pb-10 md:pt-10">
             {/* Grille de plats */}
             <div className="grid gap-6 sm:grid-cols-2">
