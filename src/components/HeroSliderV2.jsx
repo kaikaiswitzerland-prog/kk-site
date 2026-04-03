@@ -293,30 +293,6 @@ export default function HeroSliderV2() {
         </AnimatePresence>
       </div>
 
-      {/* ── Vertical nav right with progress ── */}
-      <div className="absolute right-[5%] top-1/2 -translate-y-1/2 z-10 flex flex-col gap-3">
-        {SLIDES.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => go(i)}
-            className="relative overflow-hidden cursor-pointer"
-            style={{
-              width: 3,
-              height: 40,
-              background: i < cur ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)",
-              border: "none",
-              padding: 0,
-            }}
-          >
-            {i === cur && (
-              <motion.div
-                className="absolute left-0 right-0 bottom-0"
-                style={{ background: GOLD, height: `${progress * 100}%` }}
-              />
-            )}
-          </button>
-        ))}
-      </div>
 
       {/* ── MOBILE: prev/next arrows ── */}
       <button
