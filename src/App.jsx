@@ -970,7 +970,7 @@ export default function KaiKaiApp() {
       <style>{globalStyles}</style>
       {/* Feuilles de palmier — Mode Île (position fixed, z-index -1) */}
       <PalmLeaves />
-      <div className="min-h-screen bg-black text-white overflow-x-hidden">
+      <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="sticky top-0 z-49 border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
