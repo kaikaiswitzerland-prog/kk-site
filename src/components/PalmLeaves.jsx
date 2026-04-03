@@ -6,19 +6,23 @@ export default function PalmLeaves() {
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
-    if (!islandMode) return;
+    if (!islandMode) {
+      setScrollProgress(0);
+      return;
+    }
     const handleScroll = () => {
       const max = document.body.scrollHeight - window.innerHeight;
       if (max <= 0) return;
       setScrollProgress(Math.min(window.scrollY / max, 1));
     };
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [islandMode]);
 
   return (
     <img
-      src="/Flyer__officiel_-5.png"
+      src="/Flyer (officiel)-5.png"
       alt=""
       style={{
         position: 'fixed',
