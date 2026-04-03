@@ -201,27 +201,6 @@ export default function HeroSliderV2() {
         }}
       />
 
-      {/* Large background category text */}
-      <AnimatePresence initial={false}>
-        <motion.div
-          key={`cat-text-${cur}`}
-          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-[2]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.8 }}
-          style={{
-            fontSize: "clamp(80px, 18vw, 200px)",
-            fontFamily: "'Bebas Neue', Impact, sans-serif",
-            color: "rgba(255,255,255,0.05)",
-            textTransform: "uppercase",
-            letterSpacing: "0.3em",
-            lineHeight: 1,
-          }}
-        >
-          {slide.category}
-        </motion.div>
-      </AnimatePresence>
 
       {/* ── DESKTOP: text bottom-left ── */}
       <div className="absolute bottom-[12%] left-[5%] max-w-[45%] z-10 pointer-events-none max-md:hidden">
