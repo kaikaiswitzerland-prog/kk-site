@@ -796,10 +796,10 @@ function CategoryNav({ activeCategory }) {
 
   useEffect(() => {
     if (headerH === 0) return;
-    const heroH = window.innerHeight - headerH;
     const check = () => {
       setScrolled(window.scrollY > headerH);
-      setHeroGone(window.scrollY >= heroH);
+      const sentinel = document.getElementById("hero-end");
+      if (sentinel) setHeroGone(sentinel.getBoundingClientRect().top <= headerH);
     };
     check();
     window.addEventListener("scroll", check, { passive: true });
@@ -1034,6 +1034,7 @@ export default function KaiKaiApp() {
       {step === "menu" && (
         <>
           <HeroSliderV2 />
+          <div id="hero-end" />
           <section className="mx-auto max-w-5xl px-4 pt-0 pb-10 md:pt-10">
             {/* Grille de plats */}
             <div className="grid gap-6 sm:grid-cols-2">
