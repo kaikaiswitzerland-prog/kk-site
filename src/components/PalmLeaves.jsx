@@ -32,8 +32,8 @@ export default function PalmLeaves() {
         objectFit: 'cover',
         zIndex: 0,
         pointerEvents: 'none',
-        opacity: islandMode ? 0.35 : 0,
-        transform: `scale(1.02) translateY(${-scrollProgress * 15}px)`,
+        opacity: islandMode ? 0.45 : 0,
+        transform: `scale(1.08) translateY(${-scrollProgress * 40}px)`,
         transition: 'opacity 0.8s ease',
       }}
     />
