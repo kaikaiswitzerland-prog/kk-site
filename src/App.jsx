@@ -4,6 +4,7 @@ import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Check, Phone, Instagram, Fa
 import IslandModeToggle from "./components/IslandModeToggle.jsx";
 import PalmLeaves from "./components/PalmLeaves.jsx";
 import HeroSliderV2 from "./components/HeroSliderV2.jsx";
+import { supabase } from "./lib/supabase.js";
 
 // MODIFICATION 1: Logo PNG au lieu du SVG
 const LOGO_SRC = "/logo_kaikai.png";
@@ -965,6 +966,40 @@ export default function KaiKaiApp() {
   });
   const clear = () => { setCart({}); setCartVariants({}); };
 
+  const handleOrderSubmit = async ({ form, paymentMethod }) => {
+    const orderItems = items
+      .filter(it => it.qty > 0)
+      .map(it => ({
+        id: it.id,
+        name: it.name,
+        qty: it.qty,
+        price: it.price,
+        subtotal: parseFloat((it.price * it.qty).toFixed(2)),
+        variants: cartVariants[it.id] || [],
+      }));
+
+    try {
+      await supabase.from('orders').insert([{
+        customer_name: `${form.firstName} ${form.lastName}`.trim(),
+        customer_phone: form.phone,
+        customer_address: mode === 'delivery'
+          ? `${form.address}, ${form.postalCode} Genève`
+          : 'À emporter',
+        items: orderItems,
+        total: parseFloat(total.toFixed(2)),
+        payment_method: paymentMethod,
+        status: 'pending',
+        notes: form.instructions || '',
+        delivery_mode: mode,
+      }]);
+    } catch (err) {
+      console.error('[KaïKaï] Erreur insertion commande:', err);
+    }
+
+    setStep("success");
+    clear();
+  };
+
   return (
     <>
       <style>{globalStyles}</style>
@@ -1086,7 +1121,7 @@ export default function KaiKaiApp() {
           onClear={clear}
           onRemoveOne={removeOne}
           onAdd={add}
-          onSuccess={() => { setStep("success"); clear(); }}
+          onSuccess={handleOrderSubmit}
         />
       )}
 
@@ -1918,15 +1953,17 @@ function AboutModal({ onClose }) {
 }
 
 function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total, mode, setMode, onClose, onClear, onRemoveOne, onAdd, onSuccess }) {
-  const [form, setForm] = useState({ 
-    firstName: "", 
-    lastName: "", 
-    phone: "", 
-    address: "", 
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    address: "",
     postalCode: "",
     instructions: ""
   });
   const [deliveryError, setDeliveryError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [submitting, setSubmitting] = useState(false);
   
   const MINIMUM_DELIVERY = 20.00;
   const canDelivery = subtotal >= MINIMUM_DELIVERY;
@@ -2163,6 +2200,35 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           />
         </div>
 
+        {/* Choix du mode de paiement */}
+        <div className="mt-6">
+          <p className="mb-2 text-sm text-white/60">Mode de paiement</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("cash")}
+              className={`flex-1 rounded-2xl border px-3 py-3 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                paymentMethod === "cash"
+                  ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]"
+                  : "border-white/20 hover:bg-white/10"
+              }`}
+            >
+              💵 Cash
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("twint")}
+              className={`flex-1 rounded-2xl border px-3 py-3 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                paymentMethod === "twint"
+                  ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]"
+                  : "border-white/20 hover:bg-white/10"
+              }`}
+            >
+              📱 Twint
+            </button>
+          </div>
+        </div>
+
         <div className="mt-6 space-y-2 rounded-2xl border border-white/10 p-4">
           <Line label="Sous-total" value={format(subtotal)} />
           <Line label="Réduction site (-10%)" value={`- ${format(discount)}`} />
@@ -2171,21 +2237,28 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
         </div>
 
         <div className="mt-6 flex items-center justify-between gap-3">
-          <button 
-            onClick={onClear} 
+          <button
+            onClick={onClear}
             className="rounded-2xl border border-white/20 px-4 py-2 text-sm hover:bg-white/10 transition-all"
           >
             Vider le panier
           </button>
-          <button 
-            disabled={!canSubmit} 
-            onClick={() => onSuccess()} 
-            className={`rounded-2xl px-4 py-2 transition-all ${canSubmit ? "bg-white text-black hover:bg-white/90" : "border border-white/20 text-white/50 cursor-not-allowed"}`}
+          <button
+            disabled={!canSubmit || submitting}
+            onClick={async () => {
+              setSubmitting(true);
+              await onSuccess({ form, paymentMethod });
+              setSubmitting(false);
+            }}
+            className={`rounded-2xl px-5 py-2 transition-all font-medium ${
+              canSubmit && !submitting
+                ? "bg-white text-black hover:bg-white/90"
+                : "border border-white/20 text-white/50 cursor-not-allowed"
+            }`}
           >
-            Payer maintenant
+            {submitting ? "Envoi…" : "Commander"}
           </button>
         </div>
-        <p className="mt-3 text-xs text-white/50">(Intégration paiement à brancher : Stripe / Twint / Cartes)</p>
       </div>
     </section>
   );

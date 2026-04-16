@@ -1,0 +1,26 @@
+{
+  "name": "KaïKaï Admin — Commandes",
+  "short_name": "KK Admin",
+  "description": "Tableau de bord des commandes KaïKaï en temps réel",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#000000",
+  "theme_color": "#1a2e1e",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
