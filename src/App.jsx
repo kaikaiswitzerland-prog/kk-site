@@ -979,7 +979,7 @@ export default function KaiKaiApp() {
       }));
 
     try {
-      await supabase.from('orders').insert([{
+      const { error } = await supabase.from('orders').insert([{
         customer_name: `${form.firstName} ${form.lastName}`.trim(),
         customer_phone: form.phone,
         customer_address: mode === 'delivery'
@@ -992,12 +992,16 @@ export default function KaiKaiApp() {
         notes: form.instructions || '',
         delivery_mode: mode,
       }]);
+
+      if (error) throw error;
+
+      setStep("success");
+      clear();
+      return null;
     } catch (err) {
       console.error('[KaïKaï] Erreur insertion commande:', err);
+      return "Oups, votre commande n'a pas pu être enregistrée. Réessayez dans un instant, ou contactez-nous directement au +41 76 519 76 70 ou par WhatsApp. Si vous avez déjà payé, ne vous inquiétez pas : aucun débit n'est perdu, on va régler ça ensemble.";
     }
-
-    setStep("success");
-    clear();
   };
 
   return (
@@ -1964,6 +1968,7 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
   const [deliveryError, setDeliveryError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [submitting, setSubmitting] = useState(false);
+  const [orderError, setOrderError] = useState(null);
   
   const MINIMUM_DELIVERY = 20.00;
   const canDelivery = subtotal >= MINIMUM_DELIVERY;
@@ -2236,6 +2241,12 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           <Line label="Total" value={format(total)} bold />
         </div>
 
+        {orderError && (
+          <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
+            {orderError}
+          </div>
+        )}
+
         <div className="mt-6 flex items-center justify-between gap-3">
           <button
             onClick={onClear}
@@ -2247,7 +2258,9 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
             disabled={!canSubmit || submitting}
             onClick={async () => {
               setSubmitting(true);
-              await onSuccess({ form, paymentMethod });
+              setOrderError(null);
+              const err = await onSuccess({ form, paymentMethod });
+              if (err) setOrderError(err);
               setSubmitting(false);
             }}
             className={`rounded-2xl px-5 py-2 transition-all font-medium ${
