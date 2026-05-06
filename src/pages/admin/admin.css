@@ -1,0 +1,166 @@
+/* ─── Styles spécifiques à /admin ───────────────────────────
+   Importé uniquement par AdminApp.jsx — n'impacte pas le site public.
+   Tout ce qui peut s'exprimer en classes Tailwind 4 reste dans le JSX ;
+   ce fichier ne contient que ce qui n'est pas pratique à exprimer en utilitaires
+   (grain SVG, keyframes nommées, ::before barres latérales par statut, print). */
+
+/* Conteneur racine — applique fond/encre/police/anti-alias seulement à l'admin */
+.kk-admin {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grain / noise — fixe, par-dessus tout, mix-blend-mode: overlay */
+.kk-admin::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 999;
+  mix-blend-mode: overlay;
+}
+
+/* Scrollbar discrète */
+.kk-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+.kk-scroll::-webkit-scrollbar-track { background: transparent; }
+.kk-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+/* ─── Animations ─────────────────────────────────────────── */
+@keyframes kk-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 8px rgba(74, 222, 128, 0); }
+}
+.kk-pulse-dot { animation: kk-pulse 1.6s infinite; }
+
+@keyframes kk-new-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 122, 61, 0.4); }
+  100% { box-shadow: 0 0 0 12px rgba(255, 122, 61, 0); }
+}
+.kk-new-pulse { animation: kk-new-pulse 2s ease-out; }
+
+@keyframes kk-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.kk-slide-up { animation: kk-slide-up 0.25s ease both; }
+
+@keyframes kk-toast-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.kk-toast-in { animation: kk-toast-in 0.25s ease both; }
+
+/* ─── Barre latérale colorée des order-cards (par statut) ── */
+.kk-order-card { position: relative; overflow: hidden; }
+.kk-order-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+}
+.kk-order-card[data-status="new"]::before { background: var(--color-accent-warm); }
+.kk-order-card[data-status="paid"]::before { background: var(--color-accent-green); }
+.kk-order-card[data-status="preparing"]::before { background: var(--color-accent-blue); }
+.kk-order-card[data-status="delivered"]::before { background: var(--color-ink-3); }
+.kk-order-card[data-status="refused"]::before { background: var(--color-accent-red); }
+
+/* Coin radial discret sur les KPI */
+.kk-kpi { position: relative; overflow: hidden; }
+.kk-kpi::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle at top right, var(--color-accent) 0%, transparent 70%);
+  opacity: 0.06;
+  pointer-events: none;
+}
+
+/* Indicateur "active" de la sidebar (barre verticale à gauche) */
+.kk-nav-item-active { position: relative; }
+.kk-nav-item-active::before {
+  content: "";
+  position: absolute;
+  left: -18px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  background: var(--color-accent);
+  border-radius: 0 2px 2px 0;
+}
+
+/* ─── Impression ticket cuisine (BT 58mm / 80mm) ──────────
+   Largeur cible 72mm (compatible 80mm avec marges, et 58mm en mode réduit).
+   Police monospace, gros corps, séparateurs en pointillés. */
+@media print {
+  @page { margin: 4mm; size: 80mm auto; }
+  body { background: #fff !important; }
+  body > #root { display: none !important; }
+  body > #kk-print-root { display: block !important; }
+}
+@media screen {
+  #kk-print-root { display: none; }
+}
+#kk-print-root {
+  width: 72mm;
+  margin: 0 auto;
+  padding: 4mm;
+  background: #fff;
+  color: #000;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.35;
+}
+#kk-print-root .kk-print-h1 {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+#kk-print-root .kk-print-sep {
+  border: 0;
+  border-top: 1px dashed #000;
+  margin: 6px 0;
+}
+#kk-print-root .kk-print-sep-strong {
+  border: 0;
+  border-top: 2px dashed #000;
+  margin: 8px 0;
+}
+#kk-print-root .kk-print-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+#kk-print-root .kk-print-total {
+  text-align: right;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+#kk-print-root .kk-print-variants {
+  padding-left: 8px;
+  font-size: 11px;
+}
+#kk-print-root .kk-print-foot {
+  text-align: center;
+  font-size: 10px;
+  margin-top: 8px;
+}
