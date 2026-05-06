@@ -1,8 +1,12 @@
-// src/App.jsx - VERSION AVEC TOUS LES MODALS DE VARIANTES
+// src/App.jsx - VERSION NETTOYÉE
+// Modifications du 6 mai 2026 :
+//   - Suppression de HeroSliderLegacy (fonction non utilisée, ~360 lignes mortes)
+//   - Suppression de PalmLeaves (composant désactivé qui retourne null)
+// Tout le reste est identique à la version précédente.
+
 import React, { useMemo, useState, useEffect } from "react";
 import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight } from "lucide-react";
 import IslandModeToggle from "./components/IslandModeToggle.jsx";
-import PalmLeaves from "./components/PalmLeaves.jsx";
 import HeroSliderV2 from "./components/HeroSliderV2.jsx";
 import { supabase } from "./lib/supabase.js";
 
@@ -43,37 +47,6 @@ const globalStyles = `
   .cat-nav::-webkit-scrollbar { display: none; }
   .cat-nav { -ms-overflow-style: none; scrollbar-width: none; }
 
-  @keyframes rollOutToLeft  { 0% { transform: translateX(0%) rotate(0deg); opacity: 1; } 100% { transform: translateX(-55%) rotate(-120deg); opacity: 0; } }
-  @keyframes rollOutToRight { 0% { transform: translateX(0%) rotate(0deg); opacity: 1; } 100% { transform: translateX(55%) rotate(120deg); opacity: 0; } }
-  @keyframes rollInFromRight{ 0% { transform: translateX(55%) rotate(120deg); opacity: 0; } 100% { transform: translateX(0%) rotate(0deg); opacity: 1; } }
-  @keyframes rollInFromLeft { 0% { transform: translateX(-55%) rotate(-120deg); opacity: 0; } 100% { transform: translateX(0%) rotate(0deg); opacity: 1; } }
-
-  @keyframes wordExitLeft       { from { transform: translateX(0);      } to { transform: translateX(160vw);  } }
-  @keyframes wordExitRight      { from { transform: translateX(0);      } to { transform: translateX(-160vw); } }
-  @keyframes wordEnterFromRight { from { transform: translateX(-160vw); } to { transform: translateX(0);      } }
-  @keyframes wordEnterFromLeft  { from { transform: translateX(160vw);  } to { transform: translateX(0);      } }
-
-  @keyframes textUpCat  { from { opacity: 0; transform: translateY(8px);  } to { opacity: 1; transform: translateY(0); } }
-  @keyframes textUpName { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes textUpMeta { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-
-  @keyframes floatDecor0 { 0%,100% { transform: translateY(0px);  } 50% { transform: translateY(-7px);  } }
-  @keyframes floatDecor1 { 0%,100% { transform: translateY(0px);  } 50% { transform: translateY(-11px); } }
-  @keyframes floatDecor2 { 0%,100% { transform: translateY(0px);  } 50% { transform: translateY(-6px);  } }
-  @keyframes decorAppear { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
-  @keyframes bowlHint    { 0% { transform: translateX(0); } 25% { transform: translateX(14px) rotate(3deg); } 75% { transform: translateX(-14px) rotate(-3deg); } 100% { transform: translateX(0); } }
-  @keyframes bowlFloat   { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
-  .is-floating { animation: bowlFloat 4s ease-in-out infinite; }
-
-  .hero-bowl { width: clamp(280px, 52vmin, 560px); height: clamp(280px, 52vmin, 560px); border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 0 80px rgba(0,0,0,0.5), 0 40px 120px rgba(0,0,0,0.4); flex-shrink: 0; transform-origin: center center; will-change: transform; filter: drop-shadow(0 30px 40px rgba(0,0,0,0.5)); }
-  .hero-word { font-size: clamp(120px, 22vw, 220px); font-family: 'Bebas Neue', Impact, 'Arial Black', sans-serif; font-weight: 900; color: rgba(255,255,255,0.10); text-transform: uppercase; letter-spacing: 0.3em; user-select: none; white-space: nowrap; line-height: 1; mix-blend-mode: overlay; will-change: transform; filter: blur(1.5px); }
-  @media (max-width: 768px) {
-    .hero-bowl { width: min(78vw, 340px); height: min(78vw, 340px); }
-    .hero-word  { font-size: max(26vw, 80px); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .hero-bowl, .hero-word { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-  }
 `;
 
 // Informations du restaurant
@@ -372,365 +345,6 @@ function getNextOpeningTime() {
   }
 }
 
-function HeroSliderLegacy() {
-  const SLIDES = [
-    { name: "Tahiti",           category: "POISSON", price: "22.90 CHF", description: "Thon rouge, citron vert, gingembre, sauce coco",  bgColor: "#0e2a1a", bgGradient: "radial-gradient(ellipse at 50% 50%, #1a4a2e 0%, #0e2a1a 55%, #061208 100%)", accentColor: "#2a6644", image: "/froid-tahitien.jpg"  },
-    { name: "Hawaï",            category: "POISSON", price: "22.90 CHF", description: "Thon rouge, mangue, ananas, sauce sésame",        bgColor: "#2a1800", bgGradient: "radial-gradient(ellipse at 50% 50%, #4a2e00 0%, #2a1800 55%, #100800 100%)", accentColor: "#c47a2a", image: "/froid-kaikai.jpg"   },
-    { name: "Manoa",            category: "POISSON", price: "24.90 CHF", description: "Thon rouge, sauce arachide, guacamole maison",    bgColor: "#1a1200", bgGradient: "radial-gradient(ellipse at 50% 50%, #302000 0%, #1a1200 55%, #0a0800 100%)", accentColor: "#a0832a", image: "/froid-mokai.jpg"    },
-    { name: "Chao Men",         category: "CHAUD",   price: "18.90 CHF", description: "Nouilles sautées, wok de porc, sauce crevettes",  bgColor: "#200a0a", bgGradient: "radial-gradient(ellipse at 50% 50%, #3a1010 0%, #200a0a 55%, #0e0404 100%)", accentColor: "#8b2a1a", image: "/chaud-chaomen.jpg"  },
-    { name: "Kai Fan",          category: "CHAUD",   price: "18.90 CHF", description: "Riz sauté, wok de porc, sauce champignons",       bgColor: "#0a1a0a", bgGradient: "radial-gradient(ellipse at 50% 50%, #142a14 0%, #0a1a0a 55%, #040a04 100%)", accentColor: "#2a5a1a", image: "/chaud-kaifan.jpg"   },
-    { name: "Coulant Chocolat", category: "DESSERT", price: "9.90 CHF",  description: "Coulant fondant, servi chaud",                    bgColor: "#100a00", bgGradient: "radial-gradient(ellipse at 50% 50%, #241200 0%, #100a00 55%, #080400 100%)", accentColor: "#5a2a00", image: "/dessert-coulant.jpg" },
-  ];
-  // SVG géométriques par slide — 3 formes, colorées avec accentColor
-  // Chaque entrée : fonction (c: accentColor) => JSX SVG
-  const SHAPE_DECORS = [
-    [ // Tahiti — ring + 3 points + diagonale
-      (c) => <svg width="28" height="28" fill="none" viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" stroke={c} strokeWidth="1.5" opacity="0.9"/></svg>,
-      (c) => <svg width="34" height="8"  fill="none" viewBox="0 0 34 8"><circle cx="4" cy="4" r="3" fill={c} opacity="0.8"/><circle cx="17" cy="4" r="3" fill={c} opacity="0.8"/><circle cx="30" cy="4" r="3" fill={c} opacity="0.8"/></svg>,
-      (c) => <svg width="38" height="38" fill="none" viewBox="0 0 38 38"><line x1="1" y1="37" x2="37" y2="1" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/></svg>,
-    ],
-    [ // Hawaï — diamant + point plein + croix
-      (c) => <svg width="26" height="26" fill="none" viewBox="0 0 26 26"><rect x="13" y="2" width="15" height="15" rx="1" transform="rotate(45 13 13)" stroke={c} strokeWidth="1.5" opacity="0.9"/></svg>,
-      (c) => <svg width="14" height="14" fill="none" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill={c} opacity="0.75"/></svg>,
-      (c) => <svg width="22" height="22" fill="none" viewBox="0 0 22 22"><line x1="11" y1="1" x2="11" y2="21" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/><line x1="1" y1="11" x2="21" y2="11" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/></svg>,
-    ],
-    [ // Manoa — diagonale + ring fin + point
-      (c) => <svg width="38" height="38" fill="none" viewBox="0 0 38 38"><line x1="1" y1="1" x2="37" y2="37" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/></svg>,
-      (c) => <svg width="32" height="32" fill="none" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" stroke={c} strokeWidth="1" opacity="0.65"/></svg>,
-      (c) => <svg width="10" height="10" fill="none" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill={c} opacity="0.8"/></svg>,
-    ],
-    [ // Chao Men — croix + ring + 3 points verticaux
-      (c) => <svg width="22" height="22" fill="none" viewBox="0 0 22 22"><line x1="11" y1="1" x2="11" y2="21" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/><line x1="1" y1="11" x2="21" y2="11" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/></svg>,
-      (c) => <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke={c} strokeWidth="1.5" opacity="0.85"/></svg>,
-      (c) => <svg width="8"  height="34" fill="none" viewBox="0 0 8 34"><circle cx="4" cy="4"  r="3" fill={c} opacity="0.8"/><circle cx="4" cy="17" r="3" fill={c} opacity="0.8"/><circle cx="4" cy="30" r="3" fill={c} opacity="0.8"/></svg>,
-    ],
-    [ // Kai Fan — diagonale + diamant + point
-      (c) => <svg width="38" height="38" fill="none" viewBox="0 0 38 38"><line x1="1" y1="37" x2="37" y2="1" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/></svg>,
-      (c) => <svg width="26" height="26" fill="none" viewBox="0 0 26 26"><rect x="13" y="2" width="15" height="15" rx="1" transform="rotate(45 13 13)" stroke={c} strokeWidth="1.5" opacity="0.85"/></svg>,
-      (c) => <svg width="12" height="12" fill="none" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill={c} opacity="0.75"/></svg>,
-    ],
-    [ // Coulant — ring + 3 points + croix
-      (c) => <svg width="30" height="30" fill="none" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" stroke={c} strokeWidth="1.5" opacity="0.85"/></svg>,
-      (c) => <svg width="34" height="8"  fill="none" viewBox="0 0 34 8"><circle cx="4" cy="4" r="3" fill={c} opacity="0.75"/><circle cx="17" cy="4" r="3" fill={c} opacity="0.75"/><circle cx="30" cy="4" r="3" fill={c} opacity="0.75"/></svg>,
-      (c) => <svg width="22" height="22" fill="none" viewBox="0 0 22 22"><line x1="11" y1="1" x2="11" y2="21" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/><line x1="1" y1="11" x2="21" y2="11" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/></svg>,
-    ],
-  ];
-  const N = SLIDES.length;
-  const SP = 'cubic-bezier(0.4,0.0,0.2,1)';
-  const DECOR_POS = [
-    { top: '-15%',    left: '-18%'  },
-    { top: '-20%',    right: '-15%' },
-    { bottom: '-10%', right: '-20%' },
-  ];
-  const FLOAT_DUR = [3.1, 3.8, 4.4];
-  const FLOAT_DEL = [0, 0.6, 1.2];
-
-  // ── core state
-  const [cur,       setCur]         = React.useState(0);
-  const [nxt,       setNxt]         = React.useState(null);
-  const [dir,       setDir]         = React.useState(null);
-  const [animating, setAnimating]   = React.useState(false);
-  // ── autoplay
-  const [hoverPaused,     setHoverPaused]     = React.useState(false);
-  const [afterDragPaused, setAfterDragPaused] = React.useState(false);
-  const [progress,        setProgress]        = React.useState(0);
-  // ── drag
-  const [dragX,       setDragX]       = React.useState(0);
-  const [isDragging,  setIsDragging]  = React.useState(false);
-  const [isSpringBack,setIsSpringBack]= React.useState(false);
-  const [showHint,    setShowHint]    = React.useState(false);
-  const [prevSlide, setPrevSlide] = React.useState(null);
-  const [prevDir,   setPrevDir]   = React.useState(null);
-  // ── tilt
-  const [tilt,      setTilt]      = React.useState({ x: 0, y: 0 });
-  const [tiltTrans, setTiltTrans] = React.useState('transform 0.1s ease-out');
-
-  // ── refs
-  const heroRef       = React.useRef(null);
-  const animTimerRef  = React.useRef(null);
-  const pauseTimerRef = React.useRef(null);
-  const rafRef        = React.useRef(null);
-  const progressStart = React.useRef(null);
-  const hintShown     = React.useRef(false);
-  const dragStartX    = React.useRef(0);
-  const dragXRef      = React.useRef(0);
-  const isDraggingRef = React.useRef(false);
-  const curRef        = React.useRef(0);
-  const animatingRef  = React.useRef(false);
-  curRef.current      = cur;
-  animatingRef.current= animating;
-  isDraggingRef.current = isDragging;
-
-  const autoplayPaused = hoverPaused || isDragging || afterDragPaused;
-
-  // ── navigate
-  const navigate = React.useCallback((nextIdx, direction) => {
-    if (animatingRef.current) return;
-    // Capture l'état courant AVANT tout setState
-    const currentSlide = SLIDES[curRef.current];
-    setPrevSlide(currentSlide);
-    setPrevDir(direction);
-    setAnimating(true); animatingRef.current = true;
-    setNxt(nextIdx); setDir(direction);
-    animTimerRef.current = setTimeout(() => {
-      setCur(nextIdx);
-      setNxt(null);
-      setDir(null);
-      setPrevSlide(null);
-      setPrevDir(null);
-      setAnimating(false);
-      animatingRef.current = false;
-    }, 650);
-  }, []);
-
-  const goNext = () => navigate((curRef.current + 1) % N, 'next');
-  const goPrev = () => navigate((curRef.current - 1 + N) % N, 'prev');
-  const goNextRef = React.useRef(goNext);
-  goNextRef.current = goNext;
-
-  // ── autoplay
-  React.useEffect(() => {
-    if (autoplayPaused) return;
-    const id = setInterval(() => goNextRef.current(), 5000);
-    return () => clearInterval(id);
-  }, [autoplayPaused]);
-
-  // ── progress bar
-  React.useEffect(() => {
-    cancelAnimationFrame(rafRef.current);
-    if (autoplayPaused) { setProgress(0); return; }
-    progressStart.current = Date.now();
-    setProgress(0);
-    const tick = () => {
-      const p = Math.min((Date.now() - progressStart.current) / 5000, 1);
-      setProgress(p);
-      if (p < 1) rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [cur, autoplayPaused]);
-
-  // ── hint oscillation (once at 2s)
-  React.useEffect(() => {
-    const t = setTimeout(() => {
-      if (hintShown.current || animatingRef.current || isDraggingRef.current) return;
-      hintShown.current = true;
-      setShowHint(true);
-      setTimeout(() => setShowHint(false), 700);
-    }, 2000);
-    return () => clearTimeout(t);
-  }, []);
-
-  // ── drag
-  const getClientX = (e) => e.touches ? e.touches[0].clientX : e.clientX;
-
-  const onDragStart = (e) => {
-    if (animatingRef.current) return;
-    if (e.type === 'mousedown') e.preventDefault();
-    isDraggingRef.current = true;
-    setIsDragging(true);
-    setIsSpringBack(false);
-    setShowHint(false);
-    dragStartX.current = getClientX(e);
-    dragXRef.current = 0;
-    setDragX(0);
-  };
-
-  const onDragMove = (e) => {
-    if (!isDraggingRef.current) return;
-    const delta = (getClientX(e) - dragStartX.current) * 0.65;
-    dragXRef.current = delta;
-    setDragX(delta);
-  };
-
-  const onDragEnd = () => {
-    if (!isDraggingRef.current) return;
-    isDraggingRef.current = false;
-    setIsDragging(false);
-    const dx = dragXRef.current;
-    dragXRef.current = 0;
-    setDragX(0);
-    const threshold = window.innerWidth <= 768 ? 60 : 80;
-    if (Math.abs(dx) >= threshold) {
-      setAfterDragPaused(true);
-      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
-      pauseTimerRef.current = setTimeout(() => { setAfterDragPaused(false); pauseTimerRef.current = null; }, 8000);
-      if (dx < 0) goNext(); else goPrev();
-    } else {
-      setIsSpringBack(true);
-      setTimeout(() => setIsSpringBack(false), 500);
-    }
-  };
-
-  // ── tilt 3D (desktop only)
-  const onTiltMove = (e) => {
-    if (window.innerWidth < 768) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (!heroRef.current) return;
-    const rect = heroRef.current.getBoundingClientRect();
-    setTilt({
-      x: ((e.clientY - rect.top)  / rect.height - 0.5) * -5,
-      y: ((e.clientX - rect.left) / rect.width  - 0.5) *  7,
-    });
-    setTiltTrans('transform 0.08s ease-out');
-  };
-
-  const handleMouseMove = (e) => { onDragMove(e); onTiltMove(e); };
-  const handleMouseLeave = () => {
-    onDragEnd();
-    setTilt({ x: 0, y: 0 });
-    setTiltTrans('transform 0.6s ease');
-    setHoverPaused(false);
-  };
-
-  // ── cleanup
-  React.useEffect(() => () => {
-    clearTimeout(animTimerRef.current);
-    clearTimeout(pauseTimerRef.current);
-    cancelAnimationFrame(rafRef.current);
-  }, []);
-
-  // ── derived
-  const slide        = SLIDES[cur];
-  const nextSlide    = nxt !== null ? SLIDES[nxt] : null;
-  const displaySlide = animating && nextSlide ? nextSlide : slide;
-  const bgGradient   = animating && nextSlide ? nextSlide.bgGradient : slide.bgGradient;
-
-  // Utilise prevDir capturé avant le premier setState pour garantir la cohérence
-  const exitDir  = prevDir || dir;
-  const bowlExitAnim  = exitDir === 'next' ? `rollOutToLeft 1.2s ${SP} forwards`        : `rollOutToRight 1.2s ${SP} forwards`;
-  const bowlEnterAnim = exitDir === 'next' ? `rollInFromRight 1.2s ${SP} 60ms forwards` : `rollInFromLeft 1.2s ${SP} 60ms forwards`;
-
-  // Container (mot + bol solidaires) — translate. Bowl inner — rotate seul pendant le drag.
-  let containerStyle;
-  let bowlInnerStyle;
-  if (animating) {
-    containerStyle = { animation: bowlEnterAnim };
-    bowlInnerStyle = {};
-  } else if (isDragging) {
-    containerStyle = { transform: `translateX(${dragX}px)`, transition: 'none', cursor: 'grabbing' };
-    bowlInnerStyle = { transform: `rotate(${dragX * 0.25}deg)`, transition: 'none' };
-  } else if (isSpringBack) {
-    containerStyle = { transform: 'translateX(0)', transition: `transform 0.5s ${SP}`, cursor: 'grab' };
-    bowlInnerStyle = { transform: 'rotate(0deg)', transition: `transform 0.5s ${SP}` };
-  } else if (showHint) {
-    containerStyle = { animation: 'bowlHint 0.6s ease-in-out forwards', cursor: 'grab' };
-    bowlInnerStyle = {};
-  } else {
-    containerStyle = { cursor: 'grab' };
-    bowlInnerStyle = {};
-  }
-
-  return (
-    <div
-      ref={heroRef}
-      style={{ position: 'relative', width: '100%', height: 'calc(100vh - 110px)', overflow: 'hidden', background: bgGradient, transition: 'background 0.6s ease-in-out', userSelect: 'none', touchAction: 'pan-y' }}
-      onMouseEnter={() => setHoverPaused(true)}
-      onMouseLeave={handleMouseLeave}
-      onMouseMove={handleMouseMove}
-      onMouseUp={onDragEnd}
-    >
-      {/* ── COUCHE 1 : FOND (derrière tout, z:1) — géré par backgroundColor du parent ── */}
-
-      {/* ── 3D TILT CONTAINER ── */}
-      <div style={{ position: 'absolute', inset: 0, transform: `perspective(1400px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, transition: tiltTrans, transformStyle: 'preserve-3d' }}>
-
-        {/* COUCHE 3 : MOT GÉANT + BOL solidaires — drag listeners ici */}
-        <div
-          style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3, transform: 'translateZ(55px)', touchAction: 'pan-y' }}
-          onMouseDown={onDragStart}
-          onTouchStart={onDragStart}
-          onTouchMove={onDragMove}
-          onTouchEnd={onDragEnd}
-        >
-          {/* Groupe sortant : mot + bol, même animation rollOut */}
-          {animating && (
-            <div style={{ position: 'absolute', animation: bowlExitAnim, display: 'flex', alignItems: 'center', justifyContent: 'center', willChange: 'transform, opacity', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
-              <svg style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '540px', height: '540px', pointerEvents: 'none', zIndex: 0, overflow: 'visible', mixBlendMode: 'overlay' }} viewBox="0 0 540 540">
-                <defs><path id="circlePath-exit" d="M 270,270 m -220,0 a 220,220 0 1,1 440,0 a 220,220 0 1,1 -440,0" /></defs>
-                <text fontFamily="'Bebas Neue', sans-serif" fontSize="36" fill="rgba(255,255,255,0.55)" letterSpacing="22">
-                  <textPath href="#circlePath-exit" startOffset="50%" textAnchor="middle">{(prevSlide || slide).category} · KAÏ KAÏ · {(prevSlide || slide).category} · KAÏ KAÏ ·</textPath>
-                </text>
-              </svg>
-              <div className="hero-bowl" style={{ position: 'relative', zIndex: 1 }}>
-                <img src={(prevSlide || slide).image} alt={(prevSlide || slide).name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
-              </div>
-            </div>
-          )}
-          {/* Groupe entrant / idle : mot + bol, même animation rollIn ou drag */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', willChange: 'transform, opacity', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', ...containerStyle }}>
-            {/* Halo de lumière colorée derrière le bol */}
-            <div style={{ position: 'absolute', width: '500px', height: '500px', borderRadius: '50%', background: `radial-gradient(circle, ${displaySlide.accentColor}33 0%, transparent 70%)`, top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 0, transition: 'background 0.6s ease' }} />
-            <svg style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '540px', height: '540px', pointerEvents: 'none', zIndex: 0, overflow: 'visible', mixBlendMode: 'overlay' }} viewBox="0 0 540 540">
-              <defs><path id="circlePath-current" d="M 270,270 m -220,0 a 220,220 0 1,1 440,0 a 220,220 0 1,1 -440,0" /></defs>
-              <text fontFamily="'Bebas Neue', sans-serif" fontSize="36" fill="rgba(255,255,255,0.55)" letterSpacing="22">
-                <textPath href="#circlePath-current" startOffset="50%" textAnchor="middle">{displaySlide.category} · KAÏ KAÏ · {displaySlide.category} · KAÏ KAÏ ·</textPath>
-              </text>
-            </svg>
-            {/* Mot géant en fond */}
-            <div className="hero-word" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }}>
-              {displaySlide.category}
-            </div>
-            {/* Éléments décoratifs en orbite autour du bol */}
-            {SHAPE_DECORS[animating && nxt !== null ? nxt : cur].map((renderShape, i) => (
-              <div key={`${animating ? nxt : cur}-s${i}`} style={{ position: 'absolute', ...DECOR_POS[i], transform: 'scale(1.3)', transformOrigin: 'center' }}>
-                <div style={{ animation: `floatDecor${i} ${FLOAT_DUR[i]}s ease-in-out ${FLOAT_DEL[i]}s infinite, decorAppear 0.52s cubic-bezier(0.25,0.46,0.45,0.94) ${i * 180}ms both`, filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.4))' }}>
-                  {renderShape(displaySlide.accentColor)}
-                </div>
-              </div>
-            ))}
-            <div className={`hero-bowl${!isDragging && !animating && !isSpringBack ? ' is-floating' : ''}`} style={{ position: 'relative', zIndex: 1, ...bowlInnerStyle }}>
-              <img src={displaySlide.image} alt={displaySlide.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ── COUCHE 5 : TEXTE NOM + ACCROCHE (bas gauche, z:5) ── */}
-      <div
-        key={`info-${animating ? nxt : cur}`}
-        style={{ position: 'absolute', bottom: '8%', left: '5%', maxWidth: '55%', pointerEvents: 'none', zIndex: 5, transform: 'translateZ(35px)' }}
-      >
-        <p style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', margin: '0 0 0.4rem', animation: 'textUpCat 0.35s ease-out 0.28s both' }}>
-          {displaySlide.category}
-        </p>
-        <h2 style={{ fontSize: 'clamp(42px, 6vw, 80px)', fontFamily: "'Bebas Neue', Impact, 'Arial Black', sans-serif", fontWeight: 900, color: '#fff', lineHeight: 1, margin: '0 0 0.3rem', animation: 'textUpName 0.4s ease-out 0.32s both', letterSpacing: '0.02em' }}>
-          {displaySlide.name}
-        </h2>
-        <p style={{ fontSize: 'clamp(0.95rem, 2vw, 1.3rem)', fontWeight: 500, color: 'rgba(255,255,255,0.9)', margin: '0 0 0.4rem', animation: 'textUpMeta 0.38s ease-out 0.38s both' }}>
-          {displaySlide.price}
-        </p>
-        <p style={{ fontSize: 'clamp(0.75rem, 1.3vw, 0.88rem)', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, margin: 0, animation: 'textUpMeta 0.38s ease-out 0.42s both' }}>
-          {displaySlide.description}
-        </p>
-      </div>
-
-      {/* ── COUCHE 6 : BARRE SEGMENTÉE (z:6) ── */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, display: 'flex', zIndex: 6, pointerEvents: 'none' }}>
-        {SLIDES.map((_, i) => (
-          <div key={i} style={{ flex: 1, height: '100%', background: 'rgba(255,255,255,0.18)', overflow: 'hidden', transition: 'opacity 0.3s', opacity: i === cur ? 1 : 0.7, marginRight: i < N - 1 ? 2 : 0 }}>
-            <div style={{ height: '100%', background: 'rgba(255,255,255,0.85)', width: i === cur ? `${progress * 100}%` : i < cur ? '100%' : '0%', transition: i === cur ? 'width 0.1s linear' : 'width 0.3s ease' }} />
-          </div>
-        ))}
-      </div>
-
-      {/* ── CTA Commander ── */}
-      <button
-        onClick={() => { const el = document.getElementById('section-entrees'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
-        style={{ position: 'absolute', bottom: '8%', right: '5%', zIndex: 6, padding: '10px 24px', borderRadius: 999, border: '1.5px solid #C9A96E', background: 'transparent', color: '#C9A96E', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', transition: 'background 0.2s ease, color 0.2s ease' }}
-        onMouseEnter={e => { e.currentTarget.style.background = '#C9A96E'; e.currentTarget.style.color = '#000'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#C9A96E'; }}
-      >
-        Commander
-      </button>
-
-      {/* ── DÉGRADÉ hero → menu ── */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 140, background: 'linear-gradient(to bottom, transparent, #000)', zIndex: 5, pointerEvents: 'none' }} />
-    </div>
-  );
-}
-
 function Badge({ type }) {
   const badges = {
     halal: { text: "HALAL" },
@@ -893,7 +507,9 @@ export default function KaiKaiApp() {
   const [cartVariants, setCartVariants] = useState({});
   const [mode, setMode] = useState("delivery");
   const [couponApplied] = useState(true);
-  const [step, setStep] = useState("menu");
+  const [step, setStep] = useState(
+    window.location.pathname === '/payment-success' ? 'success' : 'menu'
+  );
   const [logoVisible, setLogoVisible] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
 
@@ -979,7 +595,9 @@ export default function KaiKaiApp() {
       }));
 
     try {
-      const { error } = await supabase.from('orders').insert([{
+      const isCard = paymentMethod === 'card';
+
+      const { data: inserted, error } = await supabase.from('orders').insert([{
         customer_name: `${form.firstName} ${form.lastName}`.trim(),
         customer_phone: form.phone,
         customer_address: mode === 'delivery'
@@ -988,12 +606,29 @@ export default function KaiKaiApp() {
         items: orderItems,
         total: parseFloat(total.toFixed(2)),
         payment_method: paymentMethod,
-        status: 'pending',
+        status: isCard ? 'pending_payment' : 'pending',
         notes: form.instructions || '',
         delivery_mode: mode,
-      }]);
+      }]).select('id').single();
 
       if (error) throw error;
+
+      if (isCard) {
+        const res = await fetch('/api/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: parseFloat(total.toFixed(2)),
+            order_id: inserted.id,
+            description: `Commande KaïKaï #${inserted.id.slice(0, 8)}`,
+            redirect_url: `${window.location.origin}/payment-success?order_id=${inserted.id}`,
+          }),
+        });
+        const checkout = await res.json();
+        if (!res.ok || !checkout.checkout_url) throw new Error(checkout.error || 'Erreur SumUp');
+        window.location.href = checkout.checkout_url;
+        return null;
+      }
 
       setStep("success");
       clear();
@@ -1007,8 +642,6 @@ export default function KaiKaiApp() {
   return (
     <>
       <style>{globalStyles}</style>
-      {/* Feuilles de palmier — Mode Île (position fixed, z-index -1) */}
-      <PalmLeaves />
       <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="sticky top-0 z-49 border-b border-white/10 bg-black/80 backdrop-blur">
@@ -1966,7 +1599,7 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
     instructions: ""
   });
   const [deliveryError, setDeliveryError] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [paymentMethod, setPaymentMethod] = useState("card");
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState(null);
   
@@ -1998,6 +1631,12 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
       setMode("pickup");
     }
   }, [canDelivery, mode, setMode]);
+
+  useEffect(() => {
+    if (mode === "delivery" && paymentMethod === "cash") {
+      setPaymentMethod("card");
+    }
+  }, [mode, paymentMethod]);
 
   return (
     <section className="fixed inset-0 z-50 flex items-start justify-end bg-black/60 backdrop-blur-sm">
@@ -2211,14 +1850,14 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setPaymentMethod("cash")}
+              onClick={() => setPaymentMethod("card")}
               className={`flex-1 rounded-2xl border px-3 py-3 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                paymentMethod === "cash"
+                paymentMethod === "card"
                   ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]"
                   : "border-white/20 hover:bg-white/10"
               }`}
             >
-              💵 Cash
+              💳 Carte
             </button>
             <button
               type="button"
@@ -2231,6 +1870,19 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
             >
               📱 Twint
             </button>
+            {mode === "pickup" && (
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("cash")}
+                className={`flex-1 rounded-2xl border px-3 py-3 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                  paymentMethod === "cash"
+                    ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]"
+                    : "border-white/20 hover:bg-white/10"
+                }`}
+              >
+                💵 Cash
+              </button>
+            )}
           </div>
         </div>
 

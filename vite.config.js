@@ -7,6 +7,11 @@ export default defineConfig({
   build: {
     outDir: 'dist', // ← très important pour Vercel
   },
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3001',
+    },
+  },
   // Expose les variables d'environnement préfixées NEXT_PUBLIC_ au client
   // (en plus du préfixe Vite par défaut VITE_)
   // Dans Vercel : ajoutez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY
