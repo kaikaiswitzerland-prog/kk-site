@@ -53,11 +53,16 @@ export default function PrintTicket({ order, onComplete }) {
           <span>{fmtTime(order.created_at)}</span>
         </div>
         <div style={{ fontSize: 11 }}>{fmtDate(order.created_at)}</div>
-        <div style={{ marginTop: 2, fontWeight: 700 }}>
+        <div className="kk-print-mode">
           {order.delivery_mode === 'pickup'
-            ? '📦 À EMPORTER'
-            : `🛵 LIVRAISON — ${order.customer_address}`}
+            ? '>>> A EMPORTER <<<'
+            : `>>> LIVRAISON <<<`}
         </div>
+        {order.delivery_mode !== 'pickup' && order.customer_address && (
+          <div style={{ marginTop: 2, fontWeight: 700 }}>
+            {order.customer_address}
+          </div>
+        )}
       </div>
 
       <hr className="kk-print-sep" />

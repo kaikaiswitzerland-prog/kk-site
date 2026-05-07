@@ -30,10 +30,12 @@ export default function OrdersView({
 
   return (
     <div>
-      {/* Tabs — scroll horizontal avec snap, scroll naturel (pas de gradient fade) */}
+      {/* Tabs — scroll horizontal avec snap proximity (peut déborder, scroll naturel).
+          Sur mobile : padding/text/badge ultra-compacts pour maximiser le nombre
+          de tabs visibles d'un coup sans déborder. */}
       <div
-        className="kk-scroll mb-5 flex gap-1 overflow-x-auto border-b border-line md:mb-7"
-        style={{ scrollSnapType: 'x mandatory' }}
+        className="kk-scroll mb-5 flex gap-0.5 overflow-x-auto border-b border-line md:mb-7 md:gap-1"
+        style={{ scrollSnapType: 'x proximity' }}
       >
         {TAB_FILTERS.map((tab) => {
           const active = tab.id === activeTab;
@@ -43,8 +45,8 @@ export default function OrdersView({
               onClick={() => setActiveTab(tab.id)}
               style={{ scrollSnapAlign: 'start' }}
               className={[
-                '-mb-px inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors',
-                'md:gap-2 md:px-4 md:py-3',
+                '-mb-px inline-flex items-center gap-1 whitespace-nowrap border-b-2 px-2.5 py-2 text-[12px] font-medium transition-colors',
+                'md:gap-2 md:px-4 md:py-3 md:text-[13px]',
                 active
                   ? 'border-accent text-ink'
                   : 'border-transparent text-ink-3 hover:text-ink-2',
@@ -54,7 +56,7 @@ export default function OrdersView({
               {counts[tab.id] > 0 && (
                 <span
                   className={[
-                    'rounded-full px-2 py-0.5 font-mono text-[11px]',
+                    'rounded-full px-1.5 py-0.5 font-mono text-[10px] md:px-2 md:text-[11px]',
                     active ? 'bg-accent font-bold text-black' : 'bg-bg-elev-2 text-ink-2',
                   ].join(' ')}
                 >
