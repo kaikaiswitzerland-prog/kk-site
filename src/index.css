@@ -1,1 +1,28 @@
 @import "tailwindcss";
+
+/* ─── Design tokens admin (Tailwind 4 @theme)
+   Génère automatiquement bg-*, text-*, border-*, font-*, etc.
+   Ces tokens n'affectent pas le site public : ils ne sont consommés
+   que par les composants /admin via leurs classes utilitaires. */
+@theme {
+  --color-bg: #0a0a0a;
+  --color-bg-elev: #131313;
+  --color-bg-elev-2: #1c1c1c;
+
+  --color-line: rgba(255, 255, 255, 0.07);
+  --color-line-strong: rgba(255, 255, 255, 0.14);
+
+  --color-ink: #fafafa;
+  --color-ink-2: rgba(250, 250, 250, 0.62);
+  --color-ink-3: rgba(250, 250, 250, 0.38);
+
+  --color-accent: #d4ff6b;
+  --color-accent-warm: #ff7a3d;
+  --color-accent-blue: #6bb6ff;
+  --color-accent-green: #4ade80;
+  --color-accent-red: #ff5d5d;
+
+  --font-display: "Instrument Serif", serif;
+  --font-body: "Inter Tight", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}

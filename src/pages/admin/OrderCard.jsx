@@ -1,0 +1,187 @@
+import {
+  fmt,
+  fmtTime,
+  fmtRelative,
+  orderNumber,
+  STATUS_VISUAL,
+  STATUS_LABELS,
+  STATUS_SUBLABEL,
+  urgencyFor,
+} from '../../lib/admin/orderHelpers.js';
+import { useNow } from '../../hooks/useNow.js';
+
+const STATUS_PILL_CLASS = {
+  new: 'bg-accent-warm/12 text-accent-warm',
+  paid: 'bg-accent-green/12 text-accent-green',
+  preparing: 'bg-accent-blue/12 text-accent-blue',
+  ready: 'bg-accent/12 text-accent',
+  delivered: 'bg-white/[0.06] text-ink-2',
+  refused: 'bg-accent-red/12 text-accent-red',
+};
+
+const URGENCY_TONE_CLASS = {
+  green: 'text-accent-green',
+  yellow: 'text-accent',
+  red: 'text-accent-red kk-urgent-blink',
+};
+
+export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPrint }) {
+  const now = useNow();
+  const items = Array.isArray(order.items) ? order.items : [];
+  const visual = STATUS_VISUAL[order.status] || 'new';
+  const sublabel = STATUS_SUBLABEL(order);
+  const isTodo = order.status === 'pending' || order.status === 'paid';
+  const isPaidCard = order.status === 'paid';
+  const urgency = urgencyFor(order, now);
+
+  const deliveryPill =
+    order.delivery_mode === 'pickup' ? '📦 À emporter' : '🚴 Livraison';
+
+  return (
+    <div
+      data-status={visual}
+      className={[
+        'kk-order-card group cursor-pointer rounded-xl border border-line bg-bg-elev p-4',
+        'transition-colors hover:border-line-strong hover:bg-bg-elev-2',
+        isNew ? 'kk-new-pulse' : '',
+      ].join(' ')}
+      onClick={() => onSelect(order)}
+    >
+      <div className="mb-3 flex items-start justify-between">
+        <div>
+          <div className="font-mono text-[11px] tracking-[0.1em] text-ink-3">
+            #{orderNumber(order.id)}
+          </div>
+          <div className="text-base font-semibold leading-tight tracking-[-0.01em]">
+            {order.customer_name}
+          </div>
+        </div>
+        <div className="text-right font-mono text-[13px] text-ink-2">
+          {fmtTime(order.created_at)}
+          <span className="mt-0.5 block text-[10px] text-ink-3">
+            {fmtRelative(order.created_at)}
+          </span>
+        </div>
+      </div>
+
+      <div
+        className={[
+          'mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.1em]',
+          STATUS_PILL_CLASS[visual] || STATUS_PILL_CLASS.new,
+        ].join(' ')}
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        {STATUS_LABELS[order.status]}
+        {sublabel && <span className="opacity-70">· {sublabel}</span>}
+      </div>
+
+      {urgency && (
+        <div
+          className={[
+            'mb-3 flex items-center gap-1.5 font-mono text-[11px] font-medium tracking-tight',
+            URGENCY_TONE_CLASS[urgency.tone],
+          ].join(' ')}
+        >
+          <span aria-hidden>
+            {urgency.tone === 'green' ? '🟢' : urgency.tone === 'yellow' ? '🟡' : '🔴'}
+          </span>
+          <span>{urgency.label}</span>
+        </div>
+      )}
+
+      <ul className="mb-3 space-y-0.5 text-[13px]">
+        {items.slice(0, 4).map((it, i) => (
+          <li key={i} className="flex justify-between text-ink-2">
+            <span className="flex items-center">
+              <span className="mr-2.5 font-mono font-semibold text-accent">{it.qty}×</span>
+              <span className="text-ink">{it.name}</span>
+            </span>
+            <span className="font-mono text-ink-2">
+              {fmt(it.subtotal ?? it.price * it.qty)}
+            </span>
+          </li>
+        ))}
+        {items.length > 4 && (
+          <li className="pl-6 font-mono text-[11px] text-ink-3">
+            + {items.length - 4} autre{items.length - 4 > 1 ? 's' : ''}
+          </li>
+        )}
+      </ul>
+
+      <div className="mb-3 flex flex-wrap gap-1.5 border-y border-dashed border-line py-2.5">
+        <Pill>{deliveryPill}</Pill>
+        {order.delivery_mode === 'delivery' && order.customer_address && (
+          <Pill>📍 {order.customer_address}</Pill>
+        )}
+        {order.notes && <Pill>📝 {order.notes}</Pill>}
+      </div>
+
+      <div className="mb-3 flex items-baseline justify-between">
+        <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3">Total</span>
+        <span className="font-display text-[32px] italic leading-none tracking-[-0.02em]">
+          {fmt(order.total)}
+        </span>
+      </div>
+
+      {isTodo && (
+        <div
+          className="flex flex-wrap gap-1.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => onPrint(order)}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-bg px-3 py-2.5 text-[12px] font-medium text-ink transition-colors hover:bg-white/[0.05]"
+          >
+            🖨️ Ticket
+          </button>
+          <button
+            onClick={() => onUpdateStatus(order.id, 'accepted')}
+            className="flex flex-1 items-center justify-center rounded-lg bg-accent px-3 py-2.5 text-[12px] font-bold text-black transition-colors hover:bg-[#c4ee5b]"
+          >
+            Accepter →
+          </button>
+          {/* Bouton Refuser caché sur les commandes payées carte (remboursement = flow séparé) */}
+          {!isPaidCard && (
+            <button
+              onClick={() => onUpdateStatus(order.id, 'refused')}
+              className="flex flex-none items-center justify-center rounded-lg border border-accent-red/30 bg-accent-red/10 px-3 py-2.5 text-[12px] font-medium text-accent-red transition-colors hover:bg-accent-red/20"
+              title="Refuser"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      )}
+
+      {order.status === 'accepted' && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => onUpdateStatus(order.id, 'ready')}
+            className="w-full rounded-lg bg-accent px-3 py-2.5 text-[12px] font-bold text-black transition-colors hover:bg-[#c4ee5b]"
+          >
+            🍳 Marquer prête →
+          </button>
+        </div>
+      )}
+
+      {order.status === 'ready' && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => onUpdateStatus(order.id, 'delivered')}
+            className="w-full rounded-lg border border-accent-blue/30 bg-accent-blue/10 px-3 py-2.5 text-[12px] font-bold text-accent-blue transition-colors hover:bg-accent-blue/20"
+          >
+            🛵 Marquer livrée
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Pill({ children }) {
+  return (
+    <span className="rounded bg-white/[0.04] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-2">
+      {children}
+    </span>
+  );
+}
