@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   fmt,
   fmtDate,
@@ -8,12 +9,15 @@ import {
   PAYMENT_LABELS,
   PAYMENT_ICON,
   renderVariantLines,
+  buildTimeline,
+  FORCEABLE_STATUSES,
 } from '../../lib/admin/orderHelpers.js';
 
 const STATUS_PILL_CLASS = {
   new: 'bg-accent-warm/12 text-accent-warm',
   paid: 'bg-accent-green/12 text-accent-green',
   preparing: 'bg-accent-blue/12 text-accent-blue',
+  ready: 'bg-accent/12 text-accent',
   delivered: 'bg-white/[0.06] text-ink-2',
   refused: 'bg-accent-red/12 text-accent-red',
 };
@@ -23,6 +27,8 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint }) 
   const visual = STATUS_VISUAL[order.status] || 'new';
   const isPaidCard = order.status === 'paid';
   const isTodo = order.status === 'pending' || order.status === 'paid';
+  const timeline = buildTimeline(order);
+  const [forceOpen, setForceOpen] = useState(false);
 
   return (
     <div
@@ -88,6 +94,33 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint }) 
           {order.notes && <Row label="Notes" value={order.notes} />}
         </Section>
 
+        {/* Timeline */}
+        <Section title="Timeline">
+          <div className="px-4 py-3 font-mono text-[12px] leading-relaxed text-ink-2">
+            {timeline.map((step, i) => {
+              const last = i === timeline.length - 1;
+              return (
+                <div key={i} className="flex flex-wrap items-baseline gap-2">
+                  <span className="text-base leading-none">{step.icon}</span>
+                  <span className="text-ink">{step.label}</span>
+                  <span>:</span>
+                  <span>{fmtTime(step.time)}</span>
+                  {step.deltaMin !== null && (
+                    <span className="text-ink-3">
+                      (+{step.deltaMin} min{step.deltaFromLabel ? ` après ${step.deltaFromLabel}` : ''})
+                    </span>
+                  )}
+                  {last && step.totalMin !== undefined && (
+                    <span className="ml-auto rounded bg-accent/10 px-2 py-0.5 font-bold text-accent">
+                      Total : {step.totalMin} min
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+
         {/* Articles */}
         <Section title="Articles">
           {items.map((it, i) => {
@@ -126,7 +159,7 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint }) 
           </div>
         </Section>
 
-        {/* Actions */}
+        {/* Actions principales */}
         <div className="mt-5 flex flex-wrap gap-2">
           {isTodo && (
             <>
@@ -148,6 +181,14 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint }) 
           )}
           {order.status === 'accepted' && (
             <button
+              onClick={() => { onUpdateStatus(order.id, 'ready'); onClose(); }}
+              className="flex-1 rounded-lg bg-accent px-4 py-3 text-sm font-bold text-black transition-colors hover:bg-[#c4ee5b]"
+            >
+              🍳 Marquer prête
+            </button>
+          )}
+          {order.status === 'ready' && (
+            <button
               onClick={() => { onUpdateStatus(order.id, 'delivered'); onClose(); }}
               className="flex-1 rounded-lg border border-accent-blue/30 bg-accent-blue/10 px-4 py-3 text-sm font-bold text-accent-blue transition-colors hover:bg-accent-blue/20"
             >
@@ -160,6 +201,39 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint }) 
           >
             🖨️ Ticket cuisine
           </button>
+        </div>
+
+        {/* Forcer le statut (override admin) */}
+        <div className="mt-4 rounded-lg border border-line bg-bg/40 p-3">
+          <button
+            onClick={() => setForceOpen((v) => !v)}
+            className="flex w-full items-center justify-between font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 transition-colors hover:text-ink-2"
+          >
+            <span>⚙️ Forcer le statut</span>
+            <span>{forceOpen ? '▴' : '▾'}</span>
+          </button>
+          {forceOpen && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {FORCEABLE_STATUSES.map((s) => {
+                const isCurrent = s === order.status;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => { onUpdateStatus(order.id, s); }}
+                    disabled={isCurrent}
+                    className={[
+                      'rounded-md border px-2.5 py-1 font-mono text-[11px] tracking-wider transition-colors',
+                      isCurrent
+                        ? 'cursor-default border-line bg-bg-elev-2 text-ink-3'
+                        : 'border-line-strong bg-bg-elev-2 text-ink hover:bg-white/10',
+                    ].join(' ')}
+                  >
+                    {STATUS_LABELS[s]}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <button

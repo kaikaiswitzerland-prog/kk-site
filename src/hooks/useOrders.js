@@ -116,10 +116,17 @@ export function useOrders({ enabled }) {
   }, [enabled, markRecentlyAdded, triggerToast, triggerBrowserNotification]);
 
   const updateStatus = useCallback(async (id, status) => {
-    // Optimiste : on patche localement puis on attend le retour Supabase.
-    // Le canal Realtime renverra un UPDATE qui re-écrasera avec la valeur serveur.
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
-    await supabase.from('orders').update({ status }).eq('id', id);
+    // Patch optimiste : on inclut l'horodatage de la transition pour que la
+    // timeline et les chronos s'actualisent immédiatement, sans attendre
+    // l'aller-retour Supabase + Realtime.
+    const patch = { status };
+    const nowIso = new Date().toISOString();
+    if (status === 'accepted')  patch.accepted_at  = nowIso;
+    if (status === 'ready')     patch.ready_at     = nowIso;
+    if (status === 'delivered') patch.delivered_at = nowIso;
+
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+    await supabase.from('orders').update(patch).eq('id', id);
   }, []);
 
   const setSoundEnabled = useCallback((on) => {

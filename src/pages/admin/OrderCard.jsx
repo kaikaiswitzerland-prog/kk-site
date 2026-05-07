@@ -6,22 +6,33 @@ import {
   STATUS_VISUAL,
   STATUS_LABELS,
   STATUS_SUBLABEL,
+  urgencyFor,
 } from '../../lib/admin/orderHelpers.js';
+import { useNow } from '../../hooks/useNow.js';
 
 const STATUS_PILL_CLASS = {
   new: 'bg-accent-warm/12 text-accent-warm',
   paid: 'bg-accent-green/12 text-accent-green',
   preparing: 'bg-accent-blue/12 text-accent-blue',
+  ready: 'bg-accent/12 text-accent',
   delivered: 'bg-white/[0.06] text-ink-2',
   refused: 'bg-accent-red/12 text-accent-red',
 };
 
+const URGENCY_TONE_CLASS = {
+  green: 'text-accent-green',
+  yellow: 'text-accent',
+  red: 'text-accent-red kk-urgent-blink',
+};
+
 export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPrint }) {
+  const now = useNow();
   const items = Array.isArray(order.items) ? order.items : [];
   const visual = STATUS_VISUAL[order.status] || 'new';
   const sublabel = STATUS_SUBLABEL(order);
   const isTodo = order.status === 'pending' || order.status === 'paid';
   const isPaidCard = order.status === 'paid';
+  const urgency = urgencyFor(order, now);
 
   const deliveryPill =
     order.delivery_mode === 'pickup' ? '📦 À emporter' : '🚴 Livraison';
@@ -55,7 +66,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
 
       <div
         className={[
-          'mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.1em]',
+          'mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.1em]',
           STATUS_PILL_CLASS[visual] || STATUS_PILL_CLASS.new,
         ].join(' ')}
       >
@@ -63,6 +74,20 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         {STATUS_LABELS[order.status]}
         {sublabel && <span className="opacity-70">· {sublabel}</span>}
       </div>
+
+      {urgency && (
+        <div
+          className={[
+            'mb-3 flex items-center gap-1.5 font-mono text-[11px] font-medium tracking-tight',
+            URGENCY_TONE_CLASS[urgency.tone],
+          ].join(' ')}
+        >
+          <span aria-hidden>
+            {urgency.tone === 'green' ? '🟢' : urgency.tone === 'yellow' ? '🟡' : '🔴'}
+          </span>
+          <span>{urgency.label}</span>
+        </div>
+      )}
 
       <ul className="mb-3 space-y-0.5 text-[13px]">
         {items.slice(0, 4).map((it, i) => (
@@ -129,6 +154,17 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
       )}
 
       {order.status === 'accepted' && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => onUpdateStatus(order.id, 'ready')}
+            className="w-full rounded-lg bg-accent px-3 py-2.5 text-[12px] font-bold text-black transition-colors hover:bg-[#c4ee5b]"
+          >
+            🍳 Marquer prête →
+          </button>
+        </div>
+      )}
+
+      {order.status === 'ready' && (
         <div onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onUpdateStatus(order.id, 'delivered')}

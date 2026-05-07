@@ -75,8 +75,17 @@
 .kk-order-card[data-status="new"]::before { background: var(--color-accent-warm); }
 .kk-order-card[data-status="paid"]::before { background: var(--color-accent-green); }
 .kk-order-card[data-status="preparing"]::before { background: var(--color-accent-blue); }
+.kk-order-card[data-status="ready"]::before { background: var(--color-accent); }
 .kk-order-card[data-status="delivered"]::before { background: var(--color-ink-3); }
 .kk-order-card[data-status="refused"]::before { background: var(--color-accent-red); }
+
+/* Urgence (chrono) — clignotement sobre, basé uniquement sur l'opacité.
+   Utilisé sur le chip rouge pour attirer l'œil sans être agressif. */
+@keyframes kk-urgent-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.kk-urgent-blink { animation: kk-urgent-blink 1.4s ease-in-out infinite; }
 
 /* Coin radial discret sur les KPI */
 .kk-kpi { position: relative; overflow: hidden; }

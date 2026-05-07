@@ -29,14 +29,15 @@ export const orderNumber = (id) => id.slice(0, 8).toUpperCase();
 
 // ─── Statuts ────────────────────────────────────────────────
 // Cycle :
-//   cash/twint  : pending → accepted → delivered  (ou refused)
-//   carte SumUp : pending_payment → paid → accepted → delivered
+//   cash/twint  : pending → accepted → ready → delivered  (ou refused)
+//   carte SumUp : pending_payment → paid → accepted → ready → delivered
 //
-// Le statut "visuel" sur la carte (couleur) est dérivé du statut DB :
-//   - paid              → vert (déjà encaissé, à traiter cuisine)
-//   - pending           → orange (à traiter, encaissement à faire)
-//   - accepted          → bleu (en préparation)
-//   - delivered         → gris (terminé)
+// Le statut "visuel" sur la carte (couleur de la barre latérale) :
+//   - paid              → vert    (encaissé, à traiter cuisine)
+//   - pending           → orange  (à traiter, encaissement à faire)
+//   - accepted          → bleu    (en préparation)
+//   - ready             → citron  (prête, en attente livreur)
+//   - delivered         → gris    (terminé)
 //   - refused           → rouge
 //   - pending_payment   → masqué de l'admin (attente webhook SumUp)
 
@@ -44,6 +45,7 @@ export const STATUS_VISUAL = {
   pending: 'new',
   paid: 'paid',
   accepted: 'preparing',
+  ready: 'ready',
   delivered: 'delivered',
   refused: 'refused',
   pending_payment: 'pending_payment',
@@ -53,10 +55,16 @@ export const STATUS_LABELS = {
   pending: 'À traiter',
   paid: 'Payée',
   accepted: 'En préparation',
+  ready: 'Prête',
   delivered: 'Livrée',
   refused: 'Refusée',
   pending_payment: 'En attente paiement',
 };
+
+// Liste des statuts manipulables manuellement par l'admin (pour "Forcer le statut")
+export const FORCEABLE_STATUSES = [
+  'pending', 'paid', 'accepted', 'ready', 'delivered', 'refused',
+];
 
 // Sous-titre de la pill (sous le label) — différencie cash/twint vs carte
 export const STATUS_SUBLABEL = (order) => {
@@ -95,6 +103,7 @@ export const PAYMENT_ICON = {
 export const TAB_FILTERS = [
   { id: 'todo', label: 'À traiter', statuses: ['pending', 'paid'] },
   { id: 'preparing', label: 'En préparation', statuses: ['accepted'] },
+  { id: 'ready', label: 'Prêtes', statuses: ['ready'] },
   { id: 'delivered', label: 'Livrées', statuses: ['delivered'] },
   { id: 'refused', label: 'Refusées', statuses: ['refused'] },
 ];
@@ -119,10 +128,13 @@ export function renderVariantLines(variants) {
 }
 
 // ─── Calculs compta ─────────────────────────────────────────
-// Une commande est "comptabilisée" si elle est paid, accepted ou delivered
+// Une commande est "comptabilisée" si elle est paid/accepted/ready/delivered
 // (pending = pas encore confirmée par le restaurant ; refused = pas de revenu).
 export const isRevenue = (o) =>
-  o.status === 'paid' || o.status === 'accepted' || o.status === 'delivered';
+  o.status === 'paid' ||
+  o.status === 'accepted' ||
+  o.status === 'ready' ||
+  o.status === 'delivered';
 
 export function calcStats(orders) {
   const valid = orders.filter(isRevenue);
@@ -166,6 +178,111 @@ export function favoritePaymentToday(orders) {
 export function pctChange(current, previous) {
   if (!previous) return null;
   return Math.round(((current - previous) / previous) * 100);
+}
+
+// ─── Chrono d'urgence ───────────────────────────────────────
+// Calcule le seuil d'alerte d'une commande selon son statut courant.
+// Renvoie { label, tone, pulse, minutes } ou null si pas applicable.
+//
+// Seuils (brief) :
+//   pending/paid (à traiter)    : 0-3 vert · 3-5 jaune · 5+ rouge clignotant
+//   accepted (en cuisine)       : 0-15 vert · 15-25 jaune · 25+ rouge clignotant
+//   ready (prête, livreur ?)    : 0-5 vert · 5-10 jaune · 10+ rouge clignotant
+export function urgencyFor(order, now = Date.now()) {
+  const status = order.status;
+  if (status === 'pending' || status === 'paid') {
+    const minutes = Math.max(0, Math.floor((now - new Date(order.created_at).getTime()) / 60000));
+    return classify(minutes, [3, 5], `Reçue il y a ${minutes} min`);
+  }
+  if (status === 'accepted') {
+    const ref = order.accepted_at || order.created_at;
+    const minutes = Math.max(0, Math.floor((now - new Date(ref).getTime()) / 60000));
+    return classify(minutes, [15, 25], `En cuisine depuis ${minutes} min`);
+  }
+  if (status === 'ready') {
+    const ref = order.ready_at || order.accepted_at || order.created_at;
+    const minutes = Math.max(0, Math.floor((now - new Date(ref).getTime()) / 60000));
+    return classify(minutes, [5, 10], `Prête depuis ${minutes} min — livreur en route ?`);
+  }
+  return null;
+}
+
+function classify(minutes, [warn, urgent], label) {
+  if (minutes < warn) return { label, tone: 'green', pulse: false, minutes };
+  if (minutes < urgent) return { label, tone: 'yellow', pulse: false, minutes };
+  return { label, tone: 'red', pulse: true, minutes };
+}
+
+// ─── Timeline (modale détail) ───────────────────────────────
+// Renvoie la liste des étapes existantes avec deltas en minutes.
+// Format : { icon, label, time (iso), deltaMin, deltaFromLabel, totalMin? }
+export function buildTimeline(order) {
+  const steps = [];
+  const t0 = new Date(order.created_at).getTime();
+  steps.push({ icon: '📥', label: 'Reçue', time: order.created_at, deltaMin: null });
+
+  let prev = t0;
+  let prevLabel = 'reçue';
+
+  if (order.accepted_at) {
+    const t = new Date(order.accepted_at).getTime();
+    steps.push({
+      icon: '✅',
+      label: 'Acceptée',
+      time: order.accepted_at,
+      deltaMin: Math.max(0, Math.round((t - prev) / 60000)),
+      deltaFromLabel: prevLabel,
+    });
+    prev = t;
+    prevLabel = 'acceptée';
+  }
+
+  if (order.ready_at) {
+    const t = new Date(order.ready_at).getTime();
+    steps.push({
+      icon: '🍳',
+      label: 'Prête',
+      time: order.ready_at,
+      deltaMin: Math.max(0, Math.round((t - prev) / 60000)),
+      deltaFromLabel: prevLabel,
+    });
+    prev = t;
+    prevLabel = 'prête';
+  }
+
+  if (order.delivered_at) {
+    const t = new Date(order.delivered_at).getTime();
+    steps.push({
+      icon: '🛵',
+      label: 'Livrée',
+      time: order.delivered_at,
+      deltaMin: Math.max(0, Math.round((t - prev) / 60000)),
+      deltaFromLabel: prevLabel,
+      totalMin: Math.max(0, Math.round((t - t0) / 60000)),
+    });
+  }
+
+  return steps;
+}
+
+// ─── Tri par priorité (vue Commandes) ───────────────────────
+// Pour les onglets actifs (à traiter / en cuisine / prêtes) : les plus
+// anciennes en haut, basé sur le timestamp de référence du statut courant.
+// Pour delivered/refused : du plus récent au plus ancien (historique).
+export function sortByPriority(orders, tabId) {
+  const refTime = (o) => {
+    if (tabId === 'preparing') return new Date(o.accepted_at || o.created_at).getTime();
+    if (tabId === 'ready')     return new Date(o.ready_at || o.accepted_at || o.created_at).getTime();
+    if (tabId === 'delivered') return new Date(o.delivered_at || o.created_at).getTime();
+    if (tabId === 'refused')   return new Date(o.created_at).getTime();
+    return new Date(o.created_at).getTime(); // 'todo'
+  };
+  const desc = tabId === 'delivered' || tabId === 'refused';
+  return [...orders].sort((a, b) => {
+    const ra = refTime(a);
+    const rb = refTime(b);
+    return desc ? rb - ra : ra - rb;
+  });
 }
 
 // ─── Export CSV ─────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import OrderCard from './OrderCard.jsx';
-import { TAB_FILTERS, isAdminVisible } from '../../lib/admin/orderHelpers.js';
+import { TAB_FILTERS, isAdminVisible, sortByPriority } from '../../lib/admin/orderHelpers.js';
 
 export default function OrdersView({
   orders,
@@ -24,7 +24,8 @@ export default function OrdersView({
 
   const filtered = useMemo(() => {
     const tab = TAB_FILTERS.find((t) => t.id === activeTab) || TAB_FILTERS[0];
-    return visible.filter((o) => tab.statuses.includes(o.status));
+    const inTab = visible.filter((o) => tab.statuses.includes(o.status));
+    return sortByPriority(inTab, tab.id);
   }, [visible, activeTab]);
 
   return (
