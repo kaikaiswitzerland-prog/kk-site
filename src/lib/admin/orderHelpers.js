@@ -159,18 +159,93 @@ export const TAB_FILTERS = [
 export const isAdminVisible = (order) => order.status !== 'pending_payment';
 
 // ─── Variants de plats (formules) ──────────────────────────
+// Rend un tableau `variants` (du payload order.items[].variants) en sous-lignes
+// lisibles pour cuisine / admin. Le rendu (· prefix, font, casse) reste à la
+// charge des composants consommateurs — cette fonction retourne juste les
+// chaînes en mixed-case.
+//
+// Cas gérés :
+//  1. String legacy → push tel quel
+//  2. Variant simple { id, name, desc } → push name (tartare, sauce, jus seul…)
+//  3. Formule Découverte (type='decouverte') :
+//     - Plat (+ protéine si applicable)
+//     - Boisson : Soft / Jus {nom} / Eau {nom}
+//     - Dessert (+ coulis si applicable) — rare en Découverte mais supporté
+//  4. Formule Voyage (type='voyage') :
+//     - Plat 1 / Plat 2 (+ protéine[plat] si applicable)
+//     - Boissons[] avec zipping ordonné sur jus[] et eau[]
+//     - Dessert (+ coulis si applicable)
+//
+// Graceful fallback : ignore tout champ null/undefined, ne lance jamais.
 export function renderVariantLines(variants) {
   if (!variants || !variants.length) return [];
   const lines = [];
+
   variants.forEach((v) => {
-    if (typeof v === 'string') { lines.push(v); return; }
-    if (v?.name) { lines.push(v.name); return; }
-    if (v?.type) {
-      if (v.plat) lines.push(`Plat : ${v.plat}${v.proteins?.[v.plat] ? ` (${v.proteins[v.plat]})` : ''}`);
-      if (v.boisson) lines.push(`Boisson : ${v.jus || v.eau || v.boisson}`);
-      if (v.dessert) lines.push(`Dessert : ${v.dessert}${v.coulisDessert ? ` (${v.coulisDessert})` : ''}`);
+    // 1. String legacy
+    if (typeof v === 'string') {
+      lines.push(v);
+      return;
+    }
+
+    // 2. Formule Découverte (test AVANT le simple variant pour priorité)
+    if (v?.type === 'decouverte') {
+      if (v.plat) {
+        const protein = v.proteins?.[v.plat];
+        lines.push(`Plat : ${v.plat}${protein ? ` (${protein})` : ''}`);
+      }
+      if (v.boisson === 'Soft') {
+        lines.push('Boisson : Soft');
+      } else if (v.boisson === 'Jus exotique' && v.jus) {
+        lines.push(`Boisson : Jus ${v.jus}`);
+      } else if (v.boisson === 'Eau' && v.eau) {
+        lines.push(`Boisson : Eau ${v.eau}`);
+      }
+      if (v.dessert) {
+        lines.push(`Dessert : ${v.dessert}${v.coulisDessert ? ` (${v.coulisDessert})` : ''}`);
+      }
+      return;
+    }
+
+    // 3. Formule Voyage
+    if (v?.type === 'voyage') {
+      const plats = Array.isArray(v.plats) ? v.plats : [];
+      plats.forEach((plat, idx) => {
+        const protein = v.proteins?.[plat];
+        lines.push(`Plat ${idx + 1} : ${plat}${protein ? ` (${protein})` : ''}`);
+      });
+
+      // Zipping ordonné : on itère boissons[] et on consomme jus[]/eau[]
+      // dans l'ordre selon le type (logique miroir de FormuleModal).
+      const boissons = Array.isArray(v.boissons) ? v.boissons : [];
+      const jusList = Array.isArray(v.jus) ? v.jus : [];
+      const eauList = Array.isArray(v.eau) ? v.eau : [];
+      let jusIdx = 0;
+      let eauIdx = 0;
+      boissons.forEach((b) => {
+        if (b === 'Soft') {
+          lines.push('Boisson : Soft');
+        } else if (b === 'Jus exotique') {
+          const nom = jusList[jusIdx++];
+          if (nom) lines.push(`Boisson : Jus ${nom}`);
+        } else if (b === 'Eau') {
+          const nom = eauList[eauIdx++];
+          if (nom) lines.push(`Boisson : Eau ${nom}`);
+        }
+      });
+
+      if (v.dessert) {
+        lines.push(`Dessert : ${v.dessert}${v.coulisDessert ? ` (${v.coulisDessert})` : ''}`);
+      }
+      return;
+    }
+
+    // 4. Variant simple { id, name, desc } — fallback
+    if (v?.name) {
+      lines.push(v.name);
     }
   });
+
   return lines;
 }
 

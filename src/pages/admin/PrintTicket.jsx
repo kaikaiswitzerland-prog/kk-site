@@ -14,6 +14,17 @@ import {
 // Layout optimisé pour imprimante thermique BT 58mm/80mm
 // (largeur cible 72mm, monospace, séparateurs pointillés).
 // Rendu via portal dans #kk-print-root pour isolation totale (cf admin.css @media print).
+//
+// printText() : transforme tout texte affichable en CASSE HAUTE + sans accents
+// pour les imprimantes thermiques qui ne supportent pas correctement les
+// caractères Unicode étendus. Appliqué aux noms d'items, aux sous-lignes
+// variants, et aux labels du ticket.
+//   "Velouté koko" → "VELOUTE KOKO"
+//   "Po'e Banane"  → "PO'E BANANE"
+//   "Tartare Hawaï" → "TARTARE HAWAI"
+const COMBINING_MARKS = /[̀-ͯ]/g;
+const printText = (s) =>
+  String(s ?? '').toUpperCase().normalize('NFD').replace(COMBINING_MARKS, '');
 
 export default function PrintTicket({ order, onComplete }) {
   // Crée / récupère le conteneur portal
@@ -60,7 +71,7 @@ export default function PrintTicket({ order, onComplete }) {
         </div>
         {order.delivery_mode !== 'pickup' && order.customer_address && (
           <div style={{ marginTop: 2, fontWeight: 700 }}>
-            {order.customer_address}
+            {printText(order.customer_address)}
           </div>
         )}
       </div>
@@ -68,13 +79,13 @@ export default function PrintTicket({ order, onComplete }) {
       <hr className="kk-print-sep" />
 
       <div>
-        <div><strong>Client :</strong> {order.customer_name}</div>
-        <div><strong>Tél :</strong> {order.customer_phone}</div>
+        <div><strong>CLIENT :</strong> {printText(order.customer_name)}</div>
+        <div><strong>TEL :</strong> {order.customer_phone}</div>
         <div>
-          <strong>Paiement :</strong> {PAYMENT_LABELS[order.payment_method] || order.payment_method}
-          {order.status === 'paid' && ' (encaissée)'}
+          <strong>PAIEMENT :</strong> {printText(PAYMENT_LABELS[order.payment_method] || order.payment_method)}
+          {order.status === 'paid' && ' (ENCAISSEE)'}
         </div>
-        {order.notes && <div><strong>Notes :</strong> {order.notes}</div>}
+        {order.notes && <div><strong>NOTES :</strong> {printText(order.notes)}</div>}
       </div>
 
       <hr className="kk-print-sep" />
@@ -87,14 +98,14 @@ export default function PrintTicket({ order, onComplete }) {
             <div key={i} style={{ marginTop: 4 }}>
               <div className="kk-print-row">
                 <span>
-                  {it.qty}× {it.name}
+                  {it.qty}x {printText(it.name)}
                 </span>
                 <span>{fmtAmount(it.subtotal ?? it.price * it.qty)}</span>
               </div>
               {variants.length > 0 && (
                 <div className="kk-print-variants">
                   {variants.map((line, j) => (
-                    <div key={j}>· {line}</div>
+                    <div key={j}>&gt; {printText(line)}</div>
                   ))}
                 </div>
               )}

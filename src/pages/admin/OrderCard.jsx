@@ -8,6 +8,7 @@ import {
   STATUS_SUBLABEL,
   urgencyFor,
   getItemCategoryLabel,
+  renderVariantLines,
 } from '../../lib/admin/orderHelpers.js';
 import { useNow } from '../../hooks/useNow.js';
 
@@ -99,25 +100,37 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         </div>
       )}
 
-      <ul className="mb-3 space-y-0.5 text-xs md:text-[13px]">
-        {items.slice(0, 4).map((it, i) => (
-          <li key={i} className="flex items-baseline justify-between gap-3 text-ink-2">
-            <span className="flex min-w-0 items-baseline">
-              <span className="mr-2.5 flex-shrink-0 font-mono font-semibold text-accent">
-                {it.qty}×
-              </span>
-              <span className="truncate text-ink" title={it.name}>{it.name}</span>
-              <span className="ml-1.5 flex-shrink-0 font-mono text-[10px] uppercase tracking-[0.04em] text-ink-3">
-                [{getItemCategoryLabel(it)}]
-              </span>
-            </span>
-            <span className="flex-shrink-0 font-mono text-ink-2">
-              {fmt(it.subtotal ?? it.price * it.qty)}
-            </span>
-          </li>
-        ))}
+      <ul className="mb-3 space-y-1 text-xs md:text-[13px]">
+        {items.slice(0, 4).map((it, i) => {
+          const variantLines = renderVariantLines(it.variants);
+          return (
+            <li key={i} className="text-ink-2">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="flex min-w-0 items-baseline">
+                  <span className="mr-2.5 flex-shrink-0 font-mono font-semibold text-accent">
+                    {it.qty}×
+                  </span>
+                  <span className="truncate text-ink" title={it.name}>{it.name}</span>
+                  <span className="ml-1.5 flex-shrink-0 font-mono text-[10px] uppercase tracking-[0.04em] text-ink-3">
+                    [{getItemCategoryLabel(it)}]
+                  </span>
+                </span>
+                <span className="flex-shrink-0 font-mono text-ink-2">
+                  {fmt(it.subtotal ?? it.price * it.qty)}
+                </span>
+              </div>
+              {variantLines.length > 0 && (
+                <ul className="mt-1 space-y-0.5 pl-7 font-mono text-[12px] text-ink-3">
+                  {variantLines.map((line, j) => (
+                    <li key={j}>· {line}</li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })}
         {items.length > 4 && (
-          <li className="pl-6 font-mono text-[11px] text-ink-3">
+          <li className="pl-7 font-mono text-[11px] text-ink-3">
             + {items.length - 4} autre{items.length - 4 > 1 ? 's' : ''}
           </li>
         )}
