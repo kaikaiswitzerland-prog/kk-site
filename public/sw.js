@@ -1,7 +1,7 @@
 // KaïKaï Admin — Service Worker
 // Gère : installation PWA, cache offline, notifications push
 
-const CACHE_NAME = 'kaikai-admin-v1';
+const CACHE_NAME = 'kaikai-admin-v2';
 
 // ─── Installation ───────────────────────────────────────────
 self.addEventListener('install', (event) => {

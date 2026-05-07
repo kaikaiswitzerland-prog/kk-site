@@ -30,11 +30,11 @@ export default function TransactionsTable({ orders, onSelect }) {
 
   return (
     <div className="overflow-hidden rounded-xl border border-line bg-bg-elev">
-      <div className="flex flex-col gap-3 border-b border-line px-5 py-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 border-b border-line px-4 py-3 md:flex-row md:items-center md:justify-between md:px-5 md:py-4">
         <h3 className="font-display text-2xl italic tracking-[-0.02em]">
           Transactions
         </h3>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {FILTERS.map((f) => {
             const active = f.id === filter;
             return (
@@ -107,7 +107,7 @@ export default function TransactionsTable({ orders, onSelect }) {
 function Th({ children, align = 'left' }) {
   return (
     <th
-      className="border-b border-line bg-bg px-5 py-3.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-ink-3"
+      className="border-b border-line bg-bg px-3 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-ink-3 md:px-5 md:py-3.5"
       style={{ textAlign: align }}
     >
       {children}
@@ -119,7 +119,7 @@ function Td({ children, align = 'left', mono = false }) {
   return (
     <td
       className={[
-        'border-b border-line px-5 py-3.5 text-[13px] text-ink-2',
+        'border-b border-line px-3 py-3 text-[12px] text-ink-2 md:px-5 md:py-3.5 md:text-[13px]',
         mono ? 'font-mono' : '',
       ].join(' ')}
       style={{ textAlign: align }}

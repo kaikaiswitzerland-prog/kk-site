@@ -78,11 +78,11 @@ export default function ComptaView({ orders, onSelectOrder }) {
           label="Mode favori"
           value={
             kpis.favorite ? (
-              <span className="text-[28px]">
+              <span className="text-[20px] md:text-[28px]">
                 {PAYMENT_ICON[kpis.favorite.method]} {PAYMENT_LABELS[kpis.favorite.method]}
               </span>
             ) : (
-              <span className="text-[28px] text-ink-3">—</span>
+              <span className="text-[20px] text-ink-3 md:text-[28px]">—</span>
             )
           }
           trend={

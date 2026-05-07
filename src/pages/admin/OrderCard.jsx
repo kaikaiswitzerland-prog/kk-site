@@ -89,7 +89,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         </div>
       )}
 
-      <ul className="mb-3 space-y-0.5 text-[13px]">
+      <ul className="mb-3 space-y-0.5 text-xs md:text-[13px]">
         {items.slice(0, 4).map((it, i) => (
           <li key={i} className="flex justify-between text-ink-2">
             <span className="flex items-center">

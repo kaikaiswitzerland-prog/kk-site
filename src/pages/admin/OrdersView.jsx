@@ -30,49 +30,40 @@ export default function OrdersView({
 
   return (
     <div>
-      {/* Tabs — scroll horizontal avec snap sur mobile, gradient fade à droite */}
-      <div className="relative mb-5 md:mb-7">
-        <div
-          className="kk-scroll flex gap-1 overflow-x-auto border-b border-line"
-          style={{ scrollSnapType: 'x mandatory' }}
-        >
-          {TAB_FILTERS.map((tab) => {
-            const active = tab.id === activeTab;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                style={{ scrollSnapAlign: 'start' }}
-                className={[
-                  '-mb-px inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-[13px] font-medium transition-colors',
-                  'md:gap-2 md:px-4 md:py-3',
-                  active
-                    ? 'border-accent text-ink'
-                    : 'border-transparent text-ink-3 hover:text-ink-2',
-                ].join(' ')}
-              >
-                {tab.label}
-                {counts[tab.id] > 0 && (
-                  <span
-                    className={[
-                      'rounded-full px-2 py-0.5 font-mono text-[11px]',
-                      active ? 'bg-accent font-bold text-black' : 'bg-bg-elev-2 text-ink-2',
-                    ].join(' ')}
-                  >
-                    {counts[tab.id]}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-        {/* Fade à droite pour signaler le scroll possible (mobile uniquement) */}
-        <div
-          className="pointer-events-none absolute bottom-0 right-0 top-0 w-10 md:hidden"
-          style={{
-            background: 'linear-gradient(to left, var(--color-bg) 0%, rgba(10,10,10,0.6) 60%, transparent 100%)',
-          }}
-        />
+      {/* Tabs — scroll horizontal avec snap, scroll naturel (pas de gradient fade) */}
+      <div
+        className="kk-scroll mb-5 flex gap-1 overflow-x-auto border-b border-line md:mb-7"
+        style={{ scrollSnapType: 'x mandatory' }}
+      >
+        {TAB_FILTERS.map((tab) => {
+          const active = tab.id === activeTab;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{ scrollSnapAlign: 'start' }}
+              className={[
+                '-mb-px inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors',
+                'md:gap-2 md:px-4 md:py-3',
+                active
+                  ? 'border-accent text-ink'
+                  : 'border-transparent text-ink-3 hover:text-ink-2',
+              ].join(' ')}
+            >
+              {tab.label}
+              {counts[tab.id] > 0 && (
+                <span
+                  className={[
+                    'rounded-full px-2 py-0.5 font-mono text-[11px]',
+                    active ? 'bg-accent font-bold text-black' : 'bg-bg-elev-2 text-ink-2',
+                  ].join(' ')}
+                >
+                  {counts[tab.id]}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Grid */}
