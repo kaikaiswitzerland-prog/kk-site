@@ -18,7 +18,7 @@ const STATUS_PILL_CLASS = {
   paid: 'bg-accent-green/12 text-accent-green',
   preparing: 'bg-accent-blue/12 text-accent-blue',
   ready: 'bg-accent/12 text-accent',
-  delivered: 'bg-white/[0.06] text-ink-2',
+  delivered: 'bg-bg-elev-2 text-ink-2',
   refused: 'bg-accent-red/12 text-accent-red',
 };
 
@@ -165,7 +165,7 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint }) 
             <>
               <button
                 onClick={() => { onUpdateStatus(order.id, 'accepted'); onClose(); }}
-                className="flex-1 rounded-lg bg-accent px-4 py-3 text-sm font-bold text-black transition-colors hover:bg-[#c4ee5b]"
+                className="flex-1 rounded-lg bg-accent px-4 py-3 text-sm font-bold text-black transition-colors hover:bg-accent-soft"
               >
                 ✅ Accepter
               </button>
@@ -182,7 +182,7 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint }) 
           {order.status === 'accepted' && (
             <button
               onClick={() => { onUpdateStatus(order.id, 'ready'); onClose(); }}
-              className="flex-1 rounded-lg bg-accent px-4 py-3 text-sm font-bold text-black transition-colors hover:bg-[#c4ee5b]"
+              className="flex-1 rounded-lg bg-accent px-4 py-3 text-sm font-bold text-black transition-colors hover:bg-accent-soft"
             >
               🍳 Marquer prête
             </button>
@@ -197,7 +197,7 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint }) 
           )}
           <button
             onClick={() => onPrint(order)}
-            className="flex-1 rounded-lg border border-line-strong bg-bg px-4 py-3 text-sm font-medium text-ink transition-colors hover:bg-white/[0.05]"
+            className="flex-1 rounded-lg border border-line-strong bg-bg px-4 py-3 text-sm font-medium text-ink transition-colors hover:bg-bg-elev-2"
           >
             🖨️ Ticket cuisine
           </button>
@@ -225,7 +225,7 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint }) 
                       'rounded-md border px-2.5 py-1 font-mono text-[11px] tracking-wider transition-colors',
                       isCurrent
                         ? 'cursor-default border-line bg-bg-elev-2 text-ink-3'
-                        : 'border-line-strong bg-bg-elev-2 text-ink hover:bg-white/10',
+                        : 'border-line-strong bg-bg-elev-2 text-ink hover:bg-bg-elev-2',
                     ].join(' ')}
                   >
                     {STATUS_LABELS[s]}

@@ -52,7 +52,7 @@ export default function TopBar({ title, soundEnabled, onToggleSound, rightExtras
           aria-label={soundEnabled ? 'Désactiver le son' : 'Activer le son'}
           className="
             inline-flex items-center justify-center rounded-lg border border-line-strong bg-bg-elev-2
-            px-2.5 py-2 text-base text-ink transition-colors hover:bg-white/10
+            px-2.5 py-2 text-base text-ink transition-colors hover:bg-bg-elev-2
             md:gap-2 md:px-4 md:py-2.5 md:text-[13px] md:font-medium
           "
         >

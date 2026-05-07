@@ -1,27 +1,34 @@
 @import "tailwindcss";
 
-/* ─── Design tokens admin (Tailwind 4 @theme)
+/* ─── Design tokens admin (Tailwind 4 @theme) — palette ENDO&CO
+   Forêt Profonde + Citron Tahiti + Sable Blanc.
    Génère automatiquement bg-*, text-*, border-*, font-*, etc.
    Ces tokens n'affectent pas le site public : ils ne sont consommés
    que par les composants /admin via leurs classes utilitaires. */
 @theme {
-  --color-bg: #0a0a0a;
-  --color-bg-elev: #131313;
-  --color-bg-elev-2: #1c1c1c;
+  /* Fonds — Forêt Profonde + élévations */
+  --color-bg: #0a2618;
+  --color-bg-elev: #1a4030;
+  --color-bg-elev-2: #234d3c;
 
-  --color-line: rgba(255, 255, 255, 0.07);
-  --color-line-strong: rgba(255, 255, 255, 0.14);
+  /* Lignes — Sable Blanc translucide */
+  --color-line: rgba(245, 240, 232, 0.08);
+  --color-line-strong: rgba(245, 240, 232, 0.16);
 
-  --color-ink: #fafafa;
-  --color-ink-2: rgba(250, 250, 250, 0.62);
-  --color-ink-3: rgba(250, 250, 250, 0.38);
+  /* Encres — Sable Blanc + opacités */
+  --color-ink: #f5f0e8;
+  --color-ink-2: rgba(245, 240, 232, 0.65);
+  --color-ink-3: rgba(245, 240, 232, 0.40);
 
-  --color-accent: #d4ff6b;
-  --color-accent-warm: #ff7a3d;
-  --color-accent-blue: #6bb6ff;
-  --color-accent-green: #4ade80;
-  --color-accent-red: #ff5d5d;
+  /* Accents — Citron Tahiti + variantes adaptées au fond Forêt Profonde */
+  --color-accent: #d4ff6b;          /* Citron Tahiti, brand */
+  --color-accent-soft: #b8e060;     /* Hover bouton accent */
+  --color-accent-warm: #ff9a4d;     /* Pending / à traiter / cash */
+  --color-accent-blue: #7dcfff;     /* Preparing / info / carte */
+  --color-accent-green: #5be39b;    /* Payée / success */
+  --color-accent-red: #ff6b6b;      /* Refusé / erreur */
 
+  /* Fonts (inchangées) */
   --font-display: "Instrument Serif", serif;
   --font-body: "Inter Tight", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;

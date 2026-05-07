@@ -63,7 +63,7 @@ export default function LoginScreen() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 rounded-lg bg-accent px-4 py-3 font-semibold text-black transition-colors hover:bg-[#c4ee5b] disabled:opacity-60"
+            className="mt-2 rounded-lg bg-accent px-4 py-3 font-semibold text-black transition-colors hover:bg-accent-soft disabled:opacity-60"
           >
             {loading ? 'Connexion…' : 'Se connecter →'}
           </button>

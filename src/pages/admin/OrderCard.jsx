@@ -15,7 +15,7 @@ const STATUS_PILL_CLASS = {
   paid: 'bg-accent-green/12 text-accent-green',
   preparing: 'bg-accent-blue/12 text-accent-blue',
   ready: 'bg-accent/12 text-accent',
-  delivered: 'bg-white/[0.06] text-ink-2',
+  delivered: 'bg-bg-elev-2 text-ink-2',
   refused: 'bg-accent-red/12 text-accent-red',
 };
 
@@ -141,13 +141,13 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         >
           <button
             onClick={() => onPrint(order)}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-bg px-3 py-2.5 text-[12px] font-medium text-ink transition-colors hover:bg-white/[0.05]"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-bg px-3 py-2.5 text-[12px] font-medium text-ink transition-colors hover:bg-bg-elev-2"
           >
             🖨️ Ticket
           </button>
           <button
             onClick={() => onUpdateStatus(order.id, 'accepted')}
-            className="flex flex-1 items-center justify-center rounded-lg bg-accent px-3 py-2.5 text-[12px] font-bold text-black transition-colors hover:bg-[#c4ee5b]"
+            className="flex flex-1 items-center justify-center rounded-lg bg-accent px-3 py-2.5 text-[12px] font-bold text-black transition-colors hover:bg-accent-soft"
           >
             Accepter →
           </button>
@@ -168,7 +168,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         <div onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onUpdateStatus(order.id, 'ready')}
-            className="w-full rounded-lg bg-accent px-3 py-2.5 text-[12px] font-bold text-black transition-colors hover:bg-[#c4ee5b]"
+            className="w-full rounded-lg bg-accent px-3 py-2.5 text-[12px] font-bold text-black transition-colors hover:bg-accent-soft"
           >
             🍳 Marquer prête →
           </button>
@@ -191,7 +191,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
 
 function Pill({ children }) {
   return (
-    <span className="max-w-full break-words rounded bg-white/[0.04] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-2">
+    <span className="max-w-full break-words rounded bg-bg-elev-2 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-2">
       {children}
     </span>
   );

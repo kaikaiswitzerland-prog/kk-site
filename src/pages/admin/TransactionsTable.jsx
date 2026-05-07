@@ -76,7 +76,7 @@ export default function TransactionsTable({ orders, onSelect }) {
                 <tr
                   key={o.id}
                   onClick={() => onSelect?.(o)}
-                  className="cursor-pointer transition-colors hover:bg-white/[0.02]"
+                  className="cursor-pointer transition-colors hover:bg-bg-elev-2"
                 >
                   <Td>{fmtTime(o.created_at)}</Td>
                   <Td mono>#{orderNumber(o.id)}</Td>
@@ -85,7 +85,7 @@ export default function TransactionsTable({ orders, onSelect }) {
                     <span
                       className={[
                         'inline-flex items-center gap-1.5 rounded px-2 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider',
-                        PILL_CLASS[o.payment_method] || 'bg-white/[0.06] text-ink-2',
+                        PILL_CLASS[o.payment_method] || 'bg-bg-elev-2 text-ink-2',
                       ].join(' ')}
                     >
                       {(PAYMENT_LABELS[o.payment_method] || o.payment_method).toUpperCase()}

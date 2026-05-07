@@ -126,7 +126,7 @@ export default function ComptaView({ orders, onSelectOrder }) {
       <div className="mt-6">
         <button
           onClick={() => exportOrdersCSV(orders)}
-          className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-bg-elev-2 px-4 py-2.5 text-[13px] font-medium text-ink transition-colors hover:bg-white/10"
+          className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-bg-elev-2 px-4 py-2.5 text-[13px] font-medium text-ink transition-colors hover:bg-bg-elev-2"
         >
           📥 Exporter CSV
         </button>

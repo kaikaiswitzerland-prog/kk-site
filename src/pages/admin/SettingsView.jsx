@@ -28,7 +28,7 @@ export default function SettingsView({ user, soundEnabled, onToggleSound, onSign
         <Row label="Connecté en tant que" value={user?.email || '—'} />
         <button
           onClick={onSignOut}
-          className="mt-3 rounded-lg border border-line-strong bg-bg-elev-2 px-4 py-2.5 text-[13px] font-medium text-ink transition-colors hover:bg-white/10"
+          className="mt-3 rounded-lg border border-line-strong bg-bg-elev-2 px-4 py-2.5 text-[13px] font-medium text-ink transition-colors hover:bg-bg-elev-2"
         >
           Se déconnecter
         </button>
@@ -40,7 +40,7 @@ export default function SettingsView({ user, soundEnabled, onToggleSound, onSign
           value={
             <button
               onClick={onToggleSound}
-              className="rounded-md border border-line-strong bg-bg-elev-2 px-3 py-1.5 font-mono text-[12px] tracking-wider transition-colors hover:bg-white/10"
+              className="rounded-md border border-line-strong bg-bg-elev-2 px-3 py-1.5 font-mono text-[12px] tracking-wider transition-colors hover:bg-bg-elev-2"
             >
               {soundEnabled ? '🔔 Activé' : '🔕 Désactivé'}
             </button>
@@ -60,7 +60,7 @@ export default function SettingsView({ user, soundEnabled, onToggleSound, onSign
             ) : (
               <button
                 onClick={requestPerm}
-                className="rounded-md border border-line-strong bg-bg-elev-2 px-3 py-1.5 font-mono text-[12px] tracking-wider transition-colors hover:bg-white/10"
+                className="rounded-md border border-line-strong bg-bg-elev-2 px-3 py-1.5 font-mono text-[12px] tracking-wider transition-colors hover:bg-bg-elev-2"
               >
                 Autoriser
               </button>

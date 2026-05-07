@@ -47,7 +47,7 @@ export default function Sidebar({ page, setPage, pendingCount, user, onSignOut }
                   'flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                   active
                     ? 'kk-nav-item-active bg-bg-elev-2 text-ink'
-                    : 'text-ink-2 hover:bg-white/[0.03] hover:text-ink',
+                    : 'text-ink-2 hover:bg-bg-elev-2 hover:text-ink',
                 ].join(' ')}
               >
                 <span className="flex items-center gap-2">
@@ -94,7 +94,7 @@ export default function Sidebar({ page, setPage, pendingCount, user, onSignOut }
         className="
           fixed bottom-0 left-0 right-0 z-50 flex items-center
           border-t border-line bg-bg/95 px-2 py-2
-          backdrop-blur-xl md:hidden
+          backdrop-blur-[20px] md:hidden
         "
         style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
       >
