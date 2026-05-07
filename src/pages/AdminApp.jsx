@@ -73,10 +73,7 @@ export default function AdminApp() {
         onSignOut={signOut}
       />
 
-      <main
-        className="px-5 pb-32 pt-6 md:px-10 md:pb-20 md:pt-8"
-        style={{ outline: '2px solid red', outlineOffset: '-2px' }}
-      >
+      <main className="px-5 pb-32 pt-6 md:px-10 md:pb-20 md:pt-8">
         <TopBar
           title={PAGE_TITLES[page]}
           soundEnabled={soundEnabled}

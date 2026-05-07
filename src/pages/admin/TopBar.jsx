@@ -24,10 +24,7 @@ export default function TopBar({ title, soundEnabled, onToggleSound, rightExtras
   }, []);
 
   return (
-    <header
-      className="mb-6 flex flex-row items-end justify-between gap-3 border-b border-line pb-4 md:mb-9 md:pb-6"
-      style={{ outline: '2px solid magenta', outlineOffset: '-2px' }}
-    >
+    <header className="mb-6 flex flex-row items-end justify-between gap-3 border-b border-line pb-4 md:mb-9 md:pb-6">
       <div className="min-w-0 flex-1">
         <h1 className="font-display italic leading-[0.95] tracking-[-0.04em] text-[28px] md:text-[56px]">
           {title}

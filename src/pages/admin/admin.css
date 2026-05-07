@@ -4,6 +4,17 @@
    ce fichier ne contient que ce qui n'est pas pratique à exprimer en utilitaires
    (grain SVG, keyframes nommées, ::before barres latérales par statut, print). */
 
+/* Bouclier overflow horizontal niveau document.
+   `overflow-x: hidden` sur .kk-admin seul ne suffit pas sur iOS Safari :
+   si un descendant force la largeur, le HTML reste scrollable. App.jsx
+   applique cette protection sur le site public via un <style> injecté ;
+   on la duplique ici pour /admin (admin.css n'est chargé que par AdminApp).
+   Au pire, sur la page publique les rules sont identiques → no-op. */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 /* Conteneur racine — applique fond/encre/police/anti-alias seulement à l'admin */
 .kk-admin {
   background: var(--color-bg);
@@ -15,6 +26,17 @@
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+/* Verrou principal du bug "main plus large que le viewport" :
+   <main> est un grid item de .kk-admin (qui n'a pas de grid-template-columns
+   sur mobile → tracks auto). Son min-width: auto par défaut le laisse
+   grandir à la min-content cumulée de ses descendants (urgency text,
+   action buttons en flex-1, sublabel pill, etc.).
+   min-width: 0 force <main> à respecter la track de la grille,
+   et l'overflow interne est clippé par .kk-admin overflow-x: hidden. */
+.kk-admin > main {
+  min-width: 0;
 }
 
 /* Grain / noise — fixe, par-dessus tout, mix-blend-mode: overlay */

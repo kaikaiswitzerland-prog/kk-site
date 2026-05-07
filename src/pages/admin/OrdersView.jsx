@@ -35,7 +35,7 @@ export default function OrdersView({
           de tabs visibles d'un coup sans déborder. */}
       <div
         className="kk-scroll mb-5 flex gap-0.5 overflow-x-auto border-b border-line md:mb-7 md:gap-1"
-        style={{ scrollSnapType: 'x proximity', outline: '2px solid limegreen', outlineOffset: '-2px' }}
+        style={{ scrollSnapType: 'x proximity' }}
       >
         {TAB_FILTERS.map((tab) => {
           const active = tab.id === activeTab;
@@ -79,7 +79,6 @@ export default function OrdersView({
       ) : (
         <div
           className="kk-orders-grid grid gap-3 md:gap-3.5"
-          style={{ outline: '2px solid blue', outlineOffset: '-2px' }}
         >
           {filtered.map((order) => (
             <OrderCard
