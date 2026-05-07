@@ -45,6 +45,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         'transition-colors hover:border-line-strong hover:bg-bg-elev-2',
         isNew ? 'kk-new-pulse' : '',
       ].join(' ')}
+      style={{ outline: '2px solid yellow', outlineOffset: '-2px' }}
       onClick={() => onSelect(order)}
     >
       <div className="mb-3 flex items-start justify-between gap-3">
