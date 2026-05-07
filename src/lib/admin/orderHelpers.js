@@ -199,7 +199,8 @@ export function renderVariantLines(variants) {
       } else if (v.boisson === 'Jus exotique' && v.jus) {
         lines.push(`Boisson : Jus ${v.jus}`);
       } else if (v.boisson === 'Eau' && v.eau) {
-        lines.push(`Boisson : Eau ${v.eau}`);
+        // v.eau contient déjà "Eau Plate" / "Eau Gazeuse" — on évite le doublon "Eau Eau …"
+        lines.push(`Boisson : ${v.eau}`);
       }
       if (v.dessert) {
         lines.push(`Dessert : ${v.dessert}${v.coulisDessert ? ` (${v.coulisDessert})` : ''}`);
@@ -230,7 +231,8 @@ export function renderVariantLines(variants) {
           if (nom) lines.push(`Boisson : Jus ${nom}`);
         } else if (b === 'Eau') {
           const nom = eauList[eauIdx++];
-          if (nom) lines.push(`Boisson : Eau ${nom}`);
+          // nom contient déjà "Eau Plate" / "Eau Gazeuse" — pas de doublon
+          if (nom) lines.push(`Boisson : ${nom}`);
         }
       });
 
