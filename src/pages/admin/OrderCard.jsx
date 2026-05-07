@@ -7,6 +7,7 @@ import {
   STATUS_LABELS,
   STATUS_SUBLABEL,
   urgencyFor,
+  getItemCategoryLabel,
 } from '../../lib/admin/orderHelpers.js';
 import { useNow } from '../../hooks/useNow.js';
 
@@ -106,6 +107,9 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
                 {it.qty}×
               </span>
               <span className="truncate text-ink" title={it.name}>{it.name}</span>
+              <span className="ml-1.5 flex-shrink-0 font-mono text-[10px] uppercase tracking-[0.04em] text-ink-3">
+                [{getItemCategoryLabel(it)}]
+              </span>
             </span>
             <span className="flex-shrink-0 font-mono text-ink-2">
               {fmt(it.subtotal ?? it.price * it.qty)}

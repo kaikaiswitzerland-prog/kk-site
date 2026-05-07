@@ -96,6 +96,53 @@ export const PAYMENT_ICON = {
   card: '💳',
 };
 
+// ─── Catégories d'items ────────────────────────────────────
+// Lookup id → catégorie. Source : MENU dans src/App.jsx (constante inline,
+// non importable directement sans coupler admin et public). On duplique ici
+// la table minimale id → slug ; à mettre à jour en cas d'ajout de plat.
+// Le menu actuel couvre les ids "1" à "20".
+export const ITEM_CATEGORY_MAP = {
+  '1':  'entrees',   // Velouté koko
+  '2':  'entrees',   // Salade Tropicale
+  '3':  'entrees',   // Salade de poulet
+  '4':  'entrees',   // Tartare de thon rouge
+  '5':  'chaud',     // Chao Men
+  '6':  'chaud',     // Kai Fan
+  '7':  'chaud',     // Omelette Fu Young
+  '8':  'chaud',     // Wok de Bœuf
+  '9':  'froid',     // Tahiti
+  '10': 'froid',     // Hawaï
+  '11': 'froid',     // Samoa
+  '12': 'froid',     // Manoa
+  '13': 'formules',  // Formule Découverte
+  '14': 'formules',  // Formule Voyage
+  '15': 'desserts',  // Coulant au chocolat
+  '16': 'desserts',  // Crème Tropicale
+  '17': 'desserts',  // Po'e Banane
+  '18': 'desserts',  // Cheesecake
+  '19': 'boissons',  // Jus exotiques
+  '20': 'boissons',  // Eau plate/gazeuse
+};
+
+export const CATEGORY_LABELS = {
+  entrees:  'Entrée',
+  chaud:    'Plat chaud',
+  froid:    'Plat froid',
+  formules: 'Formule',
+  desserts: 'Dessert',
+  boissons: 'Boisson',
+};
+
+// Renvoie toujours un string non-null :
+//  - label français si l'id de l'item est connu
+//  - "?" si l'id n'est pas dans ITEM_CATEGORY_MAP (plat retiré du menu)
+export function getItemCategoryLabel(item) {
+  const id = String(item?.id ?? '');
+  const slug = ITEM_CATEGORY_MAP[id];
+  if (!slug) return '?';
+  return CATEGORY_LABELS[slug] || '?';
+}
+
 // ─── Filtres tabs (vue Commandes) ───────────────────────────
 // Mapping tab → statuts DB inclus.
 // "À traiter" regroupe pending (cash/twint) + paid (carte) car tous deux

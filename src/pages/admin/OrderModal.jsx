@@ -11,6 +11,7 @@ import {
   renderVariantLines,
   buildTimeline,
   FORCEABLE_STATUSES,
+  getItemCategoryLabel,
 } from '../../lib/admin/orderHelpers.js';
 
 const STATUS_PILL_CLASS = {
@@ -134,6 +135,9 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint }) 
                   <span>
                     <span className="mr-2.5 font-mono font-semibold text-accent">{it.qty}×</span>
                     <span className="font-medium">{it.name}</span>
+                    <span className="ml-1.5 font-mono text-[10px] uppercase tracking-[0.04em] text-ink-3">
+                      [{getItemCategoryLabel(it)}]
+                    </span>
                   </span>
                   <span className="font-mono font-semibold">
                     {fmt(it.subtotal ?? it.price * it.qty)}
