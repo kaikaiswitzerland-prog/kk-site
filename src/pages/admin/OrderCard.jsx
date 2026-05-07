@@ -47,16 +47,19 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
       ].join(' ')}
       onClick={() => onSelect(order)}
     >
-      <div className="mb-3 flex items-start justify-between">
-        <div>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <div className="font-mono text-[11px] tracking-[0.1em] text-ink-3">
             #{orderNumber(order.id)}
           </div>
-          <div className="text-base font-semibold leading-tight tracking-[-0.01em]">
+          <div
+            title={order.customer_name}
+            className="truncate text-base font-semibold leading-tight tracking-[-0.01em]"
+          >
             {order.customer_name}
           </div>
         </div>
-        <div className="text-right font-mono text-[13px] text-ink-2">
+        <div className="flex-shrink-0 text-right font-mono text-[13px] text-ink-2">
           {fmtTime(order.created_at)}
           <span className="mt-0.5 block text-[10px] text-ink-3">
             {fmtRelative(order.created_at)}
@@ -64,15 +67,21 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         </div>
       </div>
 
-      <div
-        className={[
-          'mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.1em]',
-          STATUS_PILL_CLASS[visual] || STATUS_PILL_CLASS.new,
-        ].join(' ')}
-      >
-        <span className="h-1.5 w-1.5 rounded-full bg-current" />
-        {STATUS_LABELS[order.status]}
-        {sublabel && <span className="opacity-70">· {sublabel}</span>}
+      <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div
+          className={[
+            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.1em]',
+            STATUS_PILL_CLASS[visual] || STATUS_PILL_CLASS.new,
+          ].join(' ')}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+          {STATUS_LABELS[order.status]}
+        </div>
+        {sublabel && (
+          <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-3">
+            · {sublabel}
+          </span>
+        )}
       </div>
 
       {urgency && (
@@ -91,12 +100,14 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
 
       <ul className="mb-3 space-y-0.5 text-xs md:text-[13px]">
         {items.slice(0, 4).map((it, i) => (
-          <li key={i} className="flex justify-between text-ink-2">
-            <span className="flex items-center">
-              <span className="mr-2.5 font-mono font-semibold text-accent">{it.qty}×</span>
-              <span className="text-ink">{it.name}</span>
+          <li key={i} className="flex items-baseline justify-between gap-3 text-ink-2">
+            <span className="flex min-w-0 items-baseline">
+              <span className="mr-2.5 flex-shrink-0 font-mono font-semibold text-accent">
+                {it.qty}×
+              </span>
+              <span className="truncate text-ink" title={it.name}>{it.name}</span>
             </span>
-            <span className="font-mono text-ink-2">
+            <span className="flex-shrink-0 font-mono text-ink-2">
               {fmt(it.subtotal ?? it.price * it.qty)}
             </span>
           </li>
@@ -116,9 +127,9 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         {order.notes && <Pill>📝 {order.notes}</Pill>}
       </div>
 
-      <div className="mb-3 flex items-baseline justify-between">
+      <div className="mb-3 flex items-baseline justify-between gap-3">
         <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3">Total</span>
-        <span className="font-display text-[26px] italic leading-none tracking-[-0.02em] md:text-[32px]">
+        <span className="flex-shrink-0 font-display text-[26px] italic leading-none tracking-[-0.02em] md:text-[32px]">
           {fmt(order.total)}
         </span>
       </div>
@@ -180,7 +191,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
 
 function Pill({ children }) {
   return (
-    <span className="rounded bg-white/[0.04] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-2">
+    <span className="max-w-full break-words rounded bg-white/[0.04] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-2">
       {children}
     </span>
   );

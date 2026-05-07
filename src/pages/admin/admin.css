@@ -87,13 +87,16 @@
 }
 .kk-urgent-blink { animation: kk-urgent-blink 1.4s ease-in-out infinite; }
 
-/* Grille des commandes — colonne unique sur mobile, auto-fill 340px+ sur tablet/desktop */
+/* Grille des commandes — colonne unique sur mobile, auto-fill 340px+ sur tablet/desktop.
+   minmax(0, 1fr) au lieu de 1fr : autorise la track à shrink en dessous du min-content
+   du contenu (sinon une carte avec un long nom force la grille à dépasser le viewport
+   et le contenu droit est clippé par overflow-x: hidden de .kk-admin). */
 .kk-orders-grid {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (min-width: 640px) {
   .kk-orders-grid {
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
   }
 }
 
