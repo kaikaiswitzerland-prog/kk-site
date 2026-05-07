@@ -1015,17 +1015,21 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
   );
 }
 
-function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge }) {
+function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge, disabled }) {
   return (
     <button
       className={`modal-tile tile-${Math.min(index, 6)}`}
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: 12,
         padding: '13px 14px', marginBottom: 8,
         background: isSelected ? 'rgba(255,255,255,0.11)' : 'rgba(255,255,255,0.03)',
         border: isSelected ? '1px solid rgba(255,255,255,0.28)' : '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 16, cursor: 'pointer', textAlign: 'left',
+        borderRadius: 16,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        textAlign: 'left',
+        opacity: disabled ? 0.4 : 1,
       }}
     >
       {emoji && (
@@ -1052,6 +1056,66 @@ function SectionLabel({ children }) {
   return (
     <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', letterSpacing: '0.09em', textTransform: 'uppercase', padding: '14px 2px 10px' }}>
       {children}
+    </div>
+  );
+}
+
+function SelectionList({ label, items, onRemove }) {
+  return (
+    <div style={{
+      marginTop: 4,
+      marginBottom: 4,
+      padding: 10,
+      background: 'rgba(255,255,255,0.03)',
+      borderRadius: 14,
+      border: '1px dashed rgba(255,255,255,0.12)',
+    }}>
+      <div style={{
+        fontSize: 9,
+        fontWeight: 700,
+        color: 'rgba(255,255,255,0.50)',
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        marginBottom: 8,
+        paddingLeft: 2,
+      }}>
+        {label}
+      </div>
+      {items.map((it) => (
+        <div key={it.key} style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '7px 10px',
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: 10,
+          marginBottom: 4,
+        }}>
+          {it.emoji && <span style={{ fontSize: 18, flexShrink: 0 }}>{it.emoji}</span>}
+          <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {it.name}
+            {it.detail && (
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginLeft: 6 }}>
+                · {it.detail}
+              </span>
+            )}
+          </span>
+          <button
+            onClick={() => onRemove(it.key)}
+            aria-label="Retirer"
+            style={{
+              width: 26, height: 26, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.08)',
+              border: 'none', color: 'rgba(255,255,255,0.65)',
+              fontSize: 13, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1262,10 +1326,21 @@ function FormuleModal({ item, onConfirm, onClose }) {
   };
 
   const togglePlatVoy = (plat) => {
-    if (selectedPlats.includes(plat)) { setSelectedPlats(selectedPlats.filter(p => p !== plat)); setSelectedProteins(p => { const n={...p}; delete n[plat]; return n; }); return; }
     if (selectedPlats.length >= 2) return;
     setSelectedPlats([...selectedPlats, plat]);
-    if (needsProtein(plat)) { setProteinForPlat(plat); setShowProteinSelector(true); }
+    if (needsProtein(plat) && !selectedProteins[plat]) {
+      setProteinForPlat(plat);
+      setShowProteinSelector(true);
+    }
+  };
+
+  const removePlatAt = (idx) => {
+    const plat = selectedPlats[idx];
+    const remaining = selectedPlats.filter((_, i) => i !== idx);
+    setSelectedPlats(remaining);
+    if (!remaining.includes(plat)) {
+      setSelectedProteins(p => { const n = { ...p }; delete n[plat]; return n; });
+    }
   };
 
   const handleBoissonDec = (b) => {
@@ -1276,17 +1351,30 @@ function FormuleModal({ item, onConfirm, onClose }) {
   };
 
   const handleBoissonVoy = (b) => {
-    const jusCount = selectedBoissons.filter(x => x === 'Jus exotique').length;
-    const eauCount = selectedBoissons.filter(x => x === 'Eau').length;
+    if (selectedBoissons.length >= 2) return;
     if (b === 'Jus exotique') {
-      if (jusCount > 0) { setSelectedBoissons(selectedBoissons.filter(x => x !== 'Jus exotique')); setSelectedJusVoyage([]); return; }
-      if (selectedBoissons.length >= 2) return;
-      setSelectedBoissons([...selectedBoissons, b]); setJusIndex(0); setShowJusSelector(true);
+      const jusCount = selectedBoissons.filter(x => x === 'Jus exotique').length;
+      setSelectedBoissons([...selectedBoissons, b]);
+      setJusIndex(jusCount);
+      setShowJusSelector(true);
     } else {
-      if (eauCount > 0) { setSelectedBoissons(selectedBoissons.filter(x => x !== 'Eau')); setSelectedEauVoyage([]); return; }
-      if (selectedBoissons.length >= 2) return;
-      setSelectedBoissons([...selectedBoissons, b]); setEauIndex(0); setShowEauSelector(true);
+      const eauCount = selectedBoissons.filter(x => x === 'Eau').length;
+      setSelectedBoissons([...selectedBoissons, b]);
+      setEauIndex(eauCount);
+      setShowEauSelector(true);
     }
+  };
+
+  const removeBoissonAt = (idx) => {
+    const b = selectedBoissons[idx];
+    if (b === 'Jus exotique') {
+      const jusIdxToRemove = selectedBoissons.slice(0, idx).filter(x => x === 'Jus exotique').length;
+      setSelectedJusVoyage(prev => prev.filter((_, i) => i !== jusIdxToRemove));
+    } else if (b === 'Eau') {
+      const eauIdxToRemove = selectedBoissons.slice(0, idx).filter(x => x === 'Eau').length;
+      setSelectedEauVoyage(prev => prev.filter((_, i) => i !== eauIdxToRemove));
+    }
+    setSelectedBoissons(prev => prev.filter((_, i) => i !== idx));
   };
 
   const prog = getProgress();
@@ -1333,19 +1421,35 @@ function FormuleModal({ item, onConfirm, onClose }) {
         {plats.map((plat, i) => {
           const sel = isVoyage ? selectedPlats.includes(plat) : selectedPlat === plat;
           const prot = selectedProteins[plat];
+          const platCount = isVoyage ? selectedPlats.filter(p => p === plat).length : 0;
+          const platLimit = isVoyage && selectedPlats.length >= 2;
           return (
             <OptionTile
               key={plat}
               emoji={platEmojis[plat]}
-              name={plat}
+              name={plat + (platCount > 1 ? ` ×${platCount}` : '')}
               desc={prot ? `${platDescs[plat]} · ${prot}` : platDescs[plat]}
               isSelected={sel}
               onClick={() => isVoyage ? togglePlatVoy(plat) : togglePlatDec(plat)}
               index={i}
               badge={needsProtein(plat) && sel && !prot ? 'choix requis' : null}
+              disabled={platLimit}
             />
           );
         })}
+
+        {isVoyage && selectedPlats.length > 0 && (
+          <SelectionList
+            label={`Votre sélection (${selectedPlats.length}/2 plats)`}
+            items={selectedPlats.map((p, i) => ({
+              key: i,
+              emoji: platEmojis[p],
+              name: p,
+              detail: selectedProteins[p] || null,
+            }))}
+            onRemove={removePlatAt}
+          />
+        )}
 
         <SectionLabel>{isVoyage ? "Boissons (jusqu'à 2)" : 'Votre boisson'}</SectionLabel>
         {['Jus exotique', 'Eau'].map((b, i) => {
@@ -1353,6 +1457,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
           const countVoy = selectedBoissons.filter(x => x === b).length;
           const selVoy = countVoy > 0;
           const sel = isVoyage ? selVoy : selDec;
+          const boissonLimit = isVoyage && selectedBoissons.length >= 2;
           const subLabel = b === 'Jus exotique'
             ? (isVoyage ? (selectedJusVoyage[0] || 'Au choix') : (selectedJusDecouverte || 'Au choix'))
             : (isVoyage ? (selectedEauVoyage[0] || 'Plate ou gazeuse') : (selectedEauDecouverte || 'Plate ou gazeuse'));
@@ -1365,9 +1470,30 @@ function FormuleModal({ item, onConfirm, onClose }) {
               isSelected={sel}
               onClick={() => isVoyage ? handleBoissonVoy(b) : handleBoissonDec(b)}
               index={plats.length + i}
+              disabled={boissonLimit}
             />
           );
         })}
+
+        {isVoyage && selectedBoissons.length > 0 && (
+          <SelectionList
+            label={`Votre sélection (${selectedBoissons.length}/2 boissons)`}
+            items={selectedBoissons.map((b, i) => {
+              const jusIdx = selectedBoissons.slice(0, i).filter(x => x === 'Jus exotique').length;
+              const eauIdx = selectedBoissons.slice(0, i).filter(x => x === 'Eau').length;
+              const detail = b === 'Jus exotique'
+                ? (selectedJusVoyage[jusIdx] || null)
+                : (selectedEauVoyage[eauIdx] || null);
+              return {
+                key: i,
+                emoji: b === 'Jus exotique' ? '🧉' : '💧',
+                name: b,
+                detail,
+              };
+            })}
+            onRemove={removeBoissonAt}
+          />
+        )}
 
         {isVoyage && (
           <>
