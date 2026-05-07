@@ -87,6 +87,16 @@
 }
 .kk-urgent-blink { animation: kk-urgent-blink 1.4s ease-in-out infinite; }
 
+/* Grille des commandes — colonne unique sur mobile, auto-fill 340px+ sur tablet/desktop */
+.kk-orders-grid {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .kk-orders-grid {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
+}
+
 /* Coin radial discret sur les KPI */
 .kk-kpi { position: relative; overflow: hidden; }
 .kk-kpi::after {
