@@ -41,7 +41,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
     <div
       data-status={visual}
       className={[
-        'kk-order-card group cursor-pointer rounded-xl border border-line bg-bg-elev p-4',
+        'kk-order-card group cursor-pointer rounded-xl border border-line bg-bg-elev p-3 md:p-4',
         'transition-colors hover:border-line-strong hover:bg-bg-elev-2',
         isNew ? 'kk-new-pulse' : '',
       ].join(' ')}
@@ -118,7 +118,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
 
       <div className="mb-3 flex items-baseline justify-between">
         <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3">Total</span>
-        <span className="font-display text-[32px] italic leading-none tracking-[-0.02em]">
+        <span className="font-display text-[26px] italic leading-none tracking-[-0.02em] md:text-[32px]">
           {fmt(order.total)}
         </span>
       </div>

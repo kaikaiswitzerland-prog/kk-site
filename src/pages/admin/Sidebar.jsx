@@ -89,12 +89,14 @@ export default function Sidebar({ page, setPage, pendingCount, user, onSignOut }
         </div>
       </aside>
 
-      {/* ── Mobile bottom nav ───────────────────────── */}
+      {/* ── Mobile bottom nav (3 items équirépartis : Commandes / Compta / Paramètres) ── */}
       <nav
         className="
-          fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around
-          border-t border-line bg-bg/95 px-4 py-2 backdrop-blur-xl md:hidden
+          fixed bottom-0 left-0 right-0 z-50 flex items-center
+          border-t border-line bg-bg/95 px-2 py-2
+          backdrop-blur-xl md:hidden
         "
+        style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
       >
         {NAV_ITEMS.map((item) => {
           const active = page === item.id;
@@ -107,10 +109,10 @@ export default function Sidebar({ page, setPage, pendingCount, user, onSignOut }
                 active ? 'text-accent' : 'text-ink-3',
               ].join(' ')}
             >
-              <span className="relative text-base leading-none">
+              <span className="relative inline-flex items-center justify-center text-base leading-none">
                 {item.icon}
                 {item.id === 'orders' && pendingCount > 0 && (
-                  <span className="absolute -right-2 -top-1 rounded-full bg-accent-warm px-1.5 py-px font-mono text-[9px] font-bold text-black">
+                  <span className="absolute -right-3 -top-1.5 min-w-[16px] rounded-full bg-accent-warm px-1 py-px text-center font-mono text-[9px] font-bold leading-none text-black">
                     {pendingCount}
                   </span>
                 )}
