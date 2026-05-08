@@ -212,7 +212,12 @@ export function renderVariantLines(variants) {
     if (v?.type === 'voyage') {
       const plats = Array.isArray(v.plats) ? v.plats : [];
       plats.forEach((plat, idx) => {
-        const protein = v.proteins?.[plat];
+        // Voyage nouveau format : v.proteins est un array aligné sur v.plats[idx].
+        // Voyage legacy : v.proteins est un objet { [platName]: proteinName } — on
+        // dual-read pour préserver l'affichage des commandes déjà passées.
+        const protein = Array.isArray(v.proteins)
+          ? v.proteins[idx]
+          : v.proteins?.[plat];
         lines.push(`Plat ${idx + 1} : ${plat}${protein ? ` (${protein})` : ''}`);
       });
 
