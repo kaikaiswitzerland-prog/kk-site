@@ -9,11 +9,21 @@ export const fmt = (n) =>
 export const fmtAmount = (n) =>
   Number(n).toLocaleString('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export const fmtDate = (iso) =>
-  new Date(iso).toLocaleDateString('fr-CH', { day: '2-digit', month: '2-digit', year: '2-digit' });
+export const fmtDate = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleDateString('fr-CH', { day: '2-digit', month: '2-digit', year: '2-digit' });
+};
 
-export const fmtTime = (iso) =>
-  new Date(iso).toLocaleTimeString('fr-CH', { hour: '2-digit', minute: '2-digit' });
+export const fmtTime = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleTimeString('fr-CH', { hour: '2-digit', minute: '2-digit' });
+};
 
 export const fmtRelative = (iso) => {
   const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -25,7 +35,8 @@ export const fmtRelative = (iso) => {
   return `il y a ${d} j`;
 };
 
-export const orderNumber = (id) => id.slice(0, 8).toUpperCase();
+export const orderNumber = (id) =>
+  id ? String(id).slice(0, 8).toUpperCase() : '????????';
 
 // ─── Statuts ────────────────────────────────────────────────
 // Cycle :
@@ -182,6 +193,7 @@ export function renderVariantLines(variants) {
   const lines = [];
 
   variants.forEach((v) => {
+    try {
     // 1. String legacy
     if (typeof v === 'string') {
       lines.push(v);
@@ -250,6 +262,13 @@ export function renderVariantLines(variants) {
     // 4. Variant simple { id, name, desc } — fallback
     if (v?.name) {
       lines.push(v.name);
+    }
+    } catch (err) {
+      // Variant au format inattendu : on log côté console et on pousse une
+      // ligne placeholder plutôt que de faire planter tout le composant
+      // consommateur (PrintTicket, OrderCard, OrderModal).
+      console.warn('renderVariantLines: variant invalide', v, err);
+      lines.push('? Variant invalide');
     }
   });
 
