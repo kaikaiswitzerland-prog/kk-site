@@ -69,7 +69,7 @@ export default function AdminApp() {
   const handlePrint = (order) => {
     flushSync(() => setPrintOrder(order));
     window.print();
-    setPrintOrder(null);
+    setTimeout(() => setPrintOrder(null), 10000); // 10s = test décisif
   };
   const toggleSound = () => setSoundEnabled(!soundEnabled);
 
