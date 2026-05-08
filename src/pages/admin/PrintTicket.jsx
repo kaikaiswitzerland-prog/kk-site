@@ -1,4 +1,4 @@
-import { Component, useEffect, useRef } from 'react';
+import { Component } from 'react';
 import { createPortal } from 'react-dom';
 import {
   fmt,
@@ -10,14 +10,14 @@ import {
   renderVariantLines,
 } from '../../lib/admin/orderHelpers.js';
 
-// Ticket cuisine — déclenchement manuel via window.print().
+// Ticket cuisine — composant pré-monté en permanence dans AdminApp.
+// AdminApp pousse l'order via flushSync puis appelle window.print()
+// SYNCHRONEMENT dans le user gesture (cf Safari iOS qui bloque les print()
+// hors gesture). Ce composant ne déclenche donc PAS lui-même window.print().
+//
 // Layout optimisé pour imprimante thermique BT 58mm/80mm
 // (largeur cible 72mm, monospace, séparateurs pointillés).
 // Rendu via portal dans #kk-print-root pour isolation totale (cf admin.css @media print).
-//
-// printText() : transforme tout texte affichable en CASSE HAUTE + sans accents
-// pour les imprimantes thermiques qui ne supportent pas correctement les
-// caractères Unicode étendus.
 const COMBINING_MARKS = /[̀-ͯ]/g;
 const printText = (s) => {
   try {
@@ -144,19 +144,9 @@ function PrintTicketBody({ order }) {
   );
 }
 
-export default function PrintTicket({ order, onComplete }) {
-  // onComplete est souvent une arrow function inline côté parent (nouvelle ref
-  // à chaque render). Si on la met dans les deps du useEffect, chaque re-render
-  // d'AdminApp (useNow tick, push Realtime…) annule et reschedule le timeout
-  // 150 ms — risque de race où window.print() s'exécute pendant un commit
-  // React, capturant un portal vide → ticket imprimé blanc.
-  // Solution : ref stable, useEffect uniquement dépendant de `order`.
-  const onCompleteRef = useRef(onComplete);
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  });
-
-  // Crée / récupère le conteneur portal
+export default function PrintTicket({ order }) {
+  // Crée / récupère le conteneur portal (toujours présent dans le DOM,
+  // masqué hors @media print via admin.css).
   let mount = typeof document !== 'undefined' ? document.getElementById('kk-print-root') : null;
   if (typeof document !== 'undefined' && !mount) {
     mount = document.createElement('div');
@@ -164,16 +154,8 @@ export default function PrintTicket({ order, onComplete }) {
     document.body.appendChild(mount);
   }
 
-  useEffect(() => {
-    if (!order) return;
-    const t = setTimeout(() => {
-      window.print();
-      setTimeout(() => onCompleteRef.current?.(), 200);
-    }, 150);
-    return () => clearTimeout(t);
-  }, [order]);
-
-  if (!order || !mount) return null;
+  if (!mount) return null;
+  if (!order) return createPortal(null, mount);
 
   return createPortal(
     <PrintErrorBoundary order={order}>

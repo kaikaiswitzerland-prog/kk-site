@@ -6,6 +6,7 @@
 // Le rendu des sections vit dans src/pages/admin/*.
 
 import { useMemo, useState } from 'react';
+import { flushSync } from 'react-dom';
 import './admin/admin.css';
 
 import { useAdminAuth } from '../hooks/useAdminAuth.js';
@@ -60,7 +61,16 @@ export default function AdminApp() {
   if (loading) return <LoadingScreen />;
   if (!user) return <LoginScreen />;
 
-  const handlePrint = (order) => setPrintOrder(order);
+  // Safari iOS bloque window.print() hors user gesture. Pour rester dans le
+  // gesture du clic, on commit synchronement le ticket via flushSync, puis
+  // on appelle window.print() dans le même call stack que le onClick. Le
+  // composant PrintTicket est pré-monté en permanence dans l'arbre (avec
+  // order=null par défaut) ; flushSync ne fait qu'un update de prop.
+  const handlePrint = (order) => {
+    flushSync(() => setPrintOrder(order));
+    window.print();
+    setPrintOrder(null);
+  };
   const toggleSound = () => setSoundEnabled(!soundEnabled);
 
   return (
@@ -120,12 +130,10 @@ export default function AdminApp() {
         />
       )}
 
-      {printOrder && (
-        <PrintTicket
-          order={printOrder}
-          onComplete={() => setPrintOrder(null)}
-        />
-      )}
+      {/* PrintTicket est rendu en permanence (portal masqué hors @media print)
+          pour que window.print() puisse être appelé synchronement dans le
+          user gesture du clic Ticket — voir handlePrint. */}
+      <PrintTicket order={printOrder} />
     </div>
   );
 }
