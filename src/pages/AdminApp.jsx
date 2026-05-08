@@ -5,7 +5,7 @@
 // Orchestrateur uniquement : auth, navigation entre pages, modale, impression.
 // Le rendu des sections vit dans src/pages/admin/*.
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import './admin/admin.css';
 
@@ -45,6 +45,7 @@ export default function AdminApp() {
   const [activeTab, setActiveTab] = useState('todo');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [printOrder, setPrintOrder] = useState(null);
+  const printTimerRef = useRef(null);
 
   // Compte les commandes "à traiter" (pending + paid, hors pending_payment)
   const pendingCount = useMemo(() => {
@@ -67,9 +68,22 @@ export default function AdminApp() {
   // composant PrintTicket est pré-monté en permanence dans l'arbre (avec
   // order=null par défaut) ; flushSync ne fait qu'un update de prop.
   const handlePrint = (order) => {
+    // Si une impression précédente est encore en flight (timer pas
+    // encore expiré), on annule son cleanup pour éviter de vider le
+    // portal pendant la capture de la nouvelle impression.
+    if (printTimerRef.current) {
+      clearTimeout(printTimerRef.current);
+      printTimerRef.current = null;
+    }
     flushSync(() => setPrintOrder(order));
     window.print();
-    setTimeout(() => setPrintOrder(null), 10000); // 10s = test décisif
+    // iOS Safari : window.print() retourne immédiatement, AirPrint
+    // capture le DOM en arrière-plan. On laisse 2s avant de vider
+    // le portal pour garantir que la capture est terminée.
+    printTimerRef.current = setTimeout(() => {
+      setPrintOrder(null);
+      printTimerRef.current = null;
+    }, 2000);
   };
   const toggleSound = () => setSoundEnabled(!soundEnabled);
 
