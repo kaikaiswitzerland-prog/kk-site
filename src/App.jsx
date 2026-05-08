@@ -1238,7 +1238,12 @@ function FormuleModal({ item, onConfirm, onClose }) {
   const [jusIndex, setJusIndex] = useState(0);
   const [showProteinSelector, setShowProteinSelector] = useState(false);
   const [proteinForPlat, setProteinForPlat] = useState(null);
-  const [selectedProteins, setSelectedProteins] = useState({});
+  const [proteinForPlatIdx, setProteinForPlatIdx] = useState(null);
+  // Voyage: array aligné sur selectedPlats[idx] → permet 2× même plat avec protéines distinctes.
+  // Découverte: objet { [platName]: protein } (1 seul plat possible, format inchangé).
+  const [selectedProteins, setSelectedProteins] = useState(
+    item.formuleType === 'voyage' ? [] : {}
+  );
   const [showEauSelector, setShowEauSelector] = useState(false);
   const [selectedEauDecouverte, setSelectedEauDecouverte] = useState(null);
   const [selectedEauVoyage, setSelectedEauVoyage] = useState([]);
@@ -1302,7 +1307,9 @@ function FormuleModal({ item, onConfirm, onClose }) {
       return true;
     } else {
       if (selectedPlats.length !== 2) return false;
-      for (const p of selectedPlats) { if (needsProtein(p) && !selectedProteins[p]) return false; }
+      for (let i = 0; i < selectedPlats.length; i++) {
+        if (needsProtein(selectedPlats[i]) && !selectedProteins[i]) return false;
+      }
       if (selectedBoissons.length === 0) return false;
       if (!selectedDessert) return false;
       if (needsCoulis(selectedDessert) && !selectedCoulisDessert) return false;
@@ -1327,20 +1334,21 @@ function FormuleModal({ item, onConfirm, onClose }) {
 
   const togglePlatVoy = (plat) => {
     if (selectedPlats.length >= 2) return;
+    const newIdx = selectedPlats.length;
     setSelectedPlats([...selectedPlats, plat]);
-    if (needsProtein(plat) && !selectedProteins[plat]) {
+    setSelectedProteins(prev => [...(Array.isArray(prev) ? prev : []), null]);
+    if (needsProtein(plat)) {
       setProteinForPlat(plat);
+      setProteinForPlatIdx(newIdx);
       setShowProteinSelector(true);
     }
   };
 
   const removePlatAt = (idx) => {
-    const plat = selectedPlats[idx];
-    const remaining = selectedPlats.filter((_, i) => i !== idx);
-    setSelectedPlats(remaining);
-    if (!remaining.includes(plat)) {
-      setSelectedProteins(p => { const n = { ...p }; delete n[plat]; return n; });
-    }
+    setSelectedPlats(prev => prev.filter((_, i) => i !== idx));
+    setSelectedProteins(prev =>
+      Array.isArray(prev) ? prev.filter((_, i) => i !== idx) : prev
+    );
   };
 
   const handleBoissonDec = (b) => {
@@ -1420,19 +1428,30 @@ function FormuleModal({ item, onConfirm, onClose }) {
         <SectionLabel>{isVoyage ? 'Choisissez vos 2 plats' : 'Votre plat'}</SectionLabel>
         {plats.map((plat, i) => {
           const sel = isVoyage ? selectedPlats.includes(plat) : selectedPlat === plat;
-          const prot = selectedProteins[plat];
+          // Découverte: protéine par nom de plat. Voyage: la protéine peut différer
+          // par occurrence — on n'affiche pas de sub-label sur le tile (la SelectionList
+          // détaille chaque occurrence avec sa protéine).
+          const protDec = !isVoyage ? selectedProteins[plat] : null;
           const platCount = isVoyage ? selectedPlats.filter(p => p === plat).length : 0;
           const platLimit = isVoyage && selectedPlats.length >= 2;
+          // Badge "choix requis" :
+          //  - Découverte : ce plat est sélectionné mais pas encore de protéine
+          //  - Voyage : au moins une occurrence de ce plat n'a pas encore de protéine assignée
+          const needsProteinBadge = needsProtein(plat) && sel && (
+            isVoyage
+              ? selectedPlats.some((p, idx) => p === plat && !selectedProteins[idx])
+              : !protDec
+          );
           return (
             <OptionTile
               key={plat}
               emoji={platEmojis[plat]}
               name={plat + (platCount > 1 ? ` ×${platCount}` : '')}
-              desc={prot ? `${platDescs[plat]} · ${prot}` : platDescs[plat]}
+              desc={protDec ? `${platDescs[plat]} · ${protDec}` : platDescs[plat]}
               isSelected={sel}
               onClick={() => isVoyage ? togglePlatVoy(plat) : togglePlatDec(plat)}
               index={i}
-              badge={needsProtein(plat) && sel && !prot ? 'choix requis' : null}
+              badge={needsProteinBadge ? 'choix requis' : null}
               disabled={platLimit}
             />
           );
@@ -1445,7 +1464,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
               key: i,
               emoji: platEmojis[p],
               name: p,
-              detail: selectedProteins[p] || null,
+              detail: (Array.isArray(selectedProteins) ? selectedProteins[i] : null) || null,
             }))}
             onRemove={removePlatAt}
           />
@@ -1523,7 +1542,20 @@ function FormuleModal({ item, onConfirm, onClose }) {
           title="Choisissez votre protéine"
           subtitle={proteinForPlat}
           options={proteinOpts(proteinForPlat)}
-          onSelect={opt => { setSelectedProteins(p => ({...p, [proteinForPlat]: opt.name})); setShowProteinSelector(false); setProteinForPlat(null); }}
+          onSelect={opt => {
+            if (item.formuleType === 'voyage') {
+              setSelectedProteins(prev => {
+                const arr = Array.isArray(prev) ? [...prev] : [];
+                arr[proteinForPlatIdx] = opt.name;
+                return arr;
+              });
+            } else {
+              setSelectedProteins(p => ({ ...p, [proteinForPlat]: opt.name }));
+            }
+            setShowProteinSelector(false);
+            setProteinForPlat(null);
+            setProteinForPlatIdx(null);
+          }}
           onClose={() => setShowProteinSelector(false)}
         />
       )}
@@ -1809,9 +1841,14 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                             {variant.type === "voyage" && (
                               <>
                                 <div className="font-semibold text-white/70">Plats:</div>
-                                {variant.plats && variant.plats.map((plat, idx) => (
-                                  <div key={idx}>• {plat}{variant.proteins && variant.proteins[plat] && ` (${variant.proteins[plat]})`}</div>
-                                ))}
+                                {variant.plats && variant.plats.map((plat, idx) => {
+                                  const protein = Array.isArray(variant.proteins)
+                                    ? variant.proteins[idx]
+                                    : variant.proteins?.[plat];
+                                  return (
+                                    <div key={idx}>• {plat}{protein && ` (${protein})`}</div>
+                                  );
+                                })}
                                 <div className="font-semibold text-white/70 mt-1">Boissons:</div>
                                 {variant.boissons && variant.boissons.map((boisson, idx) => {
                                   if (boisson === 'Jus exotique' && variant.jus && variant.jus[idx]) {
