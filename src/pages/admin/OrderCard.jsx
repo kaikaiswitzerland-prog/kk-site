@@ -19,6 +19,8 @@ const STATUS_PILL_CLASS = {
   ready: 'bg-accent/12 text-accent',
   delivered: 'bg-bg-elev-2 text-ink-2',
   refused: 'bg-accent-red/12 text-accent-red',
+  refunded: 'bg-accent-red/8 text-accent-red',
+  pending_payment: 'bg-bg-elev-2 text-ink-3',
 };
 
 const URGENCY_TONE_CLASS = {
@@ -27,7 +29,7 @@ const URGENCY_TONE_CLASS = {
   red: 'text-accent-red kk-urgent-blink',
 };
 
-export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPrint }) {
+export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPrint, onRequestRefund }) {
   const now = useNow();
   const items = Array.isArray(order.items) ? order.items : [];
   const visual = STATUS_VISUAL[order.status] || 'new';
@@ -35,6 +37,12 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
   const isTodo = order.status === 'pending' || order.status === 'paid';
   const isPaidCard = order.status === 'paid';
   const urgency = urgencyFor(order, now);
+
+  // Une commande est remboursable côté UI si elle a été payée carte (cycle
+  // SumUp : paid/accepted/ready/delivered) — on n'affiche pas le bouton sur
+  // 'pending' (twint/cash non encore encaissé) ni 'refunded' (déjà fait).
+  const isRefundable = order.payment_method === 'card' &&
+    ['paid', 'accepted', 'ready', 'delivered'].includes(order.status);
 
   const deliveryPill =
     order.delivery_mode === 'pickup' ? '📦 À emporter' : '🚴 Livraison';
@@ -199,6 +207,20 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
             className="w-full rounded-lg border border-accent-blue/30 bg-accent-blue/10 px-3 py-2.5 text-[12px] font-bold text-accent-blue transition-colors hover:bg-accent-blue/20"
           >
             🛵 Marquer livrée
+          </button>
+        </div>
+      )}
+
+      {/* Bouton Rembourser : visible pour les commandes carte (paid →
+          delivered). Cliquer ouvre la RefundModal de confirmation. */}
+      {isRefundable && onRequestRefund && (
+        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => onRequestRefund(order)}
+            className="w-full rounded-lg border border-accent-red/20 bg-transparent px-3 py-2 text-[11px] font-medium text-accent-red transition-colors hover:bg-accent-red/10"
+            title="Rembourser via SumUp"
+          >
+            ↩ Rembourser
           </button>
         </div>
       )}

@@ -12,6 +12,7 @@ import './admin/admin.css';
 import { useAdminAuth } from '../hooks/useAdminAuth.js';
 import { useOrders } from '../hooks/useOrders.js';
 import { TAB_FILTERS, isAdminVisible } from '../lib/admin/orderHelpers.js';
+import { supabase } from '../lib/supabase.js';
 
 import LoadingScreen from './admin/LoadingScreen.jsx';
 import LoginScreen from './admin/LoginScreen.jsx';
@@ -20,6 +21,7 @@ import TopBar from './admin/TopBar.jsx';
 import OrdersView from './admin/OrdersView.jsx';
 import OrderModal from './admin/OrderModal.jsx';
 import PrintTicket from './admin/PrintTicket.jsx';
+import RefundModal from './admin/RefundModal.jsx';
 import ComptaView from './admin/ComptaView.jsx';
 import SettingsView from './admin/SettingsView.jsx';
 import Toast from './admin/Toast.jsx';
@@ -45,6 +47,7 @@ export default function AdminApp() {
   const [activeTab, setActiveTab] = useState('todo');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [printOrder, setPrintOrder] = useState(null);
+  const [refundOrder, setRefundOrder] = useState(null);
   const printTimerRef = useRef(null);
 
   // Compte les commandes "à traiter" (pending + paid, hors pending_payment)
@@ -85,6 +88,28 @@ export default function AdminApp() {
       printTimerRef.current = null;
     }, 2000);
   };
+  // Refund : appelle /api/sumup-refund avec le JWT admin courant. Throw si
+  // échec pour que la modale affiche le message d'erreur.
+  const handleRefund = async (order, reason) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error('Session expirée — reconnectez-vous');
+    }
+    const res = await fetch('/api/sumup-refund', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ order_id: order.id, reason }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(body?.error || `Échec (HTTP ${res.status})`);
+    }
+    return body;
+  };
+
   const toggleSound = () => setSoundEnabled(!soundEnabled);
 
   return (
@@ -113,6 +138,7 @@ export default function AdminApp() {
             onSelect={setSelectedOrder}
             onUpdateStatus={updateStatus}
             onPrint={handlePrint}
+            onRequestRefund={setRefundOrder}
           />
         )}
 
@@ -141,6 +167,15 @@ export default function AdminApp() {
           onClose={() => setSelectedOrder(null)}
           onUpdateStatus={updateStatus}
           onPrint={handlePrint}
+          onRequestRefund={setRefundOrder}
+        />
+      )}
+
+      {refundOrder && (
+        <RefundModal
+          order={refundOrder}
+          onClose={() => setRefundOrder(null)}
+          onConfirm={handleRefund}
         />
       )}
 

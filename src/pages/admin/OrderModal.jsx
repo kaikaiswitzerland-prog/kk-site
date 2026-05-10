@@ -21,15 +21,20 @@ const STATUS_PILL_CLASS = {
   ready: 'bg-accent/12 text-accent',
   delivered: 'bg-bg-elev-2 text-ink-2',
   refused: 'bg-accent-red/12 text-accent-red',
+  refunded: 'bg-accent-red/8 text-accent-red',
+  pending_payment: 'bg-bg-elev-2 text-ink-3',
 };
 
-export default function OrderModal({ order, onClose, onUpdateStatus, onPrint }) {
+export default function OrderModal({ order, onClose, onUpdateStatus, onPrint, onRequestRefund }) {
   const items = Array.isArray(order.items) ? order.items : [];
   const visual = STATUS_VISUAL[order.status] || 'new';
   const isPaidCard = order.status === 'paid';
   const isTodo = order.status === 'pending' || order.status === 'paid';
   const timeline = buildTimeline(order);
   const [forceOpen, setForceOpen] = useState(false);
+
+  const isRefundable = order.payment_method === 'card' &&
+    ['paid', 'accepted', 'ready', 'delivered'].includes(order.status);
 
   return (
     <div
@@ -206,6 +211,16 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint }) 
             🖨️ Ticket cuisine
           </button>
         </div>
+
+        {/* Bouton Rembourser — uniquement pour les commandes carte payées */}
+        {isRefundable && onRequestRefund && (
+          <button
+            onClick={() => onRequestRefund(order)}
+            className="mt-2 w-full rounded-lg border border-accent-red/25 bg-transparent px-4 py-2.5 text-[12px] font-medium text-accent-red transition-colors hover:bg-accent-red/10"
+          >
+            ↩ Rembourser via SumUp
+          </button>
+        )}
 
         {/* Forcer le statut (override admin) */}
         <div className="mt-4 rounded-lg border border-line bg-bg/40 p-3">

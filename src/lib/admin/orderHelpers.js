@@ -59,6 +59,9 @@ export const STATUS_VISUAL = {
   ready: 'ready',
   delivered: 'delivered',
   refused: 'refused',
+  refunded: 'refunded',
+  failed: 'refused',
+  expired: 'delivered',
   pending_payment: 'pending_payment',
 };
 
@@ -69,12 +72,15 @@ export const STATUS_LABELS = {
   ready: 'Prête',
   delivered: 'Livrée',
   refused: 'Refusée',
+  refunded: 'Remboursée',
+  failed: 'Paiement échoué',
+  expired: 'Checkout expiré',
   pending_payment: 'En attente paiement',
 };
 
 // Liste des statuts manipulables manuellement par l'admin (pour "Forcer le statut")
 export const FORCEABLE_STATUSES = [
-  'pending', 'paid', 'accepted', 'ready', 'delivered', 'refused',
+  'pending', 'paid', 'accepted', 'ready', 'delivered', 'refused', 'refunded',
 ];
 
 // Sous-titre de la pill (sous le label) — différencie cash/twint vs carte
@@ -164,6 +170,7 @@ export const TAB_FILTERS = [
   { id: 'ready', label: 'Prêtes', statuses: ['ready'] },
   { id: 'delivered', label: 'Livrées', statuses: ['delivered'] },
   { id: 'refused', label: 'Refusées', statuses: ['refused'] },
+  { id: 'refunded', label: 'Remboursées', statuses: ['refunded'] },
 ];
 
 // Commandes visibles dans l'admin — exclut systématiquement pending_payment
