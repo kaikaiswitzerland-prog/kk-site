@@ -8,6 +8,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight } from "lucide-react";
 import IslandModeToggle from "./components/IslandModeToggle.jsx";
 import HeroSliderV2 from "./components/HeroSliderV2.jsx";
+import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
 import { supabase } from "./lib/supabase.js";
 
 // MODIFICATION 1: Logo PNG au lieu du SVG
@@ -763,12 +764,13 @@ export default function KaiKaiApp() {
       )}
 
       {step === "success" && (
-        <section className="mx-auto max-w-2xl px-4 py-16 text-center">
-          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-white text-black"><Check className="h-6 w-6" /></div>
-          <h2 className="text-2xl font-semibold">Merci ! Votre commande a été reçue.</h2>
-          <p className="mt-2 text-white/70">Un e-mail de confirmation vous a été envoyé. Préparation en cours.</p>
-          <button onClick={() => setStep("menu")} className="mt-6 rounded-2xl bg-white px-4 py-2 text-black hover:bg-white/90 transition-colors">Revenir au menu</button>
-        </section>
+        <OrderSuccessPage
+          onBackToMenu={() => {
+            // Nettoie l'URL pour que F5 ne ramène pas sur /payment-success
+            try { window.history.replaceState(null, '', '/'); } catch { /* ignore */ }
+            setStep('menu');
+          }}
+        />
       )}
 
       {step === "menu" && Object.values(cart).reduce((s, q) => s + q, 0) > 0 && (
