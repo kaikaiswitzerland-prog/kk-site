@@ -614,13 +614,13 @@ export default function KaiKaiApp() {
       if (error) throw error;
 
       if (isCard) {
+        // Le total est recalculé côté serveur depuis order.items pour empêcher
+        // toute manipulation. On envoie uniquement order_id + redirect_url.
         const res = await fetch('/api/create-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            amount: parseFloat(total.toFixed(2)),
             order_id: inserted.id,
-            description: `Commande KaïKaï #${inserted.id.slice(0, 8)}`,
             redirect_url: `${window.location.origin}/payment-success?order_id=${inserted.id}`,
           }),
         });
