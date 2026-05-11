@@ -19,6 +19,12 @@ import {
   getAllNpas,
 } from "./lib/deliveryZones.js";
 
+// Clé localStorage versionnée — bump le suffixe v* si la structure change.
+const CART_STORAGE_KEY = 'kaikai_cart_v1';
+// TTL panier : 24h. Au-delà, on jette (le client a peut-être oublié, ou les
+// prix/menu ont pu bouger entre-temps).
+const CART_TTL_MS = 24 * 60 * 60 * 1000;
+
 // MODIFICATION 1: Logo PNG au lieu du SVG
 const LOGO_SRC = "/logo_kaikai.png";
 
@@ -603,6 +609,69 @@ export default function KaiKaiApp() {
     return n; 
   });
   const clear = () => { setCart({}); setCartVariants({}); };
+
+  // ─── Panier persistant (localStorage) ─────────────────────────────────
+  // Au mount : restaurer si présent + non expiré + IDs encore au menu.
+  // À chaque mutation cart/cartVariants : sauvegarder.
+  // À la success de commande : purger explicitement (cf handleOrderSubmit).
+  //
+  // Le filtre IDs au restore protège contre la situation où on supprime un
+  // plat du menu entre 2 sessions client — sinon le client aurait un cart
+  // référençant un item fantôme qui apparaîtrait à 0 partout.
+  useEffect(() => {
+    try {
+      // Cas redirect retour SumUp : l'order a déjà été insérée en
+      // pending_payment juste avant la redirection. On purge le panier
+      // mémorisé pour ne pas le restaurer dans le state derrière la page
+      // succès (cliquer "Retour au menu" doit ramener au menu propre).
+      if (window.location.pathname === '/payment-success') {
+        localStorage.removeItem(CART_STORAGE_KEY);
+        return;
+      }
+      const raw = localStorage.getItem(CART_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return;
+      const { items, variants, savedAt } = parsed;
+      if (typeof savedAt !== 'number' || Date.now() - savedAt > CART_TTL_MS) {
+        localStorage.removeItem(CART_STORAGE_KEY);
+        return;
+      }
+      const validIds = new Set(MENU_SORTED.map((m) => m.id));
+      const cleanedCart = {};
+      const cleanedVariants = {};
+      Object.entries(items || {}).forEach(([id, qty]) => {
+        if (validIds.has(id) && Number.isFinite(qty) && qty > 0) {
+          cleanedCart[id] = qty;
+          if (Array.isArray(variants?.[id])) cleanedVariants[id] = variants[id];
+        }
+      });
+      if (Object.keys(cleanedCart).length > 0) {
+        setCart(cleanedCart);
+        setCartVariants(cleanedVariants);
+      }
+    } catch {
+      // JSON corrompu / accès localStorage refusé / Safari privé : ignorer.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const isEmpty = Object.keys(cart).length === 0;
+      if (isEmpty) {
+        localStorage.removeItem(CART_STORAGE_KEY);
+        return;
+      }
+      const payload = {
+        items: cart,
+        variants: cartVariants,
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      /* quota dépassé / accès refusé : silencieux */
+    }
+  }, [cart, cartVariants]);
 
   const handleOrderSubmit = async ({ form, paymentMethod }) => {
     // Garde-fou front : si le restaurant a fermé entre l'ouverture du
