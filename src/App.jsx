@@ -93,7 +93,12 @@ const RESTAURANT_INFO = {
   // Liste des NPA et frais : voir src/lib/deliveryZones.js (source de vérité).
   // Le champ deliveryZones ci-dessus était hardcodé à plat ; il est désormais
   // dérivé de la table NPA_TO_ZONE via getAllNpas().
+  //
+  // deliveryTime : ETA total livraison (préparation + course coursier).
+  // prepTime     : préparation seule, pour le mode "À emporter".
+  // À garder synchronisés avec api/_lib/emails/orderConfirmation.js (ETA).
   deliveryTime: "30-45",
+  prepTime: "20-25",
   
   coordinates: {
     lat: 46.1983,
@@ -958,6 +963,7 @@ export default function KaiKaiApp() {
           items={items}
           total={total}
           discount={discount}
+          mode={mode}
           onOpen={() => setStep("checkout")}
           restaurantOpen={restaurantOpen}
           manualClosure={manualClosure}
@@ -1797,9 +1803,15 @@ function FormuleModal({ item, onConfirm, onClose }) {
 }
 
 // ─── MINI PANIER FLOTTANT ────────────────────────────────────────────────────
-function MiniCart({ cart, items, total, discount, onOpen, restaurantOpen = true, manualClosure = false, openStatusLabel = '' }) {
+function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, restaurantOpen = true, manualClosure = false, openStatusLabel = '' }) {
   const totalQty = Object.values(cart).reduce((s, q) => s + q, 0);
   const cartItems = items.filter(i => i.qty > 0).slice(0, 3);
+  // ETA visible directement dans le mini-cart pour rassurer avant clic
+  // (mode='delivery' par défaut tant que le client n'a pas ouvert le
+  // Checkout : on est sur la home, mode est dans le state parent).
+  const etaLabel = mode === 'pickup'
+    ? `📦 Prêt en ${RESTAURANT_INFO.prepTime} min`
+    : `🚴 Livré en ${RESTAURANT_INFO.deliveryTime} min`;
 
   // Si fermé : on garde le mini-panier visible (l'utilisateur voit ce qu'il
   // a sélectionné) mais le tap ouvre le Checkout qui affichera son bandeau
@@ -1857,6 +1869,11 @@ function MiniCart({ cart, items, total, discount, onOpen, restaurantOpen = true,
           {format(total)}
           {discount > 0 && <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(0,0,0,0.45)', marginLeft: 4 }}>(-10%)</span>}
         </div>
+        {restaurantOpen && (
+          <div style={{ fontSize: 10, fontWeight: 600, color: '#C9A96E', marginTop: 1 }}>
+            {etaLabel}
+          </div>
+        )}
       </div>
 
       <ChevronRight size={16} color="rgba(0,0,0,0.4)" style={{ flexShrink: 0 }} />
@@ -2155,10 +2172,15 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           </div>
         )}
 
-        {mode === "delivery" && (
+        {mode === "delivery" ? (
           <div className="mb-4 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-3 flex items-center gap-2 text-sm">
             <Bike className="h-4 w-4 text-blue-400" />
-            <span className="text-blue-400">Livraison estimée : {RESTAURANT_INFO.deliveryTime} min</span>
+            <span className="text-blue-400">🚴 Livraison estimée : {RESTAURANT_INFO.deliveryTime} min</span>
+          </div>
+        ) : (
+          <div className="mb-4 rounded-2xl border border-[#C9A96E]/30 bg-[#C9A96E]/10 p-3 flex items-center gap-2 text-sm">
+            <Clock className="h-4 w-4 text-[#C9A96E]" />
+            <span className="text-[#C9A96E]">📦 Prêt à emporter dans : {RESTAURANT_INFO.prepTime} min</span>
           </div>
         )}
 

@@ -11,6 +11,10 @@ import { supabase } from '../lib/supabase.js';
 const POLL_INTERVAL_MS = 2000;
 const POLL_MAX_ATTEMPTS = 10;
 
+// ETA en minutes — aligné avec src/App.jsx RESTAURANT_INFO et avec
+// api/_lib/emails/orderConfirmation.js. À garder synchronisés à la main.
+const ETA = { delivery: '30-45', pickup: '20-25' };
+
 const fmtCHF = (n) =>
   new Intl.NumberFormat('fr-CH', { style: 'currency', currency: 'CHF' }).format(n);
 
@@ -157,6 +161,12 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null }
 
   // Cas succès — commande validée (paid pour carte, pending pour cash/twint)
   if (SUCCESS_STATUSES.includes(status)) {
+    const isPickup = order.delivery_mode === 'pickup';
+    const etaMinutes = isPickup ? ETA.pickup : ETA.delivery;
+    const etaIcon = isPickup ? '📦' : '🚴';
+    const etaText = isPickup
+      ? `À emporter dans ~${etaMinutes} min`
+      : `Livraison dans ~${etaMinutes} min`;
     return (
       <Section>
         <SuccessIcon />
@@ -168,6 +178,7 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null }
           modeLabel={modeLabel}
           email={order.customer_email}
         />
+        <EtaBadge icon={etaIcon} text={etaText} />
         <BackButton onClick={onBackToMenu} />
       </Section>
     );
@@ -314,6 +325,15 @@ function SpinnerIcon() {
   return (
     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/5 border border-white/15 text-white">
       <Loader2 className="h-6 w-6 animate-spin" />
+    </div>
+  );
+}
+
+function EtaBadge({ icon, text }) {
+  return (
+    <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-[#C9A96E]/30 bg-[#C9A96E]/10 px-4 py-2 text-sm text-[#C9A96E]">
+      <span aria-hidden>⏱</span>
+      <span>{icon} {text}</span>
     </div>
   );
 }
