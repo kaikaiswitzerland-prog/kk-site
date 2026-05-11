@@ -18,13 +18,19 @@
 
 import { supabaseAdmin } from './_lib/supabaseServer.js';
 import { getRestaurantStatus, formatStatusLabel } from './_lib/restaurantHours.js';
+import { getZoneByNpa } from './_lib/deliveryZones.js';
 
 // Recompute du total côté serveur — miroir de la logique du front
 // (App.jsx:519-522). On utilise items[].price tel que stocké en DB ; un
 // durcissement ultérieur consisterait à dupliquer MENU côté serveur pour
 // ignorer aussi item.price (mais le scope du chantier 1 est limité au
 // recompute du total, pas des prix unitaires).
-function computeOrderTotal(order) {
+//
+// Pour le deliveryFee : on prend le NPA du body de la requête (pas de la
+// DB — l'order ne stocke pas le NPA séparément, juste dans customer_address)
+// et on regarde dans NOTRE table de zones. Si le client envoie un NPA bidon
+// ou rien, on refuse.
+function computeOrderTotal(order, npa) {
   const items = Array.isArray(order.items) ? order.items : [];
   const subtotal = items.reduce(
     (s, it) => s + Number(it.price || 0) * Number(it.qty || 0),
@@ -33,9 +39,19 @@ function computeOrderTotal(order) {
   // TODO réactiver -10% quand Mode Île revient (cohérent avec couponApplied
   // côté front App.jsx). Tant que le programme membre est OFF, pas de remise.
   const discount = 0;
-  const deliveryFee = (order.delivery_mode === 'delivery' && subtotal > 0) ? 4.90 : 0;
+
+  let deliveryFee = 0;
+  if (order.delivery_mode === 'delivery' && subtotal > 0) {
+    const zone = getZoneByNpa(npa);
+    if (!zone) {
+      // Sentinel : on signale "NPA invalide" au caller pour qu'il renvoie 409.
+      return { error: 'invalid_delivery_zone' };
+    }
+    deliveryFee = zone.fee;
+  }
+
   const total = Math.max(0, subtotal - discount) + deliveryFee;
-  return Math.round(total * 100) / 100;
+  return { total: Math.round(total * 100) / 100, deliveryFee, subtotal };
 }
 
 export default async function handler(req, res) {
@@ -43,7 +59,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { order_id, redirect_url } = req.body || {};
+  const { order_id, redirect_url, npa } = req.body || {};
 
   if (!order_id || !redirect_url) {
     return res.status(400).json({ error: 'Missing required fields (order_id, redirect_url)' });
@@ -102,11 +118,23 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'create-checkout réservé aux paiements carte' });
     }
 
-    // 3. Recompute serveur (anti price-tampering)
-    const total = computeOrderTotal(order);
+    // 3. Recompute serveur (anti price-tampering + anti zone-tampering)
+    const computed = computeOrderTotal(order, npa);
+    if (computed.error === 'invalid_delivery_zone') {
+      console.warn('[KaïKaï create-checkout] refus : NPA hors zone', order.id, { npa });
+      return res.status(409).json({
+        error: 'invalid_delivery_zone',
+        message: 'Code postal hors zone de livraison',
+      });
+    }
+    const { total, deliveryFee, subtotal } = computed;
     if (total <= 0) {
       return res.status(400).json({ error: 'Total recalculé invalide' });
     }
+    console.log(
+      `[KaïKaï create-checkout] order=${order.id} mode=${order.delivery_mode} ` +
+      `NPA=${npa || '-'} fee=${deliveryFee.toFixed(2)} subtotal=${subtotal.toFixed(2)} total=${total.toFixed(2)}`
+    );
 
     // 4. Construire les URLs SumUp
     //   - return_url  : callback webhook (POST côté serveur)
