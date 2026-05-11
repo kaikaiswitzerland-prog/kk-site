@@ -600,6 +600,7 @@ export default function KaiKaiApp() {
 
       const { data: inserted, error } = await supabase.from('orders').insert([{
         customer_name: `${form.firstName} ${form.lastName}`.trim(),
+        customer_email: form.email?.trim() || null,
         customer_phone: form.phone,
         customer_address: mode === 'delivery'
           ? `${form.address}, ${form.postalCode} Genève`
@@ -617,6 +618,8 @@ export default function KaiKaiApp() {
       if (isCard) {
         // Le total est recalculé côté serveur depuis order.items pour empêcher
         // toute manipulation. On envoie uniquement order_id + redirect_url.
+        // L'email de confirmation sera déclenché par le webhook SumUp une fois
+        // le paiement confirmé — pas besoin d'appeler send-order-confirmation ici.
         const res = await fetch('/api/create-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -631,7 +634,25 @@ export default function KaiKaiApp() {
         return null;
       }
 
+      // Cash / Twint : déclenche l'envoi d'email en fire-and-forget.
+      // Si l'email échoue, ça ne doit pas casser le flow checkout — d'où
+      // l'absence d'await et le catch silencieux (log côté server uniquement).
+      if (form.email?.trim()) {
+        fetch('/api/send-order-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: inserted.id }),
+        }).catch((err) => {
+          console.warn('[KaïKaï] send-order-confirmation failed (non bloquant)', err);
+        });
+      }
+
       setStep("success");
+      // Préserve order_id dans l'URL pour que OrderSuccessPage puisse
+      // refetch et afficher le récap (en cohérence avec le flow carte).
+      try {
+        window.history.replaceState(null, '', `/payment-success?order_id=${inserted.id}`);
+      } catch { /* ignore */ }
       clear();
       return null;
     } catch (err) {
@@ -1749,10 +1770,16 @@ function AboutModal({ onClose }) {
   );
 }
 
+// Email basique : présence d'un @ entouré de caractères non-espacés et
+// d'un domaine avec extension. Pas RFC 5322 complet — c'est volontaire,
+// la validation finale c'est Resend qui la fera.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total, mode, setMode, onClose, onClear, onRemoveOne, onAdd, onSuccess }) {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
+    email: "",
     phone: "",
     address: "",
     postalCode: "",
@@ -1780,10 +1807,18 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
     }
   };
   
-  const canSubmit = hasItems && 
-                    form.firstName && 
-                    form.lastName && 
-                    form.phone && 
+  // Validation email :
+  //  - paiement Carte  → email obligatoire ET au format valide
+  //  - paiement Cash/Twint → email facultatif mais SI rempli, au format valide
+  const emailRequired = paymentMethod === "card";
+  const emailFormatOk = !form.email || EMAIL_REGEX.test(form.email.trim());
+  const emailOk = emailFormatOk && (!emailRequired || !!form.email.trim());
+
+  const canSubmit = hasItems &&
+                    form.firstName &&
+                    form.lastName &&
+                    form.phone &&
+                    emailOk &&
                     (mode === "pickup" || (form.address && form.postalCode && !deliveryError));
   
   useEffect(() => {
@@ -1965,12 +2000,34 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
               onChange={handleChange} 
             />
           </div>
-          <input 
-            name="phone" 
-            placeholder="Téléphone *" 
-            className="rounded-xl border border-white/20 bg-transparent px-3 py-2 outline-none focus:border-white/40 transition-colors" 
-            value={form.phone} 
-            onChange={handleChange} 
+          <input
+            name="email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder={emailRequired
+              ? "Email * (pour la confirmation)"
+              : "Email (recommandé pour recevoir la confirmation)"}
+            className={`rounded-xl border ${
+              form.email && !emailFormatOk
+                ? 'border-red-500/50'
+                : 'border-white/20'
+            } bg-transparent px-3 py-2 outline-none focus:border-white/40 transition-colors`}
+            value={form.email}
+            onChange={handleChange}
+          />
+          {form.email && !emailFormatOk && (
+            <div className="flex items-start gap-2 text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl p-2">
+              <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <span>Format email invalide</span>
+            </div>
+          )}
+          <input
+            name="phone"
+            placeholder="Téléphone *"
+            className="rounded-xl border border-white/20 bg-transparent px-3 py-2 outline-none focus:border-white/40 transition-colors"
+            value={form.phone}
+            onChange={handleChange}
           />
           
           {mode === "delivery" && (
