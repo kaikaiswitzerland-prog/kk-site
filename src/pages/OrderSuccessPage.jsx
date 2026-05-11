@@ -40,7 +40,7 @@ export default function OrderSuccessPage({ onBackToMenu }) {
     if (!orderId) return null;
     const { data, error } = await supabase
       .from('orders')
-      .select('id, status, payment_method, total, customer_name, items, delivery_mode')
+      .select('id, status, payment_method, total, customer_name, customer_email, items, delivery_mode')
       .eq('id', orderId)
       .single();
     if (error) {
@@ -155,7 +155,12 @@ export default function OrderSuccessPage({ onBackToMenu }) {
         <SuccessIcon />
         <Title>Merci ! Votre commande a été reçue.</Title>
         <Lead>Préparation en cours.</Lead>
-        <Recap orderShortId={orderShortId} total={order.total} modeLabel={modeLabel} />
+        <Recap
+          orderShortId={orderShortId}
+          total={order.total}
+          modeLabel={modeLabel}
+          email={order.customer_email}
+        />
         <BackButton onClick={onBackToMenu} />
       </Section>
     );
@@ -306,12 +311,23 @@ function SpinnerIcon() {
   );
 }
 
-function Recap({ orderShortId, total, modeLabel }) {
+function Recap({ orderShortId, total, modeLabel, email }) {
   return (
     <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-sm">
       <Row label="Numéro" value={`#${orderShortId}`} />
       <Row label="Mode" value={modeLabel} />
       <Row label="Total" value={fmtCHF(total)} bold />
+      {email && (
+        <Row
+          label="Confirmation"
+          value={
+            <span className="break-all">
+              <span aria-hidden>📧 </span>
+              {email}
+            </span>
+          }
+        />
+      )}
     </div>
   );
 }
