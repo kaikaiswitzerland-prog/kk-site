@@ -163,7 +163,6 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null }
   if (SUCCESS_STATUSES.includes(status)) {
     const isPickup = order.delivery_mode === 'pickup';
     const etaMinutes = isPickup ? ETA.pickup : ETA.delivery;
-    const etaIcon = isPickup ? '📦' : '🚴';
     const etaText = isPickup
       ? `À emporter dans ~${etaMinutes} min`
       : `Livraison dans ~${etaMinutes} min`;
@@ -178,7 +177,7 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null }
           modeLabel={modeLabel}
           email={order.customer_email}
         />
-        <EtaBadge icon={etaIcon} text={etaText} />
+        <EtaBadge text={etaText} />
         <BackButton onClick={onBackToMenu} />
       </Section>
     );
@@ -329,11 +328,10 @@ function SpinnerIcon() {
   );
 }
 
-function EtaBadge({ icon, text }) {
+function EtaBadge({ text }) {
   return (
     <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-[#C9A96E]/30 bg-[#C9A96E]/10 px-4 py-2 text-sm text-[#C9A96E]">
-      <span aria-hidden>⏱</span>
-      <span>{icon} {text}</span>
+      <span>{text}</span>
     </div>
   );
 }

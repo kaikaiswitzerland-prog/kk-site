@@ -1810,8 +1810,8 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
   // (mode='delivery' par défaut tant que le client n'a pas ouvert le
   // Checkout : on est sur la home, mode est dans le state parent).
   const etaLabel = mode === 'pickup'
-    ? `📦 Prêt en ${RESTAURANT_INFO.prepTime} min`
-    : `🚴 Livré en ${RESTAURANT_INFO.deliveryTime} min`;
+    ? `Prêt en ${RESTAURANT_INFO.prepTime} min`
+    : `Livré en ${RESTAURANT_INFO.deliveryTime} min`;
 
   // Si fermé : on garde le mini-panier visible (l'utilisateur voit ce qu'il
   // a sélectionné) mais le tap ouvre le Checkout qui affichera son bandeau
@@ -2175,12 +2175,12 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
         {mode === "delivery" ? (
           <div className="mb-4 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-3 flex items-center gap-2 text-sm">
             <Bike className="h-4 w-4 text-blue-400" />
-            <span className="text-blue-400">🚴 Livraison estimée : {RESTAURANT_INFO.deliveryTime} min</span>
+            <span className="text-blue-400">Livraison estimée : {RESTAURANT_INFO.deliveryTime} min</span>
           </div>
         ) : (
           <div className="mb-4 rounded-2xl border border-[#C9A96E]/30 bg-[#C9A96E]/10 p-3 flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-[#C9A96E]" />
-            <span className="text-[#C9A96E]">📦 Prêt à emporter dans : {RESTAURANT_INFO.prepTime} min</span>
+            <span className="text-[#C9A96E]">Prêt à emporter dans : {RESTAURANT_INFO.prepTime} min</span>
           </div>
         )}
 
@@ -2441,7 +2441,7 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           
           <div>
             <label className="mb-1 block text-xs uppercase tracking-wider text-white/50">
-              👨‍🍳 Note pour la cuisine
+              Note pour la cuisine
             </label>
             <textarea
               name="noteKitchen"
@@ -2457,7 +2457,7 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           {mode === "delivery" && (
             <div>
               <label className="mb-1 block text-xs uppercase tracking-wider text-white/50">
-                🚴 Note pour le livreur
+                Note pour le livreur
               </label>
               <textarea
                 name="noteDelivery"
