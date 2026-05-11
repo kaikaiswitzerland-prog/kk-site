@@ -10,10 +10,19 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
+// Feature flag de lancement — synchronisé avec IslandModeToggle.jsx.
+// TODO réactiver Mode Île : passer MODE_ILE_ENABLED à true.
+// Toggle et activate deviennent no-op tant que false ; islandMode reste false.
+const MODE_ILE_ENABLED = false;
+
 const IslandModeContext = createContext(null);
 
 // ── Lecture initiale depuis localStorage (évite le flash au chargement)
+// Pendant la phase de lancement, on force false même si un visiteur avait
+// activé le Mode Île auparavant — sinon le toggle apparaîtrait "actif"
+// alors que le label dit "Bientôt disponible".
 function getInitialIslandMode() {
+  if (!MODE_ILE_ENABLED) return false;
   try {
     return localStorage.getItem('islandMode') === 'true';
   } catch {
@@ -68,6 +77,8 @@ export function IslandModeProvider({ children }) {
 
   // ── Bascule le Mode Île (connecté ou non)
   const toggleIslandMode = useCallback(() => {
+    // No-op tant que MODE_ILE_ENABLED est false (phase de lancement).
+    if (!MODE_ILE_ENABLED) return;
     setIslandMode(prev => {
       const next = !prev;
       try { localStorage.setItem('islandMode', String(next)); } catch { /* ignore */ }
@@ -77,6 +88,8 @@ export function IslandModeProvider({ children }) {
 
   // ── Active directement (après connexion/inscription réussie)
   const activateIslandMode = useCallback(() => {
+    // No-op tant que MODE_ILE_ENABLED est false.
+    if (!MODE_ILE_ENABLED) return;
     setIslandMode(true);
     try { localStorage.setItem('islandMode', 'true'); } catch { /* ignore */ }
   }, []);

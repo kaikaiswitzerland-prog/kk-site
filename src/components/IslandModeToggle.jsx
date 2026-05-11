@@ -1,13 +1,23 @@
 // src/components/IslandModeToggle.jsx — Pastille "Mode Île" style iOS Control Center
 //
 // Placement : footer, après la section Boissons.
-// Comportement :
-//   - Si non connecté + clic pour activer → ouvre AuthModal
-//   - Si connecté → bascule immédiatement, état persisté dans localStorage
+// Comportement (état lancement) : DÉSACTIVÉ visuellement et fonctionnellement.
+// Le toggle reste visible mais grisé. Le programme membre + le -10% sont
+// gelés tant que MODE_ILE_ENABLED reste false.
+//
+// TODO réactiver Mode Île : passer MODE_ILE_ENABLED à true.
+// (Et remettre couponApplied=true dans src/App.jsx, et discount=subtotal*0.10
+// dans api/create-checkout.js — voir TODO marqués dans ces fichiers.)
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useIslandMode } from '../context/IslandModeContext';
 import AuthModal from './AuthModal';
+
+// ── Feature flags de lancement ────────────────────────────────────────
+const MODE_ILE_ENABLED = false;
+// AUTH_ENABLED gate la modale de création de compte. Sans Mode Île, aucune
+// raison pour un client de se créer un compte → on cache la porte d'entrée.
+const AUTH_ENABLED = false;
 
 export default function IslandModeToggle() {
   const { islandMode, toggleIslandMode, user } = useIslandMode();
@@ -24,7 +34,12 @@ export default function IslandModeToggle() {
     prevMode.current = islandMode;
   }, [islandMode]);
 
-  const handleToggle = () => {
+  const handleToggle = (e) => {
+    // Phase de lancement : toggle inopérant. On stoppe net, pas de toast.
+    if (!MODE_ILE_ENABLED) {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      return;
+    }
     if (!user && !islandMode) {
       // Utilisateur non connecté qui veut activer → authentification requise
       setShowAuth(true);
@@ -42,6 +57,7 @@ export default function IslandModeToggle() {
           onClick={handleToggle}
           role="switch"
           aria-checked={islandMode}
+          aria-disabled={!MODE_ILE_ENABLED}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -50,10 +66,11 @@ export default function IslandModeToggle() {
             borderRadius: '20px',
             background: islandMode ? 'rgba(42,102,68,0.25)' : '#1a2e1a',
             border: `1px solid ${islandMode ? '#2a6644' : '#2a5a2a'}`,
-            width: '220px',
-            cursor: 'pointer',
+            width: '260px',
+            cursor: MODE_ILE_ENABLED ? 'pointer' : 'not-allowed',
             transition: 'background 0.3s ease, border-color 0.3s ease',
             userSelect: 'none',
+            opacity: MODE_ILE_ENABLED ? 1 : 0.5,
           }}
         >
           {/* Icône palmier */}
@@ -69,7 +86,7 @@ export default function IslandModeToggle() {
               flex: 1,
             }}
           >
-            Mode Île
+            {MODE_ILE_ENABLED ? 'Mode Île' : 'Mode Île — Bientôt disponible'}
           </span>
 
           {/* Toggle switch */}
@@ -100,8 +117,12 @@ export default function IslandModeToggle() {
           </div>
         </div>
 
-        {/* Message de succès */}
-        {successMsg ? (
+        {/* Message de succès / sous-texte */}
+        {!MODE_ILE_ENABLED ? (
+          <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', paddingLeft: '4px' }}>
+            Programme membre en préparation
+          </span>
+        ) : successMsg ? (
           <span style={{ fontSize: '0.82rem', color: '#4ade80', fontWeight: 600, paddingLeft: '4px', transition: 'opacity 0.3s' }}>
             Bienvenue dans le Mode Île 🌴
           </span>
@@ -112,7 +133,7 @@ export default function IslandModeToggle() {
         )}
       </div>
 
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {AUTH_ENABLED && showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </>
   );
 }

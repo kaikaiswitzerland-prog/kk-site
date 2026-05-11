@@ -29,8 +29,9 @@ function computeOrderTotal(order) {
     (s, it) => s + Number(it.price || 0) * Number(it.qty || 0),
     0
   );
-  // -10% appliqué systématiquement (cohérent avec couponApplied=true du front)
-  const discount = subtotal * 0.10;
+  // TODO réactiver -10% quand Mode Île revient (cohérent avec couponApplied
+  // côté front App.jsx). Tant que le programme membre est OFF, pas de remise.
+  const discount = 0;
   const deliveryFee = (order.delivery_mode === 'delivery' && subtotal > 0) ? 4.90 : 0;
   const total = Math.max(0, subtotal - discount) + deliveryFee;
   return Math.round(total * 100) / 100;

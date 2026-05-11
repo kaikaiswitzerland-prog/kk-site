@@ -507,7 +507,10 @@ export default function KaiKaiApp() {
   const [cart, setCart] = useState({});
   const [cartVariants, setCartVariants] = useState({});
   const [mode, setMode] = useState("delivery");
-  const [couponApplied] = useState(true);
+  // TODO réactiver -10% quand le Mode Île (programme membre) revient.
+  // Garder le couponApplied pour que la logique discount/MiniCart/Checkout
+  // continue de fonctionner sans changement quand on remettra à true.
+  const [couponApplied] = useState(false);
   const [step, setStep] = useState(
     window.location.pathname === '/payment-success' ? 'success' : 'menu'
   );
@@ -2093,17 +2096,22 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
             >
               💳 Carte
             </button>
-            <button
-              type="button"
-              onClick={() => setPaymentMethod("twint")}
-              className={`flex-1 rounded-2xl border px-3 py-3 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                paymentMethod === "twint"
-                  ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]"
-                  : "border-white/20 hover:bg-white/10"
-              }`}
-            >
-              📱 Twint
-            </button>
+            {/* TODO réactiver Twint (intégration Stripe ou TWINT Business).
+                Le backend gère encore payment_method='twint' pour les
+                anciennes commandes en DB — voir useOrders.js / orderHelpers.js. */}
+            {false && (
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("twint")}
+                className={`flex-1 rounded-2xl border px-3 py-3 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                  paymentMethod === "twint"
+                    ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]"
+                    : "border-white/20 hover:bg-white/10"
+                }`}
+              >
+                📱 Twint
+              </button>
+            )}
             {mode === "pickup" && (
               <button
                 type="button"
@@ -2122,7 +2130,9 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
 
         <div className="mt-6 space-y-2 rounded-2xl border border-white/10 p-4">
           <Line label="Sous-total" value={format(subtotal)} />
-          <Line label="Réduction site (-10%)" value={`- ${format(discount)}`} />
+          {discount > 0 && (
+            <Line label="Réduction site (-10%)" value={`- ${format(discount)}`} />
+          )}
           {mode === "delivery" && <Line label="Frais de livraison" value={format(deliveryFee)} />}
           <Line label="Total" value={format(total)} bold />
         </div>
