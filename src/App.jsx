@@ -11,6 +11,13 @@ import HeroSliderV2 from "./components/HeroSliderV2.jsx";
 import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
 import { supabase } from "./lib/supabase.js";
 import { useRestaurantOpen } from "./hooks/useRestaurantOpen.js";
+import {
+  DELIVERY_ZONES,
+  NPA_TO_ZONE,
+  getZoneByNpa,
+  getDeliveryFee,
+  getAllNpas,
+} from "./lib/deliveryZones.js";
 
 // MODIFICATION 1: Logo PNG au lieu du SVG
 const LOGO_SRC = "/logo_kaikai.png";
@@ -71,7 +78,9 @@ const RESTAURANT_INFO = {
     dinner: { start: "18:00", end: "22:00" }
   },
   
-  deliveryZones: ["1200", "1201", "1202", "1203", "1204", "1205", "1206", "1207", "1208", "1209"],
+  // Liste des NPA et frais : voir src/lib/deliveryZones.js (source de vérité).
+  // Le champ deliveryZones ci-dessus était hardcodé à plat ; il est désormais
+  // dérivé de la table NPA_TO_ZONE via getAllNpas().
   deliveryTime: "30-45",
   
   coordinates: {
@@ -498,6 +507,12 @@ export default function KaiKaiApp() {
   const [cart, setCart] = useState({});
   const [cartVariants, setCartVariants] = useState({});
   const [mode, setMode] = useState("delivery");
+  // NPA saisi par le client au checkout. Élevé au niveau KaiKaiApp parce
+  // qu'il pilote deliveryFee (donc total) et l'affichage MiniCart.
+  const [deliveryNpa, setDeliveryNpa] = useState("");
+  // Modale "Voir les zones desservies" — ouverte depuis le Checkout (si NPA
+  // hors zone) ou depuis l'AboutModal.
+  const [showZonesModal, setShowZonesModal] = useState(false);
   // TODO réactiver -10% quand le Mode Île (programme membre) revient.
   // Garder le couponApplied pour que la logique discount/MiniCart/Checkout
   // continue de fonctionner sans changement quand on remettra à true.
@@ -518,7 +533,14 @@ export default function KaiKaiApp() {
   const items = useMemo(() => MENU_SORTED.map(m => ({ ...m, qty: cart[m.id] || 0 })), [cart]);
   const subtotal = useMemo(() => items.reduce((s, it) => s + it.price * it.qty, 0), [items]);
   const discount = useMemo(() => (couponApplied ? subtotal * 0.10 : 0), [couponApplied, subtotal]);
-  const deliveryFee = useMemo(() => (mode === "delivery" && subtotal > 0 ? 4.9 : 0), [mode, subtotal]);
+  // deliveryFee dépend du NPA (zone) : 4.90 / 6.90 / 9.90 CHF, ou 0 si
+  // NPA hors zone ou mode pickup. Le total qui en découle est aussi
+  // recalculé côté serveur (api/create-checkout.js) pour empêcher tout
+  // tampering, via la même table NPA → zone (api/_lib/deliveryZones.js).
+  const deliveryFee = useMemo(() => {
+    if (mode !== "delivery" || subtotal <= 0) return 0;
+    return getDeliveryFee(deliveryNpa) ?? 0;
+  }, [mode, subtotal, deliveryNpa]);
   const total = useMemo(() => Math.max(0, subtotal - discount) + deliveryFee, [subtotal, discount, deliveryFee]);
 
   const add = (id, variant = null) => {
@@ -593,6 +615,13 @@ export default function KaiKaiApp() {
         : `Le restaurant vient de fermer. ${openStatusLabel}.`;
     }
 
+    // Garde-fou front : NPA hors zone en mode livraison. Le bouton "Commander"
+    // est déjà désactivé côté UI, mais on garantit ici qu'aucun INSERT ne
+    // passe avec un NPA bidon (et le serveur double-check pour le flow carte).
+    if (mode === 'delivery' && !getZoneByNpa(deliveryNpa)) {
+      return "Code postal hors zone de livraison. Choisissez 'À emporter' ou un autre NPA.";
+    }
+
     const orderItems = items
       .filter(it => it.qty > 0)
       .map(it => ({
@@ -612,7 +641,7 @@ export default function KaiKaiApp() {
         customer_email: form.email?.trim() || null,
         customer_phone: form.phone,
         customer_address: mode === 'delivery'
-          ? `${form.address}, ${form.postalCode} Genève`
+          ? `${form.address}, ${deliveryNpa} Genève`
           : 'À emporter',
         items: orderItems,
         total: parseFloat(total.toFixed(2)),
@@ -635,6 +664,9 @@ export default function KaiKaiApp() {
           body: JSON.stringify({
             order_id: inserted.id,
             redirect_url: `${window.location.origin}/payment-success?order_id=${inserted.id}`,
+            // Le serveur recompute deliveryFee depuis ce NPA via sa propre
+            // table — pas de confiance dans le total qu'on enverrait.
+            npa: mode === 'delivery' ? deliveryNpa : null,
           }),
         });
         const checkout = await res.json();
@@ -803,8 +835,13 @@ export default function KaiKaiApp() {
           manualClosure={manualClosure}
           openStatusLabel={openStatusLabel}
           openStatus={openStatus}
+          deliveryNpa={deliveryNpa}
+          setDeliveryNpa={setDeliveryNpa}
+          onShowZones={() => setShowZonesModal(true)}
         />
       )}
+
+      {showZonesModal && <ZonesModal onClose={() => setShowZonesModal(false)} />}
 
       {step === "success" && (
         <OrderSuccessPage
@@ -1720,6 +1757,76 @@ function MiniCart({ cart, items, total, discount, onOpen, restaurantOpen = true,
   );
 }
 
+// Modale "Voir les zones desservies" — ouverte depuis le Checkout (NPA hors
+// zone) ou depuis AboutModal. Affiche les 3 zones, leurs prix, et la liste
+// des NPA couverts. Source : src/lib/deliveryZones.js.
+function ZonesModal({ onClose }) {
+  // Regroupe les NPA par zone pour l'affichage.
+  const grouped = useMemo(() => {
+    const out = { ZONE_1: [], ZONE_2: [], ZONE_3: [] };
+    Object.entries(NPA_TO_ZONE).forEach(([npa, { zone, label }]) => {
+      out[zone].push({ npa, label });
+    });
+    Object.values(out).forEach((arr) => arr.sort((a, b) => a.npa.localeCompare(b.npa)));
+    return out;
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
+      <div
+        className="bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-semibold">Zones de livraison</h2>
+          <button onClick={onClose} className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <p className="text-sm text-white/70 mb-6">
+          Livraison à Genève uniquement, dans un rayon d'environ 8 km autour
+          de notre cuisine (1 Bd de la Tour, Plainpalais). Les frais varient
+          selon la zone.
+        </p>
+
+        <div className="space-y-4">
+          {Object.values(DELIVERY_ZONES).map((zone) => (
+            <div key={zone.id} className="rounded-2xl border border-white/10 p-4">
+              <div className="flex items-baseline justify-between gap-3 mb-1">
+                <h3 className="text-lg font-semibold text-white">
+                  {zone.name}
+                </h3>
+                <span className="text-sm font-mono text-[#C9A96E]">
+                  {format(zone.fee)}
+                </span>
+              </div>
+              <p className="text-xs text-white/60 mb-3">{zone.description}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {grouped[zone.id].map(({ npa, label }) => (
+                  <span
+                    key={npa}
+                    className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-white/80"
+                    title={label}
+                  >
+                    <span className="font-mono">{npa}</span>
+                    <span className="text-white/50">·</span>
+                    <span>{label}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-6 text-xs text-white/50 italic">
+          NPA non listé ? Choisissez « À emporter » à 1 Bd de la Tour.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function AboutModal({ onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
@@ -1822,38 +1929,43 @@ function AboutModal({ onClose }) {
 // la validation finale c'est Resend qui la fera.
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total, mode, setMode, onClose, onClear, onRemoveOne, onAdd, onSuccess, restaurantOpen = true, manualClosure = false, openStatusLabel = '' }) {
+function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total, mode, setMode, onClose, onClear, onRemoveOne, onAdd, onSuccess, restaurantOpen = true, manualClosure = false, openStatusLabel = '', deliveryNpa = '', setDeliveryNpa = () => {}, onShowZones = () => {} }) {
+  // `postalCode` ne fait plus partie de form : le NPA est élevé au niveau
+  // parent (KaiKaiApp) pour piloter deliveryFee. On le lit/écrit via les
+  // props deliveryNpa / setDeliveryNpa.
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     address: "",
-    postalCode: "",
     instructions: ""
   });
-  const [deliveryError, setDeliveryError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState(null);
-  
+
   const MINIMUM_DELIVERY = 20.00;
   const canDelivery = subtotal >= MINIMUM_DELIVERY;
-  
+
   const hasItems = items.some(i => i.qty > 0);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
-    
-    if (name === "postalCode" && value.length === 4) {
-      if (!RESTAURANT_INFO.deliveryZones.includes(value)) {
-        setDeliveryError(`Désolé, nous ne livrons pas encore dans la zone ${value}. Essayez "À emporter" !`);
-      } else {
-        setDeliveryError("");
-      }
-    }
   };
-  
+
+  // NPA : sanitize (digits only, max 4) et délègue au parent.
+  const handleNpaChange = (e) => {
+    const raw = e.target.value || '';
+    const cleaned = raw.replace(/\D/g, '').slice(0, 4);
+    setDeliveryNpa(cleaned);
+  };
+
+  // Descripteur de zone pour le NPA courant. null si vide ou hors zone.
+  const zoneInfo = mode === 'delivery' ? getZoneByNpa(deliveryNpa) : null;
+  const npaIsFull = deliveryNpa.length === 4;
+  const npaOutOfZone = mode === 'delivery' && npaIsFull && !zoneInfo;
+
   // Validation email :
   //  - paiement Carte  → email obligatoire ET au format valide
   //  - paiement Cash/Twint → email facultatif mais SI rempli, au format valide
@@ -1867,7 +1979,7 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                     form.lastName &&
                     form.phone &&
                     emailOk &&
-                    (mode === "pickup" || (form.address && form.postalCode && !deliveryError));
+                    (mode === "pickup" || (form.address && !!zoneInfo));
   
   useEffect(() => {
     if (!canDelivery && mode === "delivery") {
@@ -2104,25 +2216,74 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           
           {mode === "delivery" && (
             <>
-              <input 
-                name="address" 
-                placeholder="Adresse de livraison *" 
-                className="rounded-xl border border-white/20 bg-transparent px-3 py-2 outline-none focus:border-white/40 transition-colors" 
-                value={form.address} 
-                onChange={handleChange} 
+              <input
+                name="address"
+                placeholder="Rue et numéro *"
+                autoComplete="street-address"
+                className="rounded-xl border border-white/20 bg-transparent px-3 py-2 outline-none focus:border-white/40 transition-colors"
+                value={form.address}
+                onChange={handleChange}
               />
-              <input 
-                name="postalCode" 
-                placeholder="Code postal *" 
-                maxLength="4"
-                className={`rounded-xl border ${deliveryError ? 'border-red-500/50' : 'border-white/20'} bg-transparent px-3 py-2 outline-none focus:border-white/40 transition-colors`} 
-                value={form.postalCode} 
-                onChange={handleChange} 
+              <input
+                name="npa"
+                placeholder="Code postal (NPA) *"
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                maxLength={4}
+                autoComplete="postal-code"
+                list="kk-npa-list"
+                className={`rounded-xl border ${
+                  npaOutOfZone
+                    ? 'border-red-500/50'
+                    : zoneInfo
+                      ? 'border-green-500/40'
+                      : 'border-white/20'
+                } bg-transparent px-3 py-2 outline-none focus:border-white/40 transition-colors`}
+                value={deliveryNpa}
+                onChange={handleNpaChange}
               />
-              {deliveryError && (
+              {/* Datalist : autocomplete natif. Affiche "1205 — Plainpalais (Zone 1)" */}
+              <datalist id="kk-npa-list">
+                {getAllNpas().map((n) => {
+                  const z = NPA_TO_ZONE[n];
+                  const zoneNumber = z.zone === 'ZONE_1' ? 1 : z.zone === 'ZONE_2' ? 2 : 3;
+                  return (
+                    <option key={n} value={n}>{`${n} — ${z.label} (Zone ${zoneNumber})`}</option>
+                  );
+                })}
+              </datalist>
+
+              {zoneInfo && (
+                <div className="flex items-start gap-2 text-xs text-green-400 bg-green-500/10 border border-green-500/30 rounded-xl p-2">
+                  <Check className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <span>
+                    {zoneInfo.label} · {zoneInfo.name} · Livraison {format(zoneInfo.fee)}
+                  </span>
+                </div>
+              )}
+              {npaOutOfZone && (
                 <div className="flex items-start gap-2 text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl p-2">
                   <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                  <span>{deliveryError}</span>
+                  <div className="flex-1">
+                    <div>Hors zone de livraison.</div>
+                    <div className="mt-1 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={onShowZones}
+                        className="underline hover:text-red-300"
+                      >
+                        Voir les zones desservies
+                      </button>
+                      <span className="opacity-60">·</span>
+                      <button
+                        type="button"
+                        onClick={() => setMode('pickup')}
+                        className="underline hover:text-red-300"
+                      >
+                        Passer en À emporter
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </>
