@@ -10,6 +10,8 @@
 // cet endpoint. On valide le token côté serveur via getUser().
 
 import { supabaseAdmin } from './_lib/supabaseServer.js';
+import { sendEmail } from './_lib/resend.js';
+import { buildRefundEmail } from './_lib/emails/orderRefund.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -36,10 +38,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 3. Charger l'order et vérifier qu'elle est remboursable
+    // 3. Charger l'order et vérifier qu'elle est remboursable.
+    //    SELECT élargi pour pouvoir construire l'email de refund derrière
+    //    sans 2e aller-retour DB.
     const { data: order, error: fetchErr } = await supabaseAdmin
       .from('orders')
-      .select('id, status, sumup_transaction_id, total, notes')
+      .select(
+        'id, status, sumup_transaction_id, total, notes, ' +
+        'customer_name, customer_email, refund_email_sent_at'
+      )
       .eq('id', order_id)
       .single();
 
@@ -117,6 +124,35 @@ export default async function handler(req, res) {
       return res.status(500).json({
         error: 'Refund SumUp OK mais update DB échoué — vérifier manuellement',
       });
+    }
+
+    // 6. Email de notification au client — best-effort, ne fait pas
+    //    échouer le refund qui est déjà acté en DB.
+    try {
+      if (!order.customer_email) {
+        console.warn('[KaïKaï mail refund] skip — pas d\'email client', order.id);
+      } else if (order.refund_email_sent_at) {
+        console.log('[KaïKaï mail refund] skip — déjà envoyé', order.id);
+      } else {
+        const { subject, html, text } = buildRefundEmail(order, reason);
+        const mailRes = await sendEmail({
+          to: order.customer_email,
+          subject,
+          html,
+          text,
+        });
+        if (mailRes.success) {
+          await supabaseAdmin
+            .from('orders')
+            .update({ refund_email_sent_at: new Date().toISOString() })
+            .eq('id', order.id);
+          console.log('[KaïKaï mail refund] envoyé', order.id, mailRes.id);
+        } else {
+          console.error('[KaïKaï mail refund] échec envoi', order.id, mailRes.error);
+        }
+      }
+    } catch (mailErr) {
+      console.error('[KaïKaï mail refund] exception', order.id, mailErr);
     }
 
     return res.status(200).json({ success: true, refunded_at: refundedAt });
