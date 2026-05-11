@@ -74,7 +74,7 @@ const RESTAURANT_INFO = {
   // pré-commande). Ici on affiche 18h-22h (service réel) et on mentionne
   // "pré-commande dès 17h30" séparément dans le copy footer/AboutModal.
   hours: {
-    lunch: { start: "11:00", end: "14:00" },
+    lunch: { start: "12:00", end: "14:00" },
     dinner: { start: "18:00", end: "22:00" }
   },
   
@@ -894,7 +894,7 @@ export default function KaiKaiApp() {
             </a>
           </div>
           <div>KaïKaï — restaurant tahitien · {RESTAURANT_INFO.address}</div>
-          <div className="mt-1">📞 {RESTAURANT_INFO.phoneDisplay} · 🕐 11h-14h | 18h-22h (pré-commande dès 17h30)</div>
+          <div className="mt-1">📞 {RESTAURANT_INFO.phoneDisplay} · 🕐 12h-14h | 18h-22h (pré-commande dès 11h / 17h30)</div>
           <div className="mt-1">
             📍 Livraison à Genève · Centre + 1ère et 2ème couronnes ·{' '}
             <button
@@ -1904,7 +1904,7 @@ function AboutModal({ onClose, onShowZones = null }) {
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 flex-shrink-0" />
-                <span>Service midi : 11h-14h</span>
+                <span>Service midi : 12h-14h (pré-commande dès 11h)</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 flex-shrink-0" />
