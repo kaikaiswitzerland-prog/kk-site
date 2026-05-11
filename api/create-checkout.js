@@ -17,6 +17,7 @@
 //   7. Renvoie { checkout_url } au front pour la redirection.
 
 import { supabaseAdmin } from './_lib/supabaseServer.js';
+import { getRestaurantStatus, formatStatusLabel } from './_lib/restaurantHours.js';
 
 // Recompute du total côté serveur — miroir de la logique du front
 // (App.jsx:519-522). On utilise items[].price tel que stocké en DB ; un
@@ -49,6 +50,36 @@ export default async function handler(req, res) {
   }
 
   try {
+    // 0. Garde-fou anti-cheat : refuser le checkout si le restaurant est
+    //    fermé. On vérifie d'abord le flag manuel (kitchen_open), puis les
+    //    horaires automatiques. Politique fail-open sur erreur DB pour ne
+    //    pas bloquer toute la chaîne paiement à cause d'un souci infra.
+    try {
+      const { data: flag } = await supabaseAdmin
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'kitchen_open')
+        .maybeSingle();
+      if (flag && flag.value === false) {
+        console.warn('[KaïKaï create-checkout] refus : kitchen_open=false', order_id);
+        return res.status(409).json({
+          error: 'kitchen_closed',
+          message: 'Le restaurant est temporairement fermé.',
+        });
+      }
+    } catch (flagErr) {
+      console.warn('[KaïKaï create-checkout] lecture kitchen_open échec (fail-open)', flagErr);
+    }
+
+    const status = getRestaurantStatus();
+    if (!status.isOpen) {
+      console.warn('[KaïKaï create-checkout] refus : hors heures', order_id, status.reason);
+      return res.status(409).json({
+        error: 'closed_hours',
+        message: formatStatusLabel(status),
+      });
+    }
+
     // 1. Charger l'order
     const { data: order, error: fetchError } = await supabaseAdmin
       .from('orders')
