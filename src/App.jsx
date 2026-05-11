@@ -752,7 +752,16 @@ export default function KaiKaiApp() {
         </div>
       </header>
 
-      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+      {showAbout && (
+        <AboutModal
+          onClose={() => setShowAbout(false)}
+          onShowZones={() => {
+            // Ferme l'AboutModal pour ne pas empiler 2 overlays.
+            setShowAbout(false);
+            setShowZonesModal(true);
+          }}
+        />
+      )}
 
       {/* Menu principal */}
       {step === "menu" && (
@@ -886,6 +895,16 @@ export default function KaiKaiApp() {
           </div>
           <div>KaïKaï — restaurant tahitien · {RESTAURANT_INFO.address}</div>
           <div className="mt-1">📞 {RESTAURANT_INFO.phoneDisplay} · 🕐 11h-14h | 18h-22h (pré-commande dès 17h30)</div>
+          <div className="mt-1">
+            📍 Livraison à Genève · Centre + 1ère et 2ème couronnes ·{' '}
+            <button
+              type="button"
+              onClick={() => setShowZonesModal(true)}
+              className="underline hover:text-white transition-colors"
+            >
+              voir les zones
+            </button>
+          </div>
           <div className="mt-2">© {new Date().getFullYear()} KaïKaï — Tous droits réservés.</div>
 
         </div>
@@ -1827,7 +1846,7 @@ function ZonesModal({ onClose }) {
   );
 }
 
-function AboutModal({ onClose }) {
+function AboutModal({ onClose, onShowZones = null }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden" onClick={(e) => e.stopPropagation()}>
@@ -1859,6 +1878,23 @@ function AboutModal({ onClose }) {
             </p>
           </div>
           
+          <div>
+            <h3 className="text-lg font-semibold mb-2 text-white">🚲 Livraison</h3>
+            <p className="text-sm leading-relaxed">
+              Livraison à Genève uniquement, dans un rayon d'environ 8 km
+              autour de notre cuisine. Frais selon zone : 4.90 / 6.90 / 9.90 CHF.
+            </p>
+            {onShowZones && (
+              <button
+                type="button"
+                onClick={onShowZones}
+                className="mt-2 text-sm underline text-[#C9A96E] hover:text-white transition-colors"
+              >
+                Voir les zones desservies
+              </button>
+            )}
+          </div>
+
           <div>
             <h3 className="text-lg font-semibold mb-3 text-white">📍 Nous Trouver</h3>
             <div className="space-y-2 text-sm">
