@@ -23,3 +23,16 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Variables d'environnement — JAMAIS commiter de secrets.
+# `*.local` (ligne 13) couvre déjà .env.local / .env.*.local mais on
+# explicite ici pour aussi capter .env tout court et les variantes
+# d'environnement non suffixées (.env.production, etc.).
+.env
+.env.local
+.env.*.local
+.env.development
+.env.staging
+.env.production
+# Exception : le template documenté DOIT pouvoir être commité.
+!.env.example

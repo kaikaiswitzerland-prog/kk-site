@@ -1,12 +1,83 @@
-# React + Vite
+# KaïKaï — Dark kitchen tahitienne (Genève)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Site de commande pour KaïKaï, par ENDO&CO Sàrl.
+Production : [kaikaifood.com](https://kaikaifood.com)
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Front** : React 19 + Vite + Tailwind 4
+- **Backend** : Vercel Functions (Node)
+- **DB** : Supabase (Postgres + Auth + RLS + Realtime)
+- **Paiement carte** : SumUp Hosted Checkout (webhook → DB)
+- **Emails** : Resend (confirmation + remboursement)
+- **Déploiement** : Vercel (auto sur push `main`)
 
-## Expanding the ESLint configuration
+## Setup local
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+git clone https://github.com/kaikaiswitzerland-prog/kk-site
+cd kk-site
+npm install
+cp .env.example .env.local   # puis remplir les valeurs (demander à Enzo)
+npm run dev
+```
+
+Le site tourne sur `http://localhost:5173`. L'admin est sur `/admin`
+(login Supabase auth requis).
+
+## Structure
+
+```
+src/
+├── App.jsx                 # Composant principal (menu, checkout)
+├── lib/                    # Helpers partagés (front)
+│   ├── supabase.js         # Client Supabase anon
+│   ├── restaurantHours.js  # Source de vérité horaires
+│   ├── deliveryZones.js    # Table NPA → zone livraison
+│   └── admin/              # Helpers admin
+├── hooks/                  # Hooks React
+│   ├── useRestaurantOpen.js  # Statut ouverture (auto + flag admin)
+│   ├── useOrders.js          # Liste commandes Realtime
+│   └── useAdminAuth.js       # Session admin
+├── pages/
+│   ├── AdminApp.jsx        # PWA admin (orchestrateur)
+│   ├── OrderSuccessPage.jsx
+│   └── admin/              # Composants admin (cards, modals, etc.)
+└── components/             # Auth, hero, mode île
+
+api/
+├── _lib/                   # Helpers serveur (miroirs de src/lib pour
+│   │                         restaurantHours et deliveryZones)
+│   ├── supabaseServer.js   # Client service_role (bypass RLS)
+│   ├── resend.js
+│   └── emails/             # Templates HTML
+├── create-checkout.js      # POST → crée checkout SumUp + garde-fous
+├── sumup-webhook.js        # POST ← SumUp confirme paiement
+├── sumup-refund.js         # POST admin — rembourse
+├── send-order-confirmation.js
+└── admin/
+    └── toggle-kitchen.js   # POST admin — stop commandes
+
+supabase/migrations/        # Historique des migrations SQL (jouées à la
+                            # main via Supabase Dashboard SQL Editor)
+```
+
+## Déploiement
+
+- **Push `main`** → Vercel déploie automatiquement.
+- **Migrations SQL** : à exécuter **manuellement** via
+  Supabase Dashboard → SQL Editor. Les migrations sont idempotentes
+  (peuvent être rejouées sans casser). Voir le dossier
+  [supabase/migrations/](supabase/migrations/) pour l'ordre chronologique.
+
+## Variables d'environnement
+
+Voir [.env.example](.env.example) pour la liste complète. Le projet
+utilise le préfixe `NEXT_PUBLIC_*` pour les variables exposées au
+client (configuré dans `vite.config.js` via `envPrefix`), pas `VITE_*`.
+En production : Vercel → Settings → Environment Variables
+(Production + Preview).
+
+## Contact
+
+ENDO&CO Sàrl — Genève
