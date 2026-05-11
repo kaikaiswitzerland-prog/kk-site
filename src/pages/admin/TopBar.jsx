@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import KitchenToggle from './KitchenToggle.jsx';
 
 const WEEKDAYS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 const WEEKDAYS_SHORT = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
@@ -36,11 +37,12 @@ export default function TopBar({ title, soundEnabled, onToggleSound, rightExtras
       </div>
 
       <div className="flex flex-shrink-0 items-center gap-1.5 md:gap-2.5">
-        {/* Live indicator — mobile : pastille + LIVE compact ; desktop : pill complète */}
-        <span className="md:hidden inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-accent-green">
-          <span className="kk-pulse-dot block h-[7px] w-[7px] rounded-full bg-accent-green" />
-          Live
-        </span>
+        {/* Toggle "Stop commandes" — placé en premier car c'est l'action
+            critique (urgence cuisine débordée). */}
+        <KitchenToggle />
+
+        {/* Live indicator — desktop uniquement : sur mobile on garde le
+            toggle + son comme actions principales. */}
         <span className="hidden md:inline-flex items-center gap-2 rounded-full border border-accent-green/20 bg-accent-green/10 px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-accent-green">
           <span className="kk-pulse-dot block h-[7px] w-[7px] rounded-full bg-accent-green" />
           Temps réel
