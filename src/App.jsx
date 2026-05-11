@@ -10,6 +10,7 @@ import IslandModeToggle from "./components/IslandModeToggle.jsx";
 import HeroSliderV2 from "./components/HeroSliderV2.jsx";
 import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
 import { supabase } from "./lib/supabase.js";
+import { useRestaurantOpen } from "./hooks/useRestaurantOpen.js";
 
 // MODIFICATION 1: Logo PNG au lieu du SVG
 const LOGO_SRC = "/logo_kaikai.png";
@@ -60,9 +61,12 @@ const RESTAURANT_INFO = {
   facebook: "#",
   email: "contact@kaikai.ch",
   
+  // Display uniquement (footer + AboutModal). Source de vérité numérique :
+  // src/lib/restaurantHours.js (constantes LUNCH / DINNER). Garder les deux
+  // synchronisés à la main.
   hours: {
-    lunch: { start: "11:30", end: "14:00" },
-    dinner: { start: "18:00", end: "22:00" }
+    lunch: { start: "11:00", end: "14:00" },
+    dinner: { start: "17:30", end: "22:00" }
   },
   
   deliveryZones: ["1200", "1201", "1202", "1203", "1204", "1205", "1206", "1207", "1208", "1209"],
@@ -313,39 +317,6 @@ function format(price) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
 }
 
-function isRestaurantOpen() {
-  const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
-  const currentTime = currentHour * 60 + currentMinute;
-  
-  const lunchStart = 11 * 60 + 30;
-  const lunchEnd = 14 * 60;
-  const dinnerStart = 18 * 60;
-  const dinnerEnd = 22 * 60;
-  
-  return (currentTime >= lunchStart && currentTime < lunchEnd) || 
-         (currentTime >= dinnerStart && currentTime < dinnerEnd);
-}
-
-function getNextOpeningTime() {
-  const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
-  const currentTime = currentHour * 60 + currentMinute;
-  
-  const lunchStart = 11 * 60 + 30;
-  const dinnerStart = 18 * 60;
-  
-  if (currentTime < lunchStart) {
-    return "11h30";
-  } else if (currentTime >= 14 * 60 && currentTime < dinnerStart) {
-    return "18h00";
-  } else {
-    return "11h30 demain";
-  }
-}
-
 function Badge({ type }) {
   const badges = {
     halal: { text: "HALAL" },
@@ -361,23 +332,39 @@ function Badge({ type }) {
   );
 }
 
-function OpenStatus() {
-  const [isOpen, setIsOpen] = useState(isRestaurantOpen());
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsOpen(isRestaurantOpen());
-    }, 60000);
-    
-    return () => clearInterval(interval);
-  }, []);
-  
+// Badge d'état affiché dans le header sticky.
+// 3 couleurs :
+//   - Vert : ouvert (statusLabel = "Ouvert · ferme à 14h")
+//   - Rouge : fermé temporairement (toggle admin "Stop commandes")
+//   - Orange : fermé automatiquement (lundi ou hors heures de service)
+function OpenStatus({ isOpen, manualClosure, statusLabel }) {
+  let palette;
+  if (isOpen) {
+    palette = {
+      bg: 'bg-green-500/20',
+      border: 'border-green-500/30',
+      text: 'text-green-400',
+      dot: 'bg-green-400 animate-pulse',
+    };
+  } else if (manualClosure) {
+    palette = {
+      bg: 'bg-red-500/20',
+      border: 'border-red-500/30',
+      text: 'text-red-400',
+      dot: 'bg-red-400',
+    };
+  } else {
+    palette = {
+      bg: 'bg-amber-500/20',
+      border: 'border-amber-500/30',
+      text: 'text-amber-400',
+      dot: 'bg-amber-400',
+    };
+  }
   return (
-    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${isOpen ? 'bg-green-500/20 border-green-500/30 text-green-400' : 'bg-red-500/20 border-red-500/30 text-red-400'}`}>
-      <div className={`h-2 w-2 rounded-full ${isOpen ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
-      <span className="text-sm font-medium">
-        {isOpen ? 'Ouvert' : `Fermé - Ouvre à ${getNextOpeningTime()}`}
-      </span>
+    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${palette.bg} ${palette.border} ${palette.text}`}>
+      <div className={`h-2 w-2 rounded-full ${palette.dot}`}></div>
+      <span className="text-sm font-medium">{statusLabel}</span>
     </div>
   );
 }
@@ -504,6 +491,8 @@ function useActiveCategory() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function KaiKaiApp() {
+  const { isOpen: restaurantOpen, manualClosure, statusLabel: openStatusLabel, status: openStatus } = useRestaurantOpen();
+
   const [cart, setCart] = useState({});
   const [cartVariants, setCartVariants] = useState({});
   const [mode, setMode] = useState("delivery");
@@ -592,6 +581,16 @@ export default function KaiKaiApp() {
   const clear = () => { setCart({}); setCartVariants({}); };
 
   const handleOrderSubmit = async ({ form, paymentMethod }) => {
+    // Garde-fou front : si le restaurant a fermé entre l'ouverture du
+    // Checkout et le clic submit (toggle admin ou bascule horaire pendant
+    // la saisie), on refuse l'INSERT. Le serveur a son propre garde-fou
+    // (api/create-checkout.js) pour les paiements carte.
+    if (!restaurantOpen) {
+      return manualClosure
+        ? "Le restaurant est temporairement fermé. Réessayez plus tard."
+        : `Le restaurant vient de fermer. ${openStatusLabel}.`;
+    }
+
     const orderItems = items
       .filter(it => it.qty > 0)
       .map(it => ({
@@ -685,7 +684,11 @@ export default function KaiKaiApp() {
             {logoVisible && <img src={LOGO_SRC} alt="KaïKaï" className="h-8" style={{ mixBlendMode: 'screen' }} onError={() => setLogoVisible(false)} />}
             <div>
               <h1 className="text-xl font-semibold">KaïKaï</h1>
-              <OpenStatus />
+              <OpenStatus
+                isOpen={restaurantOpen}
+                manualClosure={manualClosure}
+                statusLabel={openStatusLabel}
+              />
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -794,6 +797,10 @@ export default function KaiKaiApp() {
           onRemoveOne={removeOne}
           onAdd={add}
           onSuccess={handleOrderSubmit}
+          restaurantOpen={restaurantOpen}
+          manualClosure={manualClosure}
+          openStatusLabel={openStatusLabel}
+          openStatus={openStatus}
         />
       )}
 
@@ -810,7 +817,16 @@ export default function KaiKaiApp() {
       )}
 
       {step === "menu" && Object.values(cart).reduce((s, q) => s + q, 0) > 0 && (
-        <MiniCart cart={cart} items={items} total={total} discount={discount} onOpen={() => setStep("checkout")} />
+        <MiniCart
+          cart={cart}
+          items={items}
+          total={total}
+          discount={discount}
+          onOpen={() => setStep("checkout")}
+          restaurantOpen={restaurantOpen}
+          manualClosure={manualClosure}
+          openStatusLabel={openStatusLabel}
+        />
       )}
 
       {/* Mode Île — pastille membres */}
@@ -1635,9 +1651,17 @@ function FormuleModal({ item, onConfirm, onClose }) {
 }
 
 // ─── MINI PANIER FLOTTANT ────────────────────────────────────────────────────
-function MiniCart({ cart, items, total, discount, onOpen }) {
+function MiniCart({ cart, items, total, discount, onOpen, restaurantOpen = true, manualClosure = false, openStatusLabel = '' }) {
   const totalQty = Object.values(cart).reduce((s, q) => s + q, 0);
   const cartItems = items.filter(i => i.qty > 0).slice(0, 3);
+
+  // Si fermé : on garde le mini-panier visible (l'utilisateur voit ce qu'il
+  // a sélectionné) mais le tap ouvre le Checkout qui affichera son bandeau
+  // bloquant. Visuellement, on dim le bouton et on ajoute un petit texte
+  // explicatif.
+  const closedHint = !restaurantOpen
+    ? (manualClosure ? 'Fermé temporairement' : openStatusLabel)
+    : null;
 
   return (
     <div
@@ -1656,9 +1680,11 @@ function MiniCart({ cart, items, total, discount, onOpen }) {
         boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
         cursor: 'pointer',
         maxWidth: 280,
+        opacity: restaurantOpen ? 1 : 0.65,
         animation: 'tileIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both',
-        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease',
       }}
+      title={closedHint || undefined}
       onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.55)'; }}
       onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.45)'; }}
     >
@@ -1790,7 +1816,7 @@ function AboutModal({ onClose }) {
 // la validation finale c'est Resend qui la fera.
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total, mode, setMode, onClose, onClear, onRemoveOne, onAdd, onSuccess }) {
+function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total, mode, setMode, onClose, onClear, onRemoveOne, onAdd, onSuccess, restaurantOpen = true, manualClosure = false, openStatusLabel = '' }) {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -1829,7 +1855,8 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
   const emailFormatOk = !form.email || EMAIL_REGEX.test(form.email.trim());
   const emailOk = emailFormatOk && (!emailRequired || !!form.email.trim());
 
-  const canSubmit = hasItems &&
+  const canSubmit = restaurantOpen &&
+                    hasItems &&
                     form.firstName &&
                     form.lastName &&
                     form.phone &&
@@ -1857,6 +1884,30 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        {!restaurantOpen && (
+          <div
+            className={`mb-4 rounded-2xl border p-4 flex items-start gap-3 ${
+              manualClosure
+                ? 'border-red-500/30 bg-red-500/10 text-red-300'
+                : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+            }`}
+          >
+            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <div className="font-medium mb-0.5">
+                {manualClosure
+                  ? 'Restaurant temporairement fermé'
+                  : 'Restaurant fermé'}
+              </div>
+              <div className="opacity-90">
+                {manualClosure
+                  ? 'La cuisine est surchargée — réessayez plus tard.'
+                  : openStatusLabel + '.'}
+              </div>
+            </div>
+          </div>
+        )}
 
         {mode === "delivery" && (
           <div className="mb-4 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-3 flex items-center gap-2 text-sm">
