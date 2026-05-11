@@ -511,6 +511,11 @@ export default function KaiKaiApp() {
   const [step, setStep] = useState(
     window.location.pathname === '/payment-success' ? 'success' : 'menu'
   );
+  // ID de la commande à passer à OrderSuccessPage pour les flows internes
+  // (Cash/Twint juste après l'INSERT). Évite la fragilité d'un lookup
+  // window.location.search au mount alors que replaceState n'a peut-être
+  // pas encore été appliqué côté navigateur (ou React commit avant).
+  const [successOrderId, setSuccessOrderId] = useState(null);
   const [logoVisible, setLogoVisible] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
 
@@ -647,12 +652,17 @@ export default function KaiKaiApp() {
         });
       }
 
-      setStep("success");
-      // Préserve order_id dans l'URL pour que OrderSuccessPage puisse
-      // refetch et afficher le récap (en cohérence avec le flow carte).
+      // 1. URL mise à jour AVANT le changement d'étape — garantit que si
+      //    OrderSuccessPage est rendu avant que React voie le state, ou
+      //    si l'utilisateur F5, l'URL contient déjà order_id.
       try {
         window.history.replaceState(null, '', `/payment-success?order_id=${inserted.id}`);
       } catch { /* ignore */ }
+      // 2. Pose l'ID en state (passé directement en prop à OrderSuccessPage)
+      //    pour ne PAS dépendre du timing de l'URL : c'est la source de
+      //    vérité du composant succès pour ce flow Cash/Twint.
+      setSuccessOrderId(inserted.id);
+      setStep("success");
       clear();
       return null;
     } catch (err) {
@@ -786,9 +796,11 @@ export default function KaiKaiApp() {
 
       {step === "success" && (
         <OrderSuccessPage
+          initialOrderId={successOrderId}
           onBackToMenu={() => {
             // Nettoie l'URL pour que F5 ne ramène pas sur /payment-success
             try { window.history.replaceState(null, '', '/'); } catch { /* ignore */ }
+            setSuccessOrderId(null);
             setStep('menu');
           }}
         />

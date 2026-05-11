@@ -19,14 +19,21 @@ const fmtCHF = (n) =>
 // 'paid' et au-delà = paiement carte confirmé par webhook.
 const SUCCESS_STATUSES = ['pending', 'paid', 'accepted', 'ready', 'delivered'];
 
-export default function OrderSuccessPage({ onBackToMenu }) {
+export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null }) {
+  // Source de vérité de l'order_id, dans l'ordre :
+  //  1. La prop initialOrderId passée par le parent (Cash/Twint juste
+  //     après l'INSERT — le plus fiable, pas de dépendance au timing
+  //     d'une mise à jour d'URL ni à un reload).
+  //  2. URLSearchParams (cas redirect SumUp après paiement carte, ou
+  //     F5 sur la page de succès).
   const orderId = useMemo(() => {
+    if (initialOrderId) return initialOrderId;
     try {
       return new URLSearchParams(window.location.search).get('order_id');
     } catch {
       return null;
     }
-  }, []);
+  }, [initialOrderId]);
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
