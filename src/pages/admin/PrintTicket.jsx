@@ -103,7 +103,16 @@ function PrintTicketBody({ order }) {
           <strong>PAIEMENT :</strong> {printText(PAYMENT_LABELS[order.payment_method] || order.payment_method)}
           {order.status === 'paid' && ' (ENCAISSEE)'}
         </div>
-        {order.notes && <div><strong>NOTES :</strong> {printText(order.notes)}</div>}
+        {order.note_kitchen && (
+          <div><strong>CUISINE :</strong> {printText(order.note_kitchen)}</div>
+        )}
+        {order.delivery_mode === 'delivery' && order.note_delivery && (
+          <div><strong>LIVREUR :</strong> {printText(order.note_delivery)}</div>
+        )}
+        {/* Fallback legacy : commandes antérieures à la migration chantier 4 */}
+        {!order.note_kitchen && !order.note_delivery && order.notes && (
+          <div><strong>NOTES :</strong> {printText(order.notes)}</div>
+        )}
       </div>
 
       <hr className="kk-print-sep" />

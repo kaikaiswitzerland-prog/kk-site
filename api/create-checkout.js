@@ -59,7 +59,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { order_id, redirect_url, npa } = req.body || {};
+  const { order_id, redirect_url, npa, noteKitchen, noteDelivery } = req.body || {};
 
   if (!order_id || !redirect_url) {
     return res.status(400).json({ error: 'Missing required fields (order_id, redirect_url)' });
@@ -171,10 +171,23 @@ export default async function handler(req, res) {
       });
     }
 
-    // 6. Persister sumup_checkout_id pour que le webhook puisse retrouver l'order
+    // 6. Persister sumup_checkout_id pour que le webhook puisse retrouver
+    // l'order. On en profite pour re-poser note_kitchen / note_delivery
+    // sanitized — anti-tampering de l'INSERT initial qui passe par RLS
+    // anon sans validation contenu.
+    const sanitize = (s, max) => String(s || '').trim().slice(0, max);
+    const cleanedKitchen  = sanitize(noteKitchen, 500);
+    const cleanedDelivery = order.delivery_mode === 'delivery'
+      ? sanitize(noteDelivery, 200)
+      : '';
+
     const { error: updateError } = await supabaseAdmin
       .from('orders')
-      .update({ sumup_checkout_id: sumupData.id })
+      .update({
+        sumup_checkout_id: sumupData.id,
+        note_kitchen:  cleanedKitchen,
+        note_delivery: cleanedDelivery,
+      })
       .eq('id', order.id);
 
     if (updateError) {

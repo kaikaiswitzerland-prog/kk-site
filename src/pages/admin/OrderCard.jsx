@@ -149,7 +149,16 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         {order.delivery_mode === 'delivery' && order.customer_address && (
           <Pill>📍 {order.customer_address}</Pill>
         )}
-        {order.notes && <Pill>📝 {order.notes}</Pill>}
+        {/* Notes séparées (chantier 4) — icônes distinctes pour scan visuel
+            rapide. Fallback legacy `notes` si pas de note_kitchen/delivery
+            (commandes antérieures à la migration). */}
+        {order.note_kitchen && <Pill>👨‍🍳 {order.note_kitchen}</Pill>}
+        {order.delivery_mode === 'delivery' && order.note_delivery && (
+          <Pill>🚴 {order.note_delivery}</Pill>
+        )}
+        {!order.note_kitchen && !order.note_delivery && order.notes && (
+          <Pill>📝 {order.notes}</Pill>
+        )}
       </div>
 
       <div className="mb-3 flex items-baseline justify-between gap-3">

@@ -77,7 +77,8 @@ export default async function handler(req, res) {
     const ORDER_COLS =
       'id, status, sumup_transaction_id, ' +
       'customer_name, customer_email, customer_phone, customer_address, ' +
-      'items, total, delivery_mode, confirmation_email_sent_at';
+      'items, total, delivery_mode, confirmation_email_sent_at, ' +
+      'notes, note_kitchen, note_delivery';
     let { data: order, error: fetchErr } = await supabaseAdmin
       .from('orders')
       .select(ORDER_COLS)

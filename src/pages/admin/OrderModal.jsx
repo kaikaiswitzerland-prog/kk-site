@@ -97,7 +97,17 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint, on
               )}
             </span>
           </Row>
-          {order.notes && <Row label="Notes" value={order.notes} />}
+          {/* Notes séparées (chantier 4) + fallback legacy `notes` pour les
+              commandes antérieures à la migration. */}
+          {order.note_kitchen && (
+            <Row label="👨‍🍳 Cuisine" value={order.note_kitchen} />
+          )}
+          {order.delivery_mode === 'delivery' && order.note_delivery && (
+            <Row label="🚴 Livreur" value={order.note_delivery} />
+          )}
+          {!order.note_kitchen && !order.note_delivery && order.notes && (
+            <Row label="📝 Notes" value={order.notes} />
+          )}
         </Section>
 
         {/* Timeline */}

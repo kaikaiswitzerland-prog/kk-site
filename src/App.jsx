@@ -21,6 +21,12 @@ import {
 
 // Clé localStorage versionnée — bump le suffixe v* si la structure change.
 const CART_STORAGE_KEY = 'kaikai_cart_v1';
+
+// Limites des notes (alignées avec ce que le serveur re-sanitize dans
+// api/create-checkout.js — garder les deux synchronisés).
+const NOTE_KITCHEN_MAX = 500;
+const NOTE_DELIVERY_MAX = 200;
+const sanitizeNote = (s, max) => String(s || '').trim().slice(0, max);
 // TTL panier : 24h. Au-delà, on jette (le client a peut-être oublié, ou les
 // prix/menu ont pu bouger entre-temps).
 const CART_TTL_MS = 24 * 60 * 60 * 1000;
@@ -704,6 +710,10 @@ export default function KaiKaiApp() {
 
     try {
       const isCard = paymentMethod === 'card';
+      const noteKitchen  = sanitizeNote(form.noteKitchen, NOTE_KITCHEN_MAX);
+      const noteDelivery = mode === 'delivery'
+        ? sanitizeNote(form.noteDelivery, NOTE_DELIVERY_MAX)
+        : '';
 
       const { data: inserted, error } = await supabase.from('orders').insert([{
         customer_name: `${form.firstName} ${form.lastName}`.trim(),
@@ -716,7 +726,11 @@ export default function KaiKaiApp() {
         total: parseFloat(total.toFixed(2)),
         payment_method: paymentMethod,
         status: isCard ? 'pending_payment' : 'pending',
-        notes: form.instructions || '',
+        // Legacy `notes` non rempli pour les nouvelles commandes — reste
+        // utilisé par api/sumup-refund.js pour log motif refund.
+        notes: '',
+        note_kitchen:  noteKitchen,
+        note_delivery: noteDelivery,
         delivery_mode: mode,
       }]).select('id').single();
 
@@ -736,6 +750,11 @@ export default function KaiKaiApp() {
             // Le serveur recompute deliveryFee depuis ce NPA via sa propre
             // table — pas de confiance dans le total qu'on enverrait.
             npa: mode === 'delivery' ? deliveryNpa : null,
+            // Notes re-sanitized côté serveur avant UPDATE (anti-tampering
+            // de l'INSERT initial qui passe par RLS anon sans validation
+            // contenu).
+            noteKitchen,
+            noteDelivery,
           }),
         });
         const checkout = await res.json();
@@ -2044,7 +2063,11 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
     email: "",
     phone: "",
     address: "",
-    instructions: ""
+    // Notes séparées : cuisine vs livreur. Le client peut transmettre
+    // allergies/cuissons (cuisine) et instructions d'accès (livreur)
+    // sans les mélanger — l'admin les voit en 2 sections distinctes.
+    noteKitchen: "",
+    noteDelivery: ""
   });
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [submitting, setSubmitting] = useState(false);
@@ -2394,14 +2417,37 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
             </>
           )}
           
-          <textarea
-            name="instructions"
-            placeholder="Instructions spéciales (allergies, préférences, etc.)"
-            className="rounded-xl border border-white/20 bg-transparent px-3 py-2 outline-none focus:border-white/40 transition-colors resize-none"
-            rows="3"
-            value={form.instructions}
-            onChange={handleChange}
-          />
+          <div>
+            <label className="mb-1 block text-xs uppercase tracking-wider text-white/50">
+              👨‍🍳 Note pour la cuisine
+            </label>
+            <textarea
+              name="noteKitchen"
+              placeholder="Allergies, cuisson, modifs… (ex : pas de sauce soja, allergique aux fruits à coque)"
+              maxLength={500}
+              rows={3}
+              className="w-full rounded-xl border border-white/20 bg-transparent px-3 py-2 outline-none focus:border-white/40 transition-colors resize-none"
+              value={form.noteKitchen}
+              onChange={handleChange}
+            />
+          </div>
+
+          {mode === "delivery" && (
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-wider text-white/50">
+                🚴 Note pour le livreur
+              </label>
+              <textarea
+                name="noteDelivery"
+                placeholder="Digicode, étage, instructions d'accès… (ex : code 1234B, 3e étage porte gauche)"
+                maxLength={200}
+                rows={2}
+                className="w-full rounded-xl border border-white/20 bg-transparent px-3 py-2 outline-none focus:border-white/40 transition-colors resize-none"
+                value={form.noteDelivery}
+                onChange={handleChange}
+              />
+            </div>
+          )}
         </div>
 
         {/* Choix du mode de paiement */}

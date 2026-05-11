@@ -37,7 +37,8 @@ export default async function handler(req, res) {
       .select(
         'id, status, payment_method, ' +
         'customer_name, customer_email, customer_phone, customer_address, ' +
-        'items, total, delivery_mode, confirmation_email_sent_at'
+        'items, total, delivery_mode, confirmation_email_sent_at, ' +
+        'notes, note_kitchen, note_delivery'
       )
       .eq('id', order_id)
       .single();

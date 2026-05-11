@@ -11,7 +11,12 @@ import {
   htmlShell,
 } from './_shared.js';
 
-const ETA_MIN = 30;
+// ETA en minutes. Aligné avec RESTAURANT_INFO.deliveryTime/prepTime côté
+// front (src/App.jsx). À garder synchronisés à la main.
+const ETA = {
+  delivery: '30-45',
+  pickup:   '20-25',
+};
 
 /**
  * @param {Object} order — ligne brute de la table orders Supabase.
@@ -22,6 +27,10 @@ export function buildOrderConfirmationEmail(order) {
   const subject = `Commande KaïKaï confirmée — #${shortId}`;
   const items = Array.isArray(order.items) ? order.items : [];
   const isDelivery = order.delivery_mode === 'delivery';
+  const etaMinutes = isDelivery ? ETA.delivery : ETA.pickup;
+  const etaLabel = isDelivery
+    ? `Livraison estimée dans ${etaMinutes} min.`
+    : `Prête à emporter dans ${etaMinutes} min.`;
 
   // ── HTML ────────────────────────────────────────────────────────────
   const itemsRows = items.map((it) => {
@@ -61,6 +70,18 @@ export function buildOrderConfirmationEmail(order) {
          <div style="font-size:14px;color:${COLORS.text};">${esc(RESTAURANT.address)}</div>
        </div>`;
 
+  // Blocs notes — affichés uniquement si non vides. Palette identique au
+  // modeBlock pour cohérence visuelle.
+  const noteBlock = (icon, title, body) => `
+    <div style="margin-top:12px;padding:14px;border:1px solid ${COLORS.border};border-radius:8px;">
+      <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:${COLORS.textMuted};margin-bottom:6px;">${icon} ${title}</div>
+      <div style="font-size:14px;color:${COLORS.text};white-space:pre-wrap;">${esc(body)}</div>
+    </div>`;
+  const notesHtml = [
+    order.note_kitchen  && noteBlock('👨‍🍳', 'Note transmise à la cuisine', order.note_kitchen),
+    isDelivery && order.note_delivery && noteBlock('🚴', 'Note pour le livreur', order.note_delivery),
+  ].filter(Boolean).join('');
+
   const bodyHtml = `
 <p style="margin:0 0 12px 0;font-size:16px;">Bonjour ${esc(order.customer_name || '')},</p>
 <p style="margin:0 0 20px 0;color:${COLORS.text};">
@@ -88,9 +109,10 @@ export function buildOrderConfirmationEmail(order) {
 </table>
 
 ${modeBlock}
+${notesHtml}
 
 <p style="margin:20px 0 0 0;font-size:13px;color:${COLORS.textMuted};">
-  Préparation en cours, prête dans environ ${ETA_MIN} minutes.
+  ${esc(etaLabel)}
 </p>
 `;
 
@@ -111,6 +133,17 @@ ${modeBlock}
     ? `Livraison à : ${order.customer_address || ''}`
     : `À retirer chez nous : ${RESTAURANT.address}`;
 
+  // Lignes notes (vides = lignes pas ajoutées, sinon on insère un préfixe
+  // explicite). On n'utilise pas filter('') global car le tableau text
+  // utilise '' comme séparateur de paragraphes.
+  const notesLines = [];
+  if (order.note_kitchen) {
+    notesLines.push('', `>> Note cuisine : ${order.note_kitchen}`);
+  }
+  if (isDelivery && order.note_delivery) {
+    notesLines.push('', `>> Note livreur : ${order.note_delivery}`);
+  }
+
   const text = [
     `KaïKaï — Commande confirmée #${shortId}`,
     '',
@@ -124,8 +157,9 @@ ${modeBlock}
     `TOTAL : ${fmtCHF(order.total)}`,
     '',
     modeText,
+    ...notesLines,
     '',
-    `Préparation en cours, prête dans environ ${ETA_MIN} minutes.`,
+    etaLabel,
     '',
     `Une question ? ${RESTAURANT.phoneDisplay} · ${RESTAURANT.site}`,
     `${RESTAURANT.address}`,
