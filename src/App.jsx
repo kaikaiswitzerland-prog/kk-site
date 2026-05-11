@@ -61,12 +61,14 @@ const RESTAURANT_INFO = {
   facebook: "#",
   email: "contact@kaikai.ch",
   
-  // Display uniquement (footer + AboutModal). Source de vérité numérique :
-  // src/lib/restaurantHours.js (constantes LUNCH / DINNER). Garder les deux
-  // synchronisés à la main.
+  // Display uniquement (footer + AboutModal) — heures de SERVICE affichées
+  // aux clients. Source de vérité numérique des plages de pré-commande :
+  // src/lib/restaurantHours.js (LUNCH/DINNER, dinner.open=17:30 pour la
+  // pré-commande). Ici on affiche 18h-22h (service réel) et on mentionne
+  // "pré-commande dès 17h30" séparément dans le copy footer/AboutModal.
   hours: {
     lunch: { start: "11:00", end: "14:00" },
-    dinner: { start: "17:30", end: "22:00" }
+    dinner: { start: "18:00", end: "22:00" }
   },
   
   deliveryZones: ["1200", "1201", "1202", "1203", "1204", "1205", "1206", "1207", "1208", "1209"],
@@ -846,7 +848,7 @@ export default function KaiKaiApp() {
             </a>
           </div>
           <div>KaïKaï — restaurant tahitien · {RESTAURANT_INFO.address}</div>
-          <div className="mt-1">📞 {RESTAURANT_INFO.phoneDisplay} · 🕐 {RESTAURANT_INFO.hours.lunch.start}-{RESTAURANT_INFO.hours.lunch.end} | {RESTAURANT_INFO.hours.dinner.start}-{RESTAURANT_INFO.hours.dinner.end}</div>
+          <div className="mt-1">📞 {RESTAURANT_INFO.phoneDisplay} · 🕐 11h-14h | 18h-22h (pré-commande dès 17h30)</div>
           <div className="mt-2">© {new Date().getFullYear()} KaïKaï — Tous droits réservés.</div>
 
         </div>
@@ -1759,7 +1761,11 @@ function AboutModal({ onClose }) {
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 flex-shrink-0" />
-                <span>{RESTAURANT_INFO.hours.lunch.start}-{RESTAURANT_INFO.hours.lunch.end} | {RESTAURANT_INFO.hours.dinner.start}-{RESTAURANT_INFO.hours.dinner.end}</span>
+                <span>Service midi : 11h-14h</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 flex-shrink-0" />
+                <span>Service soir : 18h-22h (pré-commande dès 17h30)</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 flex-shrink-0" />
