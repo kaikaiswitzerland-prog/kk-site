@@ -21,6 +21,8 @@
 // On log les erreurs côté serveur (Vercel logs) pour debug ultérieur.
 
 import { supabaseAdmin } from './_lib/supabaseServer.js';
+import { sendEmail } from './_lib/resend.js';
+import { buildOrderConfirmationEmail } from './_lib/emails/orderConfirmation.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -69,16 +71,23 @@ export default async function handler(req, res) {
     // Lookup primaire : sumup_checkout_id (posé par create-checkout).
     // Fallback : checkout_reference = order.id (si create-checkout a échoué
     // à persister sumup_checkout_id pour une raison X).
+    //
+    // SELECT élargi : on charge tout ce qu'il faut pour pouvoir construire
+    // l'email de confirmation sans 2e aller-retour DB.
+    const ORDER_COLS =
+      'id, status, sumup_transaction_id, ' +
+      'customer_name, customer_email, customer_phone, customer_address, ' +
+      'items, total, delivery_mode, confirmation_email_sent_at';
     let { data: order, error: fetchErr } = await supabaseAdmin
       .from('orders')
-      .select('id, status, sumup_transaction_id')
+      .select(ORDER_COLS)
       .eq('sumup_checkout_id', checkoutId)
       .maybeSingle();
 
     if (!order && checkout.checkout_reference) {
       const fallback = await supabaseAdmin
         .from('orders')
-        .select('id, status, sumup_transaction_id')
+        .select(ORDER_COLS)
         .eq('id', checkout.checkout_reference)
         .maybeSingle();
       order = fallback.data;
@@ -143,6 +152,49 @@ export default async function handler(req, res) {
     }
 
     console.log('[KaïKaï webhook] order mis à jour', order.id, patch);
+
+    // 5. Email de confirmation (best-effort, ne casse jamais le webhook).
+    //    Conditions cumulatives :
+    //    - transition vers 'paid' (les statuts failed/expired n'ont pas
+    //      d'email — le client est déjà sur OrderSuccessPage qui le voit).
+    //    - customer_email rempli.
+    //    - confirmation_email_sent_at NULL (idempotence stricte : si SumUp
+    //      renvoie un webhook PAID après que l'admin a forcé re-paid manuel
+    //      ou tout autre scénario, on ne spam pas le client).
+    if (patch.status === 'paid') {
+      try {
+        if (!order.customer_email) {
+          console.warn('[KaïKaï mail confirm] skip — pas d\'email client', order.id);
+        } else if (order.confirmation_email_sent_at) {
+          console.log('[KaïKaï mail confirm] skip — déjà envoyé', order.id);
+        } else {
+          // L'objet `order` ne contient pas encore le sumup_transaction_id
+          // posté par le patch — on le fusionne pour cohérence si jamais le
+          // template l'utilise plus tard. (Aujourd'hui il ne l'utilise pas.)
+          const fullOrder = { ...order, sumup_transaction_id: patch.sumup_transaction_id };
+          const { subject, html, text } = buildOrderConfirmationEmail(fullOrder);
+          const result = await sendEmail({
+            to: order.customer_email,
+            subject,
+            html,
+            text,
+          });
+          if (result.success) {
+            await supabaseAdmin
+              .from('orders')
+              .update({ confirmation_email_sent_at: new Date().toISOString() })
+              .eq('id', order.id);
+            console.log('[KaïKaï mail confirm] envoyé', order.id, result.id);
+          } else {
+            console.error('[KaïKaï mail confirm] échec envoi', order.id, result.error);
+          }
+        }
+      } catch (mailErr) {
+        // Jamais bloquant — on a déjà retourné le statut 200 logiquement.
+        console.error('[KaïKaï mail confirm] exception', order.id, mailErr);
+      }
+    }
+
     return res.status(200).json({ updated: true, status: patch.status });
   } catch (err) {
     console.error('[KaïKaï webhook] exception', err);
