@@ -12,6 +12,12 @@ import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
 import { supabase } from "./lib/supabase.js";
 import { useRestaurantOpen } from "./hooks/useRestaurantOpen.js";
 import {
+  ALLERGENS,
+  getAllergensForItem,
+  formatAllergenNames,
+  formatAllergenNamesShort,
+} from "./data/allergens.js";
+import {
   DELIVERY_ZONES,
   NPA_TO_ZONE,
   getZoneByNpa,
@@ -1016,6 +1022,10 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
   const [showProteinModal, setShowProteinModal] = useState(false);
   const [showCoulisModal, setShowCoulisModal] = useState(false);
   const [showEauModal, setShowEauModal] = useState(false);
+  const [showAllergens, setShowAllergens] = useState(false);
+
+  const allergens = getAllergensForItem(item.id);
+  const hasNoAllergens = allergens.contains.length === 0 && allergens.traces.length === 0;
   
   const handleAdd = (variant = null) => {
     add(item.id, variant);
@@ -1060,14 +1070,35 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
           </div>
         )}
         <div className="flex items-start justify-between gap-4 p-5">
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="text-lg font-medium">{item.name}</div>
             <div className="mt-1 text-sm text-white/60">{item.desc}</div>
             <div className="mt-2 text-white/90">{format(item.price)}</div>
+            <button
+              type="button"
+              onClick={() => setShowAllergens(true)}
+              className="mt-2 block text-left transition-opacity hover:opacity-70"
+              aria-label="Voir le détail des allergènes"
+            >
+              {hasNoAllergens ? (
+                <span className="text-[11px] text-emerald-400/70">Sans allergène majeur</span>
+              ) : (
+                <>
+                  <span className="text-[11px] text-white/55">
+                    Contient : {formatAllergenNamesShort(allergens.contains)}
+                  </span>
+                  {allergens.traces.length > 0 && allergens.contains.length > 0 && (
+                    <span className="mt-0.5 block text-[10px] text-white/35">
+                      Traces : {formatAllergenNamesShort(allergens.traces)}
+                    </span>
+                  )}
+                </>
+              )}
+            </button>
           </div>
           <div className="flex items-center gap-3">
-            <button 
-              onClick={() => remove(item.id)} 
+            <button
+              onClick={() => remove(item.id)}
               className="rounded-2xl border border-white/20 p-2 hover:bg-white/10 transition-all active:scale-95"
             >
               <Minus className="h-4 w-4" />
@@ -1124,10 +1155,18 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
       )}
       
       {showEauModal && item.hasEauVariants && (
-        <EauModal 
-          item={item} 
-          onSelect={handleAdd} 
-          onClose={() => setShowEauModal(false)} 
+        <EauModal
+          item={item}
+          onSelect={handleAdd}
+          onClose={() => setShowEauModal(false)}
+        />
+      )}
+
+      {showAllergens && (
+        <AllergensModal
+          item={item}
+          allergens={allergens}
+          onClose={() => setShowAllergens(false)}
         />
       )}
     </>
@@ -1427,6 +1466,67 @@ function EauModal({ item, onSelect, onClose }) {
       {item.eauVariants.map((v, i) => (
         <OptionTile key={v.id} emoji={v.id === 'plate' ? '💧' : '🫧'} name={v.name.replace(/^[^\s]+ /, '')} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
       ))}
+    </BottomSheet>
+  );
+}
+
+// ─── ALLERGÈNES MODAL ────────────────────────────────────────────────────────
+function AllergensModal({ item, allergens, onClose }) {
+  const hasNoAllergens = allergens.contains.length === 0 && allergens.traces.length === 0;
+
+  return (
+    <BottomSheet
+      title={`Allergènes — ${item.name}`}
+      subtitle="Liste des 14 allergènes à déclaration obligatoire (UE/Suisse)"
+      photo={getPhoto(item.id)}
+      photoPos={getPhotoPos(item.id)}
+      onClose={onClose}
+    >
+      <div className="space-y-5 pb-2">
+        {hasNoAllergens ? (
+          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+            <div className="text-sm text-emerald-300">Sans allergène majeur</div>
+            <p className="mt-1 text-xs text-white/55">
+              Aucun des 14 allergènes à déclaration obligatoire n'est présent dans ce plat.
+            </p>
+          </div>
+        ) : (
+          <>
+            {allergens.contains.length > 0 && (
+              <div>
+                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.15em] text-white/40">Contient</div>
+                <ul className="space-y-1.5">
+                  {allergens.contains.map(k => (
+                    <li key={k} className="flex items-center gap-2.5 text-sm text-white/85">
+                      <span className="block h-1.5 w-1.5 rounded-full bg-amber-400" />
+                      {ALLERGENS[k]?.name || k}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {allergens.traces.length > 0 && (
+              <div>
+                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.15em] text-white/40">Peut contenir des traces de</div>
+                <ul className="space-y-1.5">
+                  {allergens.traces.map(k => (
+                    <li key={k} className="flex items-center gap-2.5 text-sm text-white/60">
+                      <span className="block h-1.5 w-1.5 rounded-full bg-white/30" />
+                      {ALLERGENS[k]?.name || k}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-relaxed text-white/70">
+          Pour toute allergie sévère, contactez-nous au{' '}
+          <a href={`tel:${RESTAURANT_INFO.phone}`} className="text-white underline underline-offset-2">
+            {RESTAURANT_INFO.phoneDisplay}
+          </a>{' '}avant de commander.
+        </div>
+      </div>
     </BottomSheet>
   );
 }
