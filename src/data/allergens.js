@@ -33,48 +33,39 @@ export const ALLERGENS = {
 // Mapping plat → allergènes.
 // Clés = ids string du MENU (src/App.jsx).
 // `contains` = ingrédients déclarés. `traces` = contamination croisée possible.
+// Version finale validée par Enzo (tableau PDF Mai 2026).
 export const ITEM_ALLERGENS = {
-  // ── ENTRÉES ───────────────────────────────────────────────
-  '1': { contains: [], traces: [] },                                                // Velouté koko
-  '2': { contains: ['MUSTARD'], traces: [] },                                       // Salade Tropicale
-  '3': { contains: ['GLUTEN', 'EGGS', 'SOY', 'MUSTARD'], traces: [] },              // Salade de poulet
-  // id 4 (Tartare de thon rouge, entrée à 3 variantes) — non explicitement
-  // listé dans le mapping initial. Union des variantes plat-froid Tahiti/
-  // Hawaï/Samoa pour rester safe côté allergique.
-  '4': { contains: ['GLUTEN', 'FISH', 'SOY', 'SESAME'], traces: [] },
+  // ─── ENTRÉES ───
+  "1":  { contains: [], traces: [] },                                                              // Velouté Koko
+  "2":  { contains: ['PEANUTS', 'MUSTARD'], traces: [] },                                          // Salade Tropicale
+  "3":  { contains: ['GLUTEN', 'SOY', 'MUSTARD', 'SESAME', 'MOLLUSCS'], traces: [] },              // Salade de poulet
+  "4":  { contains: ['GLUTEN', 'FISH', 'SOY', 'MUSTARD', 'SESAME'], traces: [] },                  // Tartare de thon rouge (entrée) — UNION 3 variantes
 
-  // ── PLATS CHAUDS ──────────────────────────────────────────
-  '5': { contains: ['GLUTEN', 'EGGS', 'SOY', 'SESAME', 'SULPHITES'], traces: [] },                       // Chao Men
-  '6': { contains: ['GLUTEN', 'EGGS', 'SOY', 'SESAME', 'SULPHITES'], traces: [] },                       // Kai Fan
-  // Union variante "avec poulet" + variante "veggie" — l'avec-poulet
-  // chargeait CRUSTACEANS/MOLLUSCS via la sauce, l'autre non. On garde
-  // l'union pour ne pas tromper les clients qui choisissent veggie tard.
-  '7': { contains: ['GLUTEN', 'EGGS', 'SOY', 'SESAME', 'CRUSTACEANS', 'MOLLUSCS'], traces: [] },         // Omelette Fu Young
-  '8': { contains: ['GLUTEN', 'SOY', 'SESAME', 'SULPHITES', 'MOLLUSCS'], traces: [] },                   // Wok de Bœuf
+  // ─── PLATS CHAUDS ───
+  "5":  { contains: ['GLUTEN', 'EGGS', 'SOY', 'MUSTARD', 'SESAME', 'SULPHITES', 'MOLLUSCS'], traces: [] },  // Chao Men
+  "6":  { contains: ['GLUTEN', 'EGGS', 'SOY', 'MUSTARD', 'SESAME', 'SULPHITES', 'MOLLUSCS'], traces: [] },  // Kai Fan
+  "7":  { contains: ['GLUTEN', 'EGGS', 'SOY', 'MUSTARD', 'SESAME', 'MOLLUSCS'], traces: [] },               // Omelette Fu Young — UNION normale + végé
+  "8":  { contains: ['GLUTEN', 'SOY', 'MUSTARD', 'SESAME', 'SULPHITES', 'MOLLUSCS'], traces: [] },          // Wok de bœuf
 
-  // ── PLATS FROIDS (les "tartares" du mapping initial) ─────
-  '9':  { contains: ['FISH'], traces: [] },                                         // Tahiti
-  '10': { contains: ['GLUTEN', 'FISH', 'SOY'], traces: [] },                        // Hawaï
-  '11': { contains: ['GLUTEN', 'FISH', 'SOY', 'SESAME'], traces: [] },              // Samoa
-  '12': { contains: ['GLUTEN', 'FISH', 'SOY'], traces: [] },                        // Manoa
+  // ─── PLATS FROIDS ───
+  "9":  { contains: ['FISH', 'MUSTARD'], traces: [] },                          // Tartare Tahiti
+  "10": { contains: ['FISH', 'MUSTARD', 'SESAME'], traces: [] },                // Tartare Hawaï
+  "11": { contains: ['GLUTEN', 'FISH', 'SOY', 'MUSTARD'], traces: [] },         // Tartare Samoa
+  "12": { contains: ['FISH', 'PEANUTS', 'MUSTARD'], traces: [] },               // Tartare Manoa
 
-  // ── FORMULES ─────────────────────────────────────────────
-  // Composition variable selon le choix client — défaut vide, à
-  // remplir par Enzo s'il souhaite déclarer un set par défaut.
-  '13': { contains: [], traces: [] },                                               // Formule Découverte
-  '14': { contains: [], traces: [] },                                               // Formule Voyage
+  // ─── FORMULES (composition variable, message dédié dans UI) ───
+  "13": { contains: [], traces: [] },  // Formule Découverte
+  "14": { contains: [], traces: [] },  // Formule Voyage
 
-  // ── DESSERTS ─────────────────────────────────────────────
-  '15': { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: [] },                                                              // Coulant au chocolat
-  '16': { contains: ['GLUTEN', 'EGGS', 'MILK', 'NUTS'], traces: [] },                                                      // Crème Tropicale
-  '17': { contains: [], traces: [] },                                                                                      // Po'e Banane
-  '18': { contains: ['GLUTEN', 'EGGS', 'MILK', 'SOY'], traces: ['MUSTARD', 'SULPHITES', 'NUTS'] },                         // Cheesecake
+  // ─── DESSERTS ───
+  "15": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS'] },                                          // Coulant au chocolat
+  "16": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS'] },                                          // Crème Tropicale
+  "17": { contains: [], traces: ['NUTS'] },                                                                  // Po'e Banane
+  "18": { contains: ['GLUTEN', 'EGGS', 'SOY', 'MILK'], traces: ['NUTS', 'MUSTARD', 'SULPHITES'] },           // Cheesecake
 
-  // ── BOISSONS ─────────────────────────────────────────────
-  // Défaut vide. À valider par Enzo (les jus industriels contiennent
-  // souvent des SULPHITES en traces).
-  '19': { contains: [], traces: [] },                                               // Jus exotiques
-  '20': { contains: [], traces: [] },                                               // Eau plate/gazeuse
+  // ─── BOISSONS ───
+  "19": { contains: [], traces: [] },  // Jus exotiques
+  "20": { contains: [], traces: [] },  // Eau plate/gazeuse
 };
 
 // Lecture sûre — un id inconnu renvoie une structure vide cohérente.
