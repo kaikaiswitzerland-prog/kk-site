@@ -118,6 +118,37 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'create-checkout réservé aux paiements carte' });
     }
 
+    // 2.5. Garde-fou rupture : aucun item du panier ne doit être dans
+    // la liste app_settings.out_of_stock_items (chantier 5). Comme pour
+    // kitchen_open, on accepte un fail-open sur erreur DB pour ne pas
+    // bloquer toute la chaîne paiement à cause d'un souci infra. Le
+    // flow Cash/Twint n'a pas ce check côté serveur (cohérent avec
+    // chantiers 6/3/4 — décision business assumée).
+    try {
+      const { data: stockRow } = await supabaseAdmin
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'out_of_stock_items')
+        .maybeSingle();
+      const outList = Array.isArray(stockRow?.value)
+        ? stockRow.value.filter(x => typeof x === 'string')
+        : [];
+      if (outList.length > 0 && Array.isArray(order.items)) {
+        const outSet = new Set(outList);
+        const blocked = order.items.find(it => it?.id && outSet.has(String(it.id)));
+        if (blocked) {
+          console.warn('[KaïKaï create-checkout] refus : item en rupture', order.id, blocked.id);
+          return res.status(409).json({
+            error: 'item_out_of_stock',
+            itemId: String(blocked.id),
+            message: `« ${blocked.name || 'Un plat'} » est en rupture de stock.`,
+          });
+        }
+      }
+    } catch (stockErr) {
+      console.warn('[KaïKaï create-checkout] lecture out_of_stock échec (fail-open)', stockErr);
+    }
+
     // 3. Recompute serveur (anti price-tampering + anti zone-tampering)
     const computed = computeOrderTotal(order, npa);
     if (computed.error === 'invalid_delivery_zone') {

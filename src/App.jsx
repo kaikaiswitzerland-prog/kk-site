@@ -11,6 +11,7 @@ import HeroSliderV2 from "./components/HeroSliderV2.jsx";
 import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
 import { supabase } from "./lib/supabase.js";
 import { useRestaurantOpen } from "./hooks/useRestaurantOpen.js";
+import { useOutOfStock } from "./hooks/useOutOfStock.js";
 import {
   ALLERGENS,
   getAllergensForItem,
@@ -526,6 +527,7 @@ function useActiveCategory() {
 
 export default function KaiKaiApp() {
   const { isOpen: restaurantOpen, manualClosure, statusLabel: openStatusLabel, status: openStatus } = useRestaurantOpen();
+  const { items: outOfStockItems } = useOutOfStock();
 
   const [cart, setCart] = useState({});
   const [cartVariants, setCartVariants] = useState({});
@@ -689,6 +691,33 @@ export default function KaiKaiApp() {
       /* quota dépassé / accès refusé : silencieux */
     }
   }, [cart, cartVariants]);
+
+  // Garde-fou rupture : si un plat passe en rupture pendant que l'utilisateur
+  // l'a dans son panier (toggle admin entre 2 polls), on le retire au prochain
+  // changement de la liste. On utilise setX(prev =>) pour éviter de dépendre
+  // de cart/cartVariants dans deps et retourner prev si rien à filtrer.
+  useEffect(() => {
+    if (outOfStockItems.length === 0) return;
+    const outSet = new Set(outOfStockItems);
+    setCart(prev => {
+      let changed = false;
+      const filtered = {};
+      for (const [id, qty] of Object.entries(prev)) {
+        if (outSet.has(id)) { changed = true; continue; }
+        filtered[id] = qty;
+      }
+      return changed ? filtered : prev;
+    });
+    setCartVariants(prev => {
+      let changed = false;
+      const filtered = {};
+      for (const [id, v] of Object.entries(prev)) {
+        if (outSet.has(id)) { changed = true; continue; }
+        filtered[id] = v;
+      }
+      return changed ? filtered : prev;
+    });
+  }, [outOfStockItems]);
 
   const handleOrderSubmit = async ({ form, paymentMethod }) => {
     // Garde-fou front : si le restaurant a fermé entre l'ouverture du
@@ -880,39 +909,39 @@ export default function KaiKaiApp() {
                 </div>
               )}
               {SEC_ENTREES.map(item => (
-                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={outOfStockItems.includes(item.id)}
                   photo={ENTREE_PHOTOS[item.id]} photoPos={ENTREE_PHOTO_POS[item.id]}
                   photoHeight="h-56" />
               ))}
 
               <h3 id="section-chaud" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🔥 Plat Chaud</h3>
               {SEC_CHAUD.map(item => (
-                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={outOfStockItems.includes(item.id)}
                   photo={CHAUD_PHOTOS[item.id]} photoPos={CHAUD_PHOTO_POS[item.id]}
                   photoHeight="h-56" />
               ))}
 
               <h3 id="section-froid" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">❄️ Plat Froid</h3>
               {SEC_FROID.map(item => (
-                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={outOfStockItems.includes(item.id)}
                   photo={FROID_PHOTOS[item.id]} photoPos={FROID_PHOTO_POS[item.id]} />
               ))}
 
               <h3 id="section-formules" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🎁 Formules</h3>
               {SEC_FORMULES.map(item => (
-                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} isFormula
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={outOfStockItems.includes(item.id)} isFormula
                   photo={FORMULE_PHOTOS[item.id]} photoPos={FORMULE_PHOTO_POS[item.id]} photoHeight="h-64" />
               ))}
 
               <h3 id="section-desserts" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍰 Desserts</h3>
               {SEC_DESSERT.map(item => (
-                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={outOfStockItems.includes(item.id)}
                   photo={DESSERT_PHOTOS[item.id]} photoPos={DESSERT_PHOTO_POS[item.id]} />
               ))}
 
               <h3 id="section-boissons" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧉 Boissons</h3>
               {SEC_BOISSON.map(item => (
-                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove}
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={outOfStockItems.includes(item.id)}
                   photo={BOISSON_PHOTOS[item.id]} photoPos={BOISSON_PHOTO_POS[item.id]} />
               ))}
             </div>
@@ -1015,7 +1044,7 @@ export default function KaiKaiApp() {
 }
 
 // Composant MenuItem avec support de TOUS les modals
-function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, photoPos = "center", photoHeight = "h-48" }) {
+function MenuItem({ item, cart, add, remove, outOfStock = false, isFormula = false, photo = null, photoPos = "center", photoHeight = "h-48" }) {
   const [showVariants, setShowVariants] = useState(false);
   const [showJus, setShowJus] = useState(false);
   const [showFormuleModal, setShowFormuleModal] = useState(false);
@@ -1043,6 +1072,7 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
   };
   
   const handlePlusClick = () => {
+    if (outOfStock) return;
     if (item.hasVariants) {
       setShowVariants(true);
     } else if (item.hasJusVariants) {
@@ -1059,10 +1089,10 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
       handleAdd();
     }
   };
-  
+
   return (
     <>
-      <div className={`rounded-3xl border border-white/10 overflow-hidden transition-all hover:border-white/20 hover:shadow-lg hover:shadow-white/5 ${isFormula ? 'bg-gradient-to-br from-white/5 to-transparent' : ''}`}>
+      <div className={`relative rounded-3xl border border-white/10 overflow-hidden transition-all hover:border-white/20 hover:shadow-lg hover:shadow-white/5 ${isFormula ? 'bg-gradient-to-br from-white/5 to-transparent' : ''} ${outOfStock ? 'opacity-50' : ''}`}>
         {photo && (
           <div className={`w-full ${photoHeight} overflow-hidden`}>
             <img src={photo} alt={item.name} className="w-full h-full object-cover" style={{ objectPosition: photoPos }}
@@ -1071,7 +1101,14 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
         )}
         <div className="flex items-start justify-between gap-4 p-5">
           <div className="min-w-0 flex-1">
-            <div className="text-lg font-medium">{item.name}</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-lg font-medium">{item.name}</div>
+              {outOfStock && (
+                <span className="rounded-md border border-red-500/40 bg-red-500/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-red-300">
+                  En rupture
+                </span>
+              )}
+            </div>
             <div className="mt-1 text-sm text-white/60">{item.desc}</div>
             <div className="mt-2 text-white/90">{format(item.price)}</div>
             <button
@@ -1104,9 +1141,11 @@ function MenuItem({ item, cart, add, remove, isFormula = false, photo = null, ph
               <Minus className="h-4 w-4" />
             </button>
             <span className="w-6 text-center font-medium">{cart[item.id] || 0}</span>
-            <button 
+            <button
               onClick={handlePlusClick}
-              className="rounded-2xl border border-white/20 p-2 hover:bg-white/10 transition-all active:scale-95"
+              disabled={outOfStock}
+              title={outOfStock ? 'En rupture de stock' : 'Ajouter au panier'}
+              className={`rounded-2xl border border-white/20 p-2 transition-all ${outOfStock ? 'cursor-not-allowed opacity-60' : 'hover:bg-white/10 active:scale-95'}`}
             >
               <Plus className="h-4 w-4" />
             </button>
