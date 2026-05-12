@@ -5,6 +5,7 @@
 const NAV_ITEMS = [
   { id: 'orders', label: 'Commandes', icon: '📋' },
   { id: 'compta', label: 'Compta', icon: '📊' },
+  { id: 'menu', label: 'Menu', icon: '🍽️' },
   { id: 'settings', label: 'Paramètres', icon: '⚙️' },
 ];
 

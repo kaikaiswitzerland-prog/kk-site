@@ -23,12 +23,14 @@ import OrderModal from './admin/OrderModal.jsx';
 import PrintTicket from './admin/PrintTicket.jsx';
 import RefundModal from './admin/RefundModal.jsx';
 import ComptaView from './admin/ComptaView.jsx';
+import MenuView from './admin/MenuView.jsx';
 import SettingsView from './admin/SettingsView.jsx';
 import Toast from './admin/Toast.jsx';
 
 const PAGE_TITLES = {
   orders: 'Commandes',
   compta: 'Compta',
+  menu: 'Menu',
   settings: 'Paramètres',
 };
 
@@ -148,6 +150,8 @@ export default function AdminApp() {
             onSelectOrder={setSelectedOrder}
           />
         )}
+
+        {page === 'menu' && <MenuView />}
 
         {page === 'settings' && (
           <SettingsView
