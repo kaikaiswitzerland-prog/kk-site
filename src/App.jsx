@@ -2091,6 +2091,8 @@ function ZonesModal({ onClose }) {
 }
 
 function AboutModal({ onClose, onShowZones = null }) {
+  const [showAllergensInfo, setShowAllergensInfo] = useState(false);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden" onClick={(e) => e.stopPropagation()}>
@@ -2100,7 +2102,11 @@ function AboutModal({ onClose, onShowZones = null }) {
             <X className="h-4 w-4" />
           </button>
         </div>
-        
+
+        {showAllergensInfo && (
+          <AllergensInfoModal onClose={() => setShowAllergensInfo(false)} />
+        )}
+
         <div className="space-y-6 text-white/80">
           <div>
             <h3 className="text-lg font-semibold mb-2 text-white">🌴 Notre Histoire</h3>
@@ -2122,6 +2128,25 @@ function AboutModal({ onClose, onShowZones = null }) {
             </p>
           </div>
           
+          <div>
+            <h3 className="text-lg font-semibold mb-2 text-white">Allergènes</h3>
+            <p className="text-sm leading-relaxed">
+              Les allergènes de chaque plat sont déclarés sur la carte (touchez la ligne
+              « Contient : ... » sous le plat). Pour toute allergie sévère, contactez-nous
+              au{' '}
+              <a href={`tel:${RESTAURANT_INFO.phone}`} className="text-white underline underline-offset-2">
+                {RESTAURANT_INFO.phoneDisplay}
+              </a>{' '}avant de commander.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowAllergensInfo(true)}
+              className="mt-2 text-sm underline text-[#C9A96E] hover:text-white transition-colors"
+            >
+              Voir la liste des 14 allergènes
+            </button>
+          </div>
+
           <div>
             <h3 className="text-lg font-semibold mb-2 text-white">🚲 Livraison</h3>
             <p className="text-sm leading-relaxed">
@@ -2198,6 +2223,56 @@ function AboutModal({ onClose, onShowZones = null }) {
               </a>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Modale globale "14 allergènes" — ouverte depuis AboutModal. Empilable
+// au-dessus d'AboutModal (z-index 60 vs son 50). Pas de photo (info légale).
+function AllergensInfoModal({ onClose }) {
+  const keys = Object.keys(ALLERGENS);
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-black border border-white/20 rounded-3xl p-6 max-w-lg w-full max-h-[88vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-semibold">Les 14 allergènes</h2>
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-white/20 p-2 hover:bg-white/10 transition-all"
+            aria-label="Fermer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <p className="text-sm text-white/65 leading-relaxed mb-4">
+          Liste des allergènes à déclaration obligatoire selon la législation
+          UE/Suisse. Les allergènes présents dans chaque plat sont affichés sur
+          la carte sous le prix.
+        </p>
+
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-2 mb-5">
+          {keys.map((k) => (
+            <li key={k} className="flex items-center gap-2 text-sm text-white/85">
+              <span className="block h-1.5 w-1.5 rounded-full bg-amber-400" />
+              {ALLERGENS[k].name}
+            </li>
+          ))}
+        </ul>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-relaxed text-white/70">
+          Pour toute allergie sévère, contactez-nous au{' '}
+          <a href={`tel:${RESTAURANT_INFO.phone}`} className="text-white underline underline-offset-2">
+            {RESTAURANT_INFO.phoneDisplay}
+          </a>{' '}avant de commander.
         </div>
       </div>
     </div>
