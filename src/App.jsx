@@ -1111,27 +1111,33 @@ function MenuItem({ item, cart, add, remove, outOfStock = false, isFormula = fal
             </div>
             <div className="mt-1 text-sm text-white/60">{item.desc}</div>
             <div className="mt-2 text-white/90">{format(item.price)}</div>
-            <button
-              type="button"
-              onClick={() => setShowAllergens(true)}
-              className="mt-2 block text-left transition-opacity hover:opacity-70"
-              aria-label="Voir le détail des allergènes"
-            >
-              {hasNoAllergens ? (
-                <span className="text-[11px] text-emerald-400/70">Sans allergène majeur</span>
-              ) : (
-                <>
-                  <span className="text-[11px] text-white/55">
-                    Contient : {formatAllergenNamesShort(allergens.contains)}
-                  </span>
-                  {allergens.traces.length > 0 && allergens.contains.length > 0 && (
-                    <span className="mt-0.5 block text-[10px] text-white/35">
-                      Traces : {formatAllergenNamesShort(allergens.traces)}
+            {isFormula ? (
+              <div className="mt-2 text-[11px] text-white/55">
+                Allergènes : selon votre composition
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAllergens(true)}
+                className="mt-2 block text-left transition-opacity hover:opacity-70"
+                aria-label="Voir le détail des allergènes"
+              >
+                {hasNoAllergens ? (
+                  <span className="text-[11px] text-emerald-400/70">Sans allergène majeur</span>
+                ) : (
+                  <>
+                    <span className="text-[11px] text-white/55">
+                      Contient : {formatAllergenNamesShort(allergens.contains)}
                     </span>
-                  )}
-                </>
-              )}
-            </button>
+                    {allergens.traces.length > 0 && allergens.contains.length > 0 && (
+                      <span className="mt-0.5 block text-[10px] text-white/35">
+                        Traces : {formatAllergenNamesShort(allergens.traces)}
+                      </span>
+                    )}
+                  </>
+                )}
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <button
