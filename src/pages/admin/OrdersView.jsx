@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import OrderCard from './OrderCard.jsx';
-import { TAB_FILTERS, isAdminVisible, sortByPriority } from '../../lib/admin/orderHelpers.js';
+import { TAB_FILTERS, isAdminVisible, orderNumber, sortByPriority } from '../../lib/admin/orderHelpers.js';
 
 const SCOPE_STORAGE_KEY = 'admin_orders_tab';
+const SEARCH_MIN_CHARS = 3;
+const SEARCH_DEBOUNCE_MS = 200;
 
 const PRIMARY_SCOPES = [
   { id: 'active',    label: 'En cours' },
@@ -17,6 +19,25 @@ function readInitialScope() {
     /* localStorage indisponible — fallback default */
   }
   return 'active';
+}
+
+// Normalisation pour la recherche : casse + accents (NFD strip diacritics).
+const DIACRITICS_RE = /[̀-ͯ]/g;
+function normalize(s) {
+  return String(s ?? '').normalize('NFD').replace(DIACRITICS_RE, '').toLowerCase();
+}
+
+function orderMatches(order, needle) {
+  const fields = [
+    order.customer_name,
+    order.customer_email,
+    order.customer_phone,
+    order.customer_address,
+    orderNumber(order.id),
+    order.note_kitchen,
+    order.note_delivery,
+  ];
+  return fields.some((f) => f && normalize(f).includes(needle));
 }
 
 export default function OrdersView({
@@ -36,6 +57,17 @@ export default function OrdersView({
   useEffect(() => {
     try { localStorage.setItem(SCOPE_STORAGE_KEY, primaryScope); } catch { /* */ }
   }, [primaryScope]);
+
+  // Barre de recherche : `query` reflète l'input en temps réel, mais le filtre
+  // utilise `debouncedQuery` (200ms) pour éviter le re-render à chaque frappe.
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(query), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [query]);
+  const needle = normalize(debouncedQuery.trim());
+  const searchActive = needle.length >= SEARCH_MIN_CHARS;
 
   // Toujours masquer pending_payment du tableau de bord
   const visible = useMemo(() => orders.filter(isAdminVisible), [orders]);
@@ -73,14 +105,68 @@ export default function OrdersView({
   }, [scopedTabs, activeTab, setActiveTab]);
 
   const filtered = useMemo(() => {
+    // Mode recherche : on bypass les onglets et on fouille toutes les
+    // commandes visibles. Tri par created_at desc (plus récentes en haut).
+    if (searchActive) {
+      const matched = visible.filter((o) => orderMatches(o, needle));
+      return [...matched].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    }
     const tab = scopedTabs.find((t) => t.id === activeTab) || scopedTabs[0];
     if (!tab) return [];
     const inTab = visible.filter((o) => tab.statuses.includes(o.status));
     return sortByPriority(inTab, tab.id);
-  }, [visible, activeTab, scopedTabs]);
+  }, [visible, activeTab, scopedTabs, searchActive, needle]);
 
   return (
     <div>
+      {/* Barre de recherche — full width, toujours visible. Si la query
+          contient ≥3 caractères (debounce 200ms), on bypass les onglets et
+          on affiche les résultats sur toutes les commandes (active + archives). */}
+      <div className="mb-3 relative md:mb-4">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3"
+        >
+          🔍
+        </span>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Rechercher (nom, email, tél, n° commande, adresse, note…)"
+          className="w-full rounded-xl border border-line bg-bg py-2.5 pl-9 pr-9 text-[13px] outline-none transition-colors focus:border-line-strong"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            aria-label="Effacer la recherche"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 font-mono text-[14px] text-ink-3 transition-colors hover:bg-bg-elev-2 hover:text-ink"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Mode recherche : header résultats à la place des onglets. */}
+      {searchActive ? (
+        <div className="mb-4 flex items-center justify-between gap-3 md:mb-5">
+          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
+            {filtered.length} résultat{filtered.length > 1 ? 's' : ''} pour
+            <span className="ml-1 text-ink">« {debouncedQuery.trim()} »</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            className="rounded-md border border-line px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-2 transition-colors hover:border-line-strong hover:text-ink"
+          >
+            Effacer
+          </button>
+        </div>
+      ) : (
+      <>
       {/* Niveau 1 : onglets primaires En cours / Terminées (segmented control).
           Persistant en localStorage. */}
       <div className="mb-3 inline-flex rounded-xl border border-line bg-bg p-1 md:mb-4">
@@ -149,13 +235,15 @@ export default function OrdersView({
           );
         })}
       </div>
+      </>
+      )}
 
       {/* Grid */}
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-line bg-bg-elev/40 p-12 text-center">
           <div className="mb-2 text-3xl">🍃</div>
           <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
-            Aucune commande
+            {searchActive ? 'Aucun résultat' : 'Aucune commande'}
           </div>
         </div>
       ) : (
