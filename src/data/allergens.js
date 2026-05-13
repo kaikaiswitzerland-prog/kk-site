@@ -68,8 +68,8 @@ export const ITEM_ALLERGENS = {
   // ─── PLATS FROIDS (TOUS AVEC SALADE) ───
   "9":  { contains: ['FISH'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },            // Tartare Tahiti
   "10": { contains: ['FISH', 'SESAME'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },  // Tartare Hawaï
-  "11": {  // Tartare Samoa froid — sauce piquante avec soja + gluten dans le plat
-    contains: ['GLUTEN', 'FISH', 'SOY'],
+  "11": {  // Tartare Samoa froid — sauce piquante avec soja + gluten + moutarde dans le plat
+    contains: ['GLUTEN', 'FISH', 'SOY', 'MUSTARD'],
     fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
     traces: []
   },
