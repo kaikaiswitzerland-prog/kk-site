@@ -85,7 +85,7 @@ const RESTAURANT_INFO = {
   address: "Bd de la Tour 1, 1205 Genève",
   phone: "+41765197670",
   phoneDisplay: "+41 76 519 76 70",
-  instagram: "https://www.instagram.com/kaikaiswitzerland",
+  instagram: "https://www.instagram.com/kaikaifood.ch",
   facebook: "#",
   email: "contact@kaikai.ch",
   // Fiche Google Business KaïKaï (avis, photos, horaires) — utilisée par
@@ -2287,7 +2287,7 @@ function AboutModal({ onClose, onShowZones = null }) {
                 className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-white/20 hover:bg-white/10 transition-all"
               >
                 <Instagram className="h-5 w-5" />
-                <span>@kaikaiswitzerland</span>
+                <span>@kaikaifood.ch</span>
               </a>
               <a 
                 href={RESTAURANT_INFO.facebook} 
