@@ -15,6 +15,8 @@ import { useOutOfStock } from "./hooks/useOutOfStock.js";
 import {
   ALLERGENS,
   getAllergensForItem,
+  getAllAllergens,
+  hasSaladSide,
   formatAllergenNames,
   formatAllergenNamesShort,
 } from "./data/allergens.js";
@@ -1054,7 +1056,8 @@ function MenuItem({ item, cart, add, remove, outOfStock = false, isFormula = fal
   const [showAllergens, setShowAllergens] = useState(false);
 
   const allergens = getAllergensForItem(item.id);
-  const hasNoAllergens = allergens.contains.length === 0 && allergens.traces.length === 0;
+  const allAllergens = getAllAllergens(allergens);
+  const hasNoAllergens = allAllergens.length === 0 && allergens.traces.length === 0;
   
   const handleAdd = (variant = null) => {
     add(item.id, variant);
@@ -1127,9 +1130,9 @@ function MenuItem({ item, cart, add, remove, outOfStock = false, isFormula = fal
                 ) : (
                   <>
                     <span className="text-[11px] text-white/55">
-                      Contient : {formatAllergenNamesShort(allergens.contains)}
+                      Contient : {formatAllergenNamesShort(allAllergens)}
                     </span>
-                    {allergens.traces.length > 0 && allergens.contains.length > 0 && (
+                    {allergens.traces.length > 0 && allAllergens.length > 0 && (
                       <span className="mt-0.5 block text-[10px] text-white/35">
                         Traces : {formatAllergenNamesShort(allergens.traces)}
                       </span>
@@ -1517,7 +1520,12 @@ function EauModal({ item, onSelect, onClose }) {
 
 // ─── ALLERGÈNES MODAL ────────────────────────────────────────────────────────
 function AllergensModal({ item, allergens, onClose }) {
-  const hasNoAllergens = allergens.contains.length === 0 && allergens.traces.length === 0;
+  const withSalad = hasSaladSide(allergens);
+  const contains  = allergens.contains  || [];
+  const fromSalad = allergens.fromSalad || [];
+  const traces    = allergens.traces    || [];
+  // Cas 2 (sans salade) : "rien" = contains vide + traces vide.
+  const noAllergensAtAll = !withSalad && contains.length === 0 && traces.length === 0;
 
   return (
     <BottomSheet
@@ -1528,20 +1536,71 @@ function AllergensModal({ item, allergens, onClose }) {
       onClose={onClose}
     >
       <div className="space-y-5 pb-2">
-        {hasNoAllergens ? (
+        {noAllergensAtAll ? (
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
             <div className="text-sm text-emerald-300">Sans allergène majeur</div>
             <p className="mt-1 text-xs text-white/55">
               Aucun des 14 allergènes à déclaration obligatoire n'est présent dans ce plat.
             </p>
           </div>
+        ) : withSalad ? (
+          <>
+            {/* Section 1 — Le plat lui-même */}
+            <div>
+              <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.15em] text-white/40">Le plat contient</div>
+              {contains.length > 0 ? (
+                <ul className="space-y-1.5">
+                  {contains.map(k => (
+                    <li key={k} className="flex items-center gap-2.5 text-sm text-white/85">
+                      <span className="block h-1.5 w-1.5 rounded-full bg-amber-400" />
+                      {ALLERGENS[k]?.name || k}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-sm text-white/65">Aucun allergène majeur</div>
+              )}
+            </div>
+
+            {/* Section 2 — La salade d'accompagnement */}
+            <div className="border-t border-white/10 pt-4">
+              <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.15em] text-white/40">Salade d'accompagnement contient</div>
+              <ul className="space-y-1.5">
+                {fromSalad.map(k => (
+                  <li key={k} className="flex items-center gap-2.5 text-sm text-white/85">
+                    <span className="block h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    {ALLERGENS[k]?.name || k}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs italic text-white/55">
+                Vous pouvez demander sans salade via les instructions cuisine lors de la commande.
+              </p>
+            </div>
+
+            {/* Section 3 — Traces (si applicable) */}
+            {traces.length > 0 && (
+              <div className="border-t border-white/10 pt-4">
+                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.15em] text-white/40">Peut contenir des traces de</div>
+                <ul className="space-y-1.5">
+                  {traces.map(k => (
+                    <li key={k} className="flex items-center gap-2.5 text-sm text-white/60">
+                      <span className="block h-1.5 w-1.5 rounded-full bg-white/30" />
+                      {ALLERGENS[k]?.name || k}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         ) : (
           <>
-            {allergens.contains.length > 0 && (
+            {/* Cas 2 — Sans salade : comportement initial */}
+            {contains.length > 0 && (
               <div>
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.15em] text-white/40">Contient</div>
                 <ul className="space-y-1.5">
-                  {allergens.contains.map(k => (
+                  {contains.map(k => (
                     <li key={k} className="flex items-center gap-2.5 text-sm text-white/85">
                       <span className="block h-1.5 w-1.5 rounded-full bg-amber-400" />
                       {ALLERGENS[k]?.name || k}
@@ -1550,11 +1609,11 @@ function AllergensModal({ item, allergens, onClose }) {
                 </ul>
               </div>
             )}
-            {allergens.traces.length > 0 && (
+            {traces.length > 0 && (
               <div>
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.15em] text-white/40">Peut contenir des traces de</div>
                 <ul className="space-y-1.5">
-                  {allergens.traces.map(k => (
+                  {traces.map(k => (
                     <li key={k} className="flex items-center gap-2.5 text-sm text-white/60">
                       <span className="block h-1.5 w-1.5 rounded-full bg-white/30" />
                       {ALLERGENS[k]?.name || k}

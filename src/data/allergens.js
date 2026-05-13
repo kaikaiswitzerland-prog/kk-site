@@ -32,32 +32,50 @@ export const ALLERGENS = {
 
 // Mapping plat → allergènes.
 // Clés = ids string du MENU (src/App.jsx).
-// `contains` = ingrédients déclarés. `traces` = contamination croisée possible.
+// `contains`  = allergènes du plat lui-même.
+// `fromSalad` = allergènes apportés par la salade d'accompagnement (si servie).
+// `traces`    = contamination croisée possible.
 // Version finale validée par Enzo (tableau PDF Mai 2026).
 export const ITEM_ALLERGENS = {
   // ─── ENTRÉES ───
-  "1":  { contains: [], traces: [] },                                                              // Velouté Koko
-  "2":  { contains: ['PEANUTS', 'MUSTARD'], traces: [] },                                          // Salade Tropicale
-  "3":  { contains: ['GLUTEN', 'SOY', 'MUSTARD', 'SESAME', 'MOLLUSCS'], traces: [] },              // Salade de poulet
-  "4":  { contains: ['GLUTEN', 'FISH', 'SOY', 'MUSTARD', 'SESAME'], traces: [] },                  // Tartare de thon rouge (entrée) — UNION 3 variantes
+  "1":  { contains: [], traces: [] },                                                          // Velouté Koko
+  "2":  { contains: ['PEANUTS', 'MUSTARD'], traces: [] },                                      // Salade Tropicale
+  "3":  { contains: ['GLUTEN', 'SOY', 'MUSTARD', 'SESAME', 'MOLLUSCS'], traces: [] },          // Salade de poulet
+  "4":  {  // Tartare de thon rouge (entrée) AVEC salade — UNION 3 variantes
+    contains: ['FISH', 'SESAME'],
+    fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
+    traces: []
+  },
 
   // ─── PLATS CHAUDS ───
-  "5":  { contains: ['GLUTEN', 'EGGS', 'SOY', 'MUSTARD', 'SESAME', 'SULPHITES', 'MOLLUSCS'], traces: [] },  // Chao Men
-  "6":  { contains: ['GLUTEN', 'EGGS', 'SOY', 'MUSTARD', 'SESAME', 'SULPHITES', 'MOLLUSCS'], traces: [] },  // Kai Fan
-  "7":  { contains: ['GLUTEN', 'EGGS', 'SOY', 'MUSTARD', 'SESAME', 'MOLLUSCS'], traces: [] },               // Omelette Fu Young — UNION normale + végé
-  "8":  { contains: ['GLUTEN', 'SOY', 'MUSTARD', 'SESAME', 'SULPHITES', 'MOLLUSCS'], traces: [] },          // Wok de bœuf
+  "5":  { contains: ['GLUTEN', 'EGGS', 'SOY', 'MUSTARD', 'SESAME', 'SULPHITES', 'MOLLUSCS'], traces: [] },  // Chao Men (sans salade)
+  "6":  {  // Kai Fan AVEC salade
+    contains: ['EGGS', 'SESAME', 'SULPHITES', 'MOLLUSCS'],
+    fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
+    traces: []
+  },
+  "7":  {  // Omelette Fu Young AVEC salade — UNION normale + végé
+    contains: ['EGGS', 'SESAME', 'MOLLUSCS'],
+    fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
+    traces: []
+  },
+  "8":  {  // Wok de bœuf AVEC salade
+    contains: ['SESAME', 'SULPHITES', 'MOLLUSCS'],
+    fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
+    traces: []
+  },
 
-  // ─── PLATS FROIDS ───
-  "9":  { contains: ['FISH', 'MUSTARD'], traces: [] },                          // Tartare Tahiti
-  "10": { contains: ['FISH', 'MUSTARD', 'SESAME'], traces: [] },                // Tartare Hawaï
-  "11": { contains: ['GLUTEN', 'FISH', 'SOY', 'MUSTARD'], traces: [] },         // Tartare Samoa
-  "12": { contains: ['FISH', 'PEANUTS', 'MUSTARD'], traces: [] },               // Tartare Manoa
+  // ─── PLATS FROIDS (TOUS AVEC SALADE) ───
+  "9":  { contains: ['FISH'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },            // Tartare Tahiti
+  "10": { contains: ['FISH', 'SESAME'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },  // Tartare Hawaï
+  "11": { contains: ['FISH'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },            // Tartare Samoa
+  "12": { contains: ['FISH', 'PEANUTS'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] }, // Tartare Manoa
 
   // ─── FORMULES (composition variable, message dédié dans UI) ───
   "13": { contains: [], traces: [] },  // Formule Découverte
   "14": { contains: [], traces: [] },  // Formule Voyage
 
-  // ─── DESSERTS ───
+  // ─── DESSERTS (sans salade) ───
   "15": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS'] },                                          // Coulant au chocolat
   "16": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS'] },                                          // Crème Tropicale
   "17": { contains: [], traces: ['NUTS'] },                                                                  // Po'e Banane
@@ -71,6 +89,20 @@ export const ITEM_ALLERGENS = {
 // Lecture sûre — un id inconnu renvoie une structure vide cohérente.
 export function getAllergensForItem(itemId) {
   return ITEM_ALLERGENS[String(itemId)] || { contains: [], traces: [] };
+}
+
+// Retourne TOUS les allergènes (contains + fromSalad) — utilisé pour
+// l'affichage compact "worst-case" sur la carte du plat.
+export function getAllAllergens(itemAllergens) {
+  if (!itemAllergens) return [];
+  const c = itemAllergens.contains || [];
+  const s = itemAllergens.fromSalad || [];
+  return [...new Set([...c, ...s])];
+}
+
+// Indique si un plat est servi avec salade d'accompagnement.
+export function hasSaladSide(itemAllergens) {
+  return !!(itemAllergens?.fromSalad && itemAllergens.fromSalad.length > 0);
 }
 
 // Convertit une liste de clés (['GLUTEN','EGGS']) en noms FR ('Gluten, Œufs').
