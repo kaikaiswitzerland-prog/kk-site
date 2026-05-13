@@ -122,7 +122,19 @@ const RESTAURANT_INFO = {
 // --- Menu réel (CHF)
 const MENU = [
   // ENTRÉES
-  { id: "1",  name: "Velouté koko", desc: "Légumes de saison et crème coco", price: 4.90, category: "entrees" },
+  {
+    id: "1",
+    name: "Velouté koko",
+    desc: "Légumes de saison et crème coco",
+    price: 4.90,
+    category: "entrees",
+    hasVariants: true,
+    variantSubtitle: "Servi froid ou chaud ?",
+    variants: [
+      { id: "froid", name: "Servi froid", desc: "Idéal pour les beaux jours" },
+      { id: "chaud", name: "Servi chaud", desc: "Réconfortant et parfumé" }
+    ]
+  },
   { id: "2",  name: "Salade Tropicale", desc: "Salade, tomate, patate, concombre, guacamole maison, cacahuètes", price: 7.90, category: "entrees" },
   { id: "3",  name: "Salade de poulet", desc: "Salade, tomate, patate, concombre, poulet", price: 9.90, category: "entrees" },
   { 
@@ -1470,9 +1482,10 @@ function getPhotoPos(id) {
 }
 
 function VariantModal({ item, onSelect, onClose }) {
-  const variantEmojis = { tahiti: '🥥', hawaii: '🥭', samoa: '🌶️' };
+  const variantEmojis = { tahiti: '🥥', hawaii: '🥭', samoa: '🌶️', froid: '❄️', chaud: '🔥' };
+  const subtitle = item.variantSubtitle || 'Choisissez votre sauce';
   return (
-    <BottomSheet title={item.name} subtitle="Choisissez votre sauce" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
+    <BottomSheet title={item.name} subtitle={subtitle} photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
       {item.variants.map((v, i) => (
         <OptionTile key={v.id} emoji={variantEmojis[v.id] || '🍽️'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
       ))}
