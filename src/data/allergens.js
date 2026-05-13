@@ -54,8 +54,8 @@ export const ITEM_ALLERGENS = {
     fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
     traces: []
   },
-  "7":  {  // Omelette Fu Young AVEC salade — UNION normale + végé
-    contains: ['EGGS', 'SESAME', 'MOLLUSCS'],
+  "7":  {  // Omelette Fu Young AVEC salade — soja + gluten aussi dans le plat
+    contains: ['GLUTEN', 'EGGS', 'SOY', 'SESAME', 'MOLLUSCS'],
     fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
     traces: []
   },
