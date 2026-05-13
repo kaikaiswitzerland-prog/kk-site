@@ -95,17 +95,19 @@ export default function AdminApp() {
   };
   // Refus structuré (chantier 7). Persiste status=refused + motif/commentaire
   // via le hook (RLS admin). Si la commande était payée carte (paid/accepted/
-  // ready/out_for_delivery/delivered), enchaîne sur un refund SumUp qui mettra
-  // status=refunded (refusal_reason / refusal_comment restent persistés en DB).
+  // ready/out_for_delivery/delivered/picked_up), enchaîne sur un refund SumUp
+  // qui mettra status=refunded (refusal_reason / refusal_comment restent
+  // persistés en DB). Puis envoi best-effort de l'email client.
   const handleRefuseOrder = async (order, { reason, comment }) => {
     await refuseOrder(order.id, { reason, comment });
 
     const wasPaidCard = order.payment_method === 'card' &&
       ['paid', 'accepted', 'ready', 'out_for_delivery', 'delivered', 'picked_up'].includes(order.status);
 
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Session expirée — reconnectez-vous');
+
     if (wasPaidCard) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error('Session expirée — reconnectez-vous');
       const reasonLabel = comment ? `${reason} — ${comment}` : reason;
       const res = await fetch('/api/sumup-refund', {
         method: 'POST',
@@ -120,7 +122,25 @@ export default function AdminApp() {
         throw new Error(body?.error || `Refund SumUp échoué (HTTP ${res.status}) — à faire manuellement`);
       }
     }
-    // TODO chantier 7 — envoi email auto via /api/admin/send-refusal-email
+
+    // Email client — best-effort, on ne fait pas crasher le flow si l'envoi
+    // échoue (la commande est déjà refusée + remboursée). On log côté server.
+    try {
+      const res = await fetch('/api/admin/send-refusal-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ orderId: order.id, reason, comment: comment || null }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.warn('[KaïKaï admin] email refus échoué', body);
+      }
+    } catch (mailErr) {
+      console.warn('[KaïKaï admin] email refus exception', mailErr);
+    }
   };
 
   // Refund : appelle /api/sumup-refund avec le JWT admin courant. Throw si
