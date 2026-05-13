@@ -88,6 +88,10 @@ const RESTAURANT_INFO = {
   instagram: "https://www.instagram.com/kaikaiswitzerland",
   facebook: "#",
   email: "contact@kaikai.ch",
+  // Fiche Google Business KaïKaï (avis, photos, horaires) — utilisée par
+  // les liens "Voir sur Google Maps". Distinct de l'iframe embed qui doit
+  // garder une URL embed-friendly (?output=embed).
+  google_page: "https://www.google.com/maps/place/Ka%C3%AFKa%C3%AF/@46.195618,6.146856,15z/data=!4m15!1m8!3m7!1s0x478c7ad30fe7dcb9:0x39597cdc1133238!2sBd+de+la+Tour+1,+1205+Gen%C3%A8ve!3b1!8m2!3d46.1956181!4d6.1468563!16s%2Fg%2F11vbg8p69b!3m5!1s0x478c7bf6f4cb3883:0xf5dee215d87c3cae!8m2!3d46.1956181!4d6.1468563!16s%2Fg%2F11z3l902ff",
   
   // Display uniquement (footer + AboutModal) — heures de SERVICE affichées
   // aux clients. Source de vérité numérique des plages de pré-commande :
@@ -176,7 +180,7 @@ const MENU = [
       { id: "poulet", name: "Poulet", desc: "Avec poulet" }
     ]
   },
-  { id: "8",  name: "Wok de Bœuf", desc: "Wok de bœuf, légumes de saison, sauce sésame, servi avec du riz et de salade", price: 26.90, category: "chaud" },
+  { id: "8",  name: "Wok de Bœuf", desc: "Wok de bœuf, légumes de saison, sauce sésame, servi avec du riz et une salade", price: 26.90, category: "chaud" },
 
   // PLATS FROIDS
   { id: "9",  name: "Tahiti", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce coco", price: 22.90, category: "froid" },
@@ -2263,6 +2267,14 @@ function AboutModal({ onClose, onShowZones = null }) {
                 referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
+            <a
+              href={RESTAURANT_INFO.google_page}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block text-sm underline text-[#C9A96E] hover:text-white transition-colors"
+            >
+              Voir sur Google Maps
+            </a>
           </div>
           
           <div>
