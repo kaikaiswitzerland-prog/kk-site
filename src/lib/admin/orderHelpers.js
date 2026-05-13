@@ -57,7 +57,9 @@ export const STATUS_VISUAL = {
   paid: 'paid',
   accepted: 'preparing',
   ready: 'ready',
+  out_for_delivery: 'in_route',
   delivered: 'delivered',
+  picked_up: 'delivered',
   refused: 'refused',
   refunded: 'refunded',
   failed: 'refused',
@@ -70,7 +72,9 @@ export const STATUS_LABELS = {
   paid: 'Payée',
   accepted: 'En préparation',
   ready: 'Prête',
+  out_for_delivery: 'En route',
   delivered: 'Livrée',
+  picked_up: 'Récupérée',
   refused: 'Refusée',
   refunded: 'Remboursée',
   failed: 'Paiement échoué',
@@ -80,7 +84,23 @@ export const STATUS_LABELS = {
 
 // Liste des statuts manipulables manuellement par l'admin (pour "Forcer le statut")
 export const FORCEABLE_STATUSES = [
-  'pending', 'paid', 'accepted', 'ready', 'delivered', 'refused', 'refunded',
+  'pending', 'paid', 'accepted', 'ready', 'out_for_delivery', 'delivered', 'picked_up', 'refused', 'refunded',
+];
+
+// Catégorisation actif/terminé (chantier 7, onglets En cours / Terminées)
+export const ACTIVE_STATUSES = ['pending', 'paid', 'accepted', 'ready', 'out_for_delivery'];
+export const COMPLETED_STATUSES = ['delivered', 'picked_up', 'refused', 'refunded'];
+export const isActiveStatus    = (s) => ACTIVE_STATUSES.includes(s);
+export const isCompletedStatus = (s) => COMPLETED_STATUSES.includes(s);
+
+// Motifs de refus structurés (chantier 7). `code` = stocké en DB
+// (orders.refusal_reason) ; `label` = libellé UI + email client.
+export const REFUSAL_REASONS = [
+  { code: 'stock_out',     label: 'Rupture de stock' },
+  { code: 'out_of_zone',   label: 'Adresse hors zone' },
+  { code: 'product_error', label: 'Erreur produit' },
+  { code: 'closed',        label: 'Restaurant fermé' },
+  { code: 'other',         label: 'Autre' },
 ];
 
 // Sous-titre de la pill (sous le label) — différencie cash/twint vs carte
@@ -165,12 +185,13 @@ export function getItemCategoryLabel(item) {
 // "À traiter" regroupe pending (cash/twint) + paid (carte) car tous deux
 // sont nouveaux du point de vue de la cuisine.
 export const TAB_FILTERS = [
-  { id: 'todo', label: 'À traiter', statuses: ['pending', 'paid'] },
-  { id: 'preparing', label: 'En préparation', statuses: ['accepted'] },
-  { id: 'ready', label: 'Prêtes', statuses: ['ready'] },
-  { id: 'delivered', label: 'Livrées', statuses: ['delivered'] },
-  { id: 'refused', label: 'Refusées', statuses: ['refused'] },
-  { id: 'refunded', label: 'Remboursées', statuses: ['refunded'] },
+  { id: 'todo',      label: 'À traiter',       statuses: ['pending', 'paid'],         scope: 'active' },
+  { id: 'preparing', label: 'En préparation',  statuses: ['accepted'],                scope: 'active' },
+  { id: 'ready',     label: 'Prêtes',          statuses: ['ready'],                   scope: 'active' },
+  { id: 'in_route',  label: 'En route',        statuses: ['out_for_delivery'],        scope: 'active' },
+  { id: 'completed', label: 'Terminées',       statuses: ['delivered', 'picked_up'],  scope: 'completed' },
+  { id: 'refused',   label: 'Refusées',        statuses: ['refused'],                 scope: 'completed' },
+  { id: 'refunded',  label: 'Remboursées',     statuses: ['refunded'],                scope: 'completed' },
 ];
 
 // Commandes visibles dans l'admin — exclut systématiquement pending_payment
@@ -289,7 +310,9 @@ export const isRevenue = (o) =>
   o.status === 'paid' ||
   o.status === 'accepted' ||
   o.status === 'ready' ||
-  o.status === 'delivered';
+  o.status === 'out_for_delivery' ||
+  o.status === 'delivered' ||
+  o.status === 'picked_up';
 
 export function calcStats(orders) {
   const valid = orders.filter(isRevenue);
@@ -359,6 +382,11 @@ export function urgencyFor(order, now = Date.now()) {
     const minutes = Math.max(0, Math.floor((now - new Date(ref).getTime()) / 60000));
     return classify(minutes, [5, 10], `Prête depuis ${minutes} min — livreur en route ?`);
   }
+  if (status === 'out_for_delivery') {
+    const ref = order.out_for_delivery_at || order.ready_at || order.accepted_at || order.created_at;
+    const minutes = Math.max(0, Math.floor((now - new Date(ref).getTime()) / 60000));
+    return classify(minutes, [15, 30], `En livraison depuis ${minutes} min`);
+  }
   return null;
 }
 
@@ -405,12 +433,37 @@ export function buildTimeline(order) {
     prevLabel = 'prête';
   }
 
+  if (order.out_for_delivery_at) {
+    const t = new Date(order.out_for_delivery_at).getTime();
+    steps.push({
+      icon: '🚴',
+      label: 'En route',
+      time: order.out_for_delivery_at,
+      deltaMin: Math.max(0, Math.round((t - prev) / 60000)),
+      deltaFromLabel: prevLabel,
+    });
+    prev = t;
+    prevLabel = 'en route';
+  }
+
   if (order.delivered_at) {
     const t = new Date(order.delivered_at).getTime();
     steps.push({
-      icon: '🛵',
+      icon: '🏠',
       label: 'Livrée',
       time: order.delivered_at,
+      deltaMin: Math.max(0, Math.round((t - prev) / 60000)),
+      deltaFromLabel: prevLabel,
+      totalMin: Math.max(0, Math.round((t - t0) / 60000)),
+    });
+  }
+
+  if (order.picked_up_at) {
+    const t = new Date(order.picked_up_at).getTime();
+    steps.push({
+      icon: '📦',
+      label: 'Récupérée',
+      time: order.picked_up_at,
       deltaMin: Math.max(0, Math.round((t - prev) / 60000)),
       deltaFromLabel: prevLabel,
       totalMin: Math.max(0, Math.round((t - t0) / 60000)),
@@ -428,11 +481,14 @@ export function sortByPriority(orders, tabId) {
   const refTime = (o) => {
     if (tabId === 'preparing') return new Date(o.accepted_at || o.created_at).getTime();
     if (tabId === 'ready')     return new Date(o.ready_at || o.accepted_at || o.created_at).getTime();
-    if (tabId === 'delivered') return new Date(o.delivered_at || o.created_at).getTime();
+    if (tabId === 'in_route')  return new Date(o.out_for_delivery_at || o.ready_at || o.created_at).getTime();
+    if (tabId === 'completed') return new Date(o.delivered_at || o.picked_up_at || o.created_at).getTime();
     if (tabId === 'refused')   return new Date(o.created_at).getTime();
+    if (tabId === 'refunded')  return new Date(o.created_at).getTime();
     return new Date(o.created_at).getTime(); // 'todo'
   };
-  const desc = tabId === 'delivered' || tabId === 'refused';
+  // Onglets historiques : du plus récent au plus ancien.
+  const desc = tabId === 'completed' || tabId === 'refused' || tabId === 'refunded';
   return [...orders].sort((a, b) => {
     const ra = refTime(a);
     const rb = refTime(b);

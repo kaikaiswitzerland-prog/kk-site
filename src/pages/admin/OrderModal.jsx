@@ -19,6 +19,7 @@ const STATUS_PILL_CLASS = {
   paid: 'bg-accent-green/12 text-accent-green',
   preparing: 'bg-accent-blue/12 text-accent-blue',
   ready: 'bg-accent/12 text-accent',
+  in_route: 'bg-accent-blue/12 text-accent-blue',
   delivered: 'bg-bg-elev-2 text-ink-2',
   refused: 'bg-accent-red/12 text-accent-red',
   refunded: 'bg-accent-red/8 text-accent-red',
@@ -34,7 +35,8 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint, on
   const [forceOpen, setForceOpen] = useState(false);
 
   const isRefundable = order.payment_method === 'card' &&
-    ['paid', 'accepted', 'ready', 'delivered'].includes(order.status);
+    ['paid', 'accepted', 'ready', 'out_for_delivery', 'delivered', 'picked_up'].includes(order.status);
+  const isPickup = order.delivery_mode === 'pickup';
 
   return (
     <div
@@ -207,11 +209,28 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint, on
             </button>
           )}
           {order.status === 'ready' && (
+            isPickup ? (
+              <button
+                onClick={() => { onUpdateStatus(order.id, 'picked_up'); onClose(); }}
+                className="flex-1 rounded-lg border border-accent-blue/30 bg-accent-blue/10 px-4 py-3 text-sm font-bold text-accent-blue transition-colors hover:bg-accent-blue/20"
+              >
+                📦 Marquer récupérée
+              </button>
+            ) : (
+              <button
+                onClick={() => { onUpdateStatus(order.id, 'out_for_delivery'); onClose(); }}
+                className="flex-1 rounded-lg border border-accent-blue/30 bg-accent-blue/10 px-4 py-3 text-sm font-bold text-accent-blue transition-colors hover:bg-accent-blue/20"
+              >
+                🚴 Partir en livraison
+              </button>
+            )
+          )}
+          {order.status === 'out_for_delivery' && (
             <button
               onClick={() => { onUpdateStatus(order.id, 'delivered'); onClose(); }}
               className="flex-1 rounded-lg border border-accent-blue/30 bg-accent-blue/10 px-4 py-3 text-sm font-bold text-accent-blue transition-colors hover:bg-accent-blue/20"
             >
-              🛵 Marquer livrée
+              🏠 Marquer livrée
             </button>
           )}
           <button

@@ -121,9 +121,11 @@ export function useOrders({ enabled }) {
     // l'aller-retour Supabase + Realtime.
     const patch = { status };
     const nowIso = new Date().toISOString();
-    if (status === 'accepted')  patch.accepted_at  = nowIso;
-    if (status === 'ready')     patch.ready_at     = nowIso;
-    if (status === 'delivered') patch.delivered_at = nowIso;
+    if (status === 'accepted')          patch.accepted_at         = nowIso;
+    if (status === 'ready')             patch.ready_at            = nowIso;
+    if (status === 'out_for_delivery')  patch.out_for_delivery_at = nowIso;
+    if (status === 'delivered')         patch.delivered_at        = nowIso;
+    if (status === 'picked_up')         patch.picked_up_at        = nowIso;
 
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
     await supabase.from('orders').update(patch).eq('id', id);

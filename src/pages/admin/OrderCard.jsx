@@ -17,6 +17,7 @@ const STATUS_PILL_CLASS = {
   paid: 'bg-accent-green/12 text-accent-green',
   preparing: 'bg-accent-blue/12 text-accent-blue',
   ready: 'bg-accent/12 text-accent',
+  in_route: 'bg-accent-blue/12 text-accent-blue',
   delivered: 'bg-bg-elev-2 text-ink-2',
   refused: 'bg-accent-red/12 text-accent-red',
   refunded: 'bg-accent-red/8 text-accent-red',
@@ -39,13 +40,14 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
   const urgency = urgencyFor(order, now);
 
   // Une commande est remboursable côté UI si elle a été payée carte (cycle
-  // SumUp : paid/accepted/ready/delivered) — on n'affiche pas le bouton sur
-  // 'pending' (twint/cash non encore encaissé) ni 'refunded' (déjà fait).
+  // SumUp : paid/accepted/ready/out_for_delivery/delivered/picked_up) — on
+  // n'affiche pas le bouton sur 'pending' (twint/cash non encore encaissé)
+  // ni 'refunded' (déjà fait).
   const isRefundable = order.payment_method === 'card' &&
-    ['paid', 'accepted', 'ready', 'delivered'].includes(order.status);
+    ['paid', 'accepted', 'ready', 'out_for_delivery', 'delivered', 'picked_up'].includes(order.status);
 
-  const deliveryPill =
-    order.delivery_mode === 'pickup' ? '📦 À emporter' : '🚴 Livraison';
+  const isPickup = order.delivery_mode === 'pickup';
+  const deliveryPill = isPickup ? '📦 À emporter' : '🚴 Livraison';
 
   return (
     <div
@@ -211,11 +213,31 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
 
       {order.status === 'ready' && (
         <div onClick={(e) => e.stopPropagation()}>
+          {isPickup ? (
+            <button
+              onClick={() => onUpdateStatus(order.id, 'picked_up')}
+              className="w-full rounded-lg border border-accent-blue/30 bg-accent-blue/10 px-3 py-2.5 text-[12px] font-bold text-accent-blue transition-colors hover:bg-accent-blue/20"
+            >
+              📦 Marquer récupérée
+            </button>
+          ) : (
+            <button
+              onClick={() => onUpdateStatus(order.id, 'out_for_delivery')}
+              className="w-full rounded-lg border border-accent-blue/30 bg-accent-blue/10 px-3 py-2.5 text-[12px] font-bold text-accent-blue transition-colors hover:bg-accent-blue/20"
+            >
+              🚴 Partir en livraison
+            </button>
+          )}
+        </div>
+      )}
+
+      {order.status === 'out_for_delivery' && (
+        <div onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onUpdateStatus(order.id, 'delivered')}
             className="w-full rounded-lg border border-accent-blue/30 bg-accent-blue/10 px-3 py-2.5 text-[12px] font-bold text-accent-blue transition-colors hover:bg-accent-blue/20"
           >
-            🛵 Marquer livrée
+            🏠 Marquer livrée
           </button>
         </div>
       )}
