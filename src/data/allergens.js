@@ -39,7 +39,7 @@ export const ALLERGENS = {
 export const ITEM_ALLERGENS = {
   // ─── ENTRÉES ───
   "1":  { contains: [], traces: [] },                                                          // Velouté Koko
-  "2":  { contains: ['PEANUTS', 'MUSTARD'], traces: [] },                                      // Salade Tropicale
+  "2":  { contains: ['GLUTEN', 'PEANUTS', 'SOY', 'MUSTARD'], traces: [] },                                              // Salade Tropicale (vinaigrette = soja + gluten)
   "3":  { contains: ['GLUTEN', 'SOY', 'MUSTARD', 'SESAME', 'MOLLUSCS'], traces: [] },          // Salade de poulet
   "4":  {  // Tartare de thon rouge (entrée) AVEC salade — UNION 3 variantes
     contains: ['FISH', 'SESAME'],
@@ -48,9 +48,9 @@ export const ITEM_ALLERGENS = {
   },
 
   // ─── PLATS CHAUDS ───
-  "5":  { contains: ['GLUTEN', 'EGGS', 'SOY', 'MUSTARD', 'SESAME', 'SULPHITES', 'MOLLUSCS'], traces: [] },  // Chao Men (sans salade)
-  "6":  {  // Kai Fan AVEC salade
-    contains: ['EGGS', 'SESAME', 'SULPHITES', 'MOLLUSCS'],
+  "5":  { contains: ['GLUTEN', 'EGGS', 'SOY', 'SESAME', 'SULPHITES', 'MOLLUSCS'], traces: [] },                          // Chao Men (sans moutarde)
+  "6":  {  // Kai Fan AVEC salade — soja + gluten aussi dans le plat
+    contains: ['GLUTEN', 'EGGS', 'SOY', 'SESAME', 'SULPHITES', 'MOLLUSCS'],
     fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
     traces: []
   },
@@ -59,8 +59,8 @@ export const ITEM_ALLERGENS = {
     fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
     traces: []
   },
-  "8":  {  // Wok de bœuf AVEC salade
-    contains: ['SESAME', 'SULPHITES', 'MOLLUSCS'],
+  "8":  {  // Wok de bœuf AVEC salade — soja + gluten aussi dans le plat
+    contains: ['GLUTEN', 'SOY', 'SESAME', 'SULPHITES', 'MOLLUSCS'],
     fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
     traces: []
   },
@@ -68,7 +68,11 @@ export const ITEM_ALLERGENS = {
   // ─── PLATS FROIDS (TOUS AVEC SALADE) ───
   "9":  { contains: ['FISH'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },            // Tartare Tahiti
   "10": { contains: ['FISH', 'SESAME'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },  // Tartare Hawaï
-  "11": { contains: ['FISH'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },            // Tartare Samoa
+  "11": {  // Tartare Samoa froid — sauce piquante avec soja + gluten dans le plat
+    contains: ['GLUTEN', 'FISH', 'SOY'],
+    fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
+    traces: []
+  },
   "12": { contains: ['FISH', 'PEANUTS'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] }, // Tartare Manoa
 
   // ─── FORMULES (composition variable, message dédié dans UI) ───
