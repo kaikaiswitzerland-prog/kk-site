@@ -26,7 +26,7 @@ const STATUS_PILL_CLASS = {
   pending_payment: 'bg-bg-elev-2 text-ink-3',
 };
 
-export default function OrderModal({ order, onClose, onUpdateStatus, onPrint, onRequestRefund }) {
+export default function OrderModal({ order, onClose, onUpdateStatus, onPrint, onRequestRefund, onRequestRefuse }) {
   const items = Array.isArray(order.items) ? order.items : [];
   const visual = STATUS_VISUAL[order.status] || 'new';
   const isPaidCard = order.status === 'paid';
@@ -192,7 +192,7 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint, on
               </button>
               {!isPaidCard && (
                 <button
-                  onClick={() => { onUpdateStatus(order.id, 'refused'); onClose(); }}
+                  onClick={() => { onRequestRefuse && onRequestRefuse(order); onClose(); }}
                   className="flex-1 rounded-lg border border-accent-red/30 bg-accent-red/10 px-4 py-3 text-sm font-semibold text-accent-red transition-colors hover:bg-accent-red/20"
                 >
                   Refuser

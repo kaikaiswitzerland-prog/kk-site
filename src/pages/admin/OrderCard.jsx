@@ -30,7 +30,7 @@ const URGENCY_TONE_CLASS = {
   red: 'text-accent-red kk-urgent-blink',
 };
 
-export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPrint, onRequestRefund }) {
+export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPrint, onRequestRefund, onRequestRefuse }) {
   const now = useNow();
   const items = Array.isArray(order.items) ? order.items : [];
   const visual = STATUS_VISUAL[order.status] || 'new';
@@ -187,12 +187,13 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
           >
             Accepter →
           </button>
-          {/* Bouton Refuser caché sur les commandes payées carte (remboursement = flow séparé) */}
+          {/* Bouton Refuser caché sur les commandes payées carte (refund =
+              déclenché depuis RefusalModal si on refuse avec motif). */}
           {!isPaidCard && (
             <button
-              onClick={() => onUpdateStatus(order.id, 'refused')}
+              onClick={() => onRequestRefuse && onRequestRefuse(order)}
               className="flex flex-none items-center justify-center rounded-lg border border-accent-red/30 bg-accent-red/10 px-3 py-2.5 text-[12px] font-medium text-accent-red transition-colors hover:bg-accent-red/20"
-              title="Refuser"
+              title="Refuser avec motif"
             >
               ✕
             </button>

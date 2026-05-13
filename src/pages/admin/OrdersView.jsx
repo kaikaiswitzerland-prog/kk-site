@@ -11,6 +11,7 @@ export default function OrdersView({
   onUpdateStatus,
   onPrint,
   onRequestRefund,
+  onRequestRefuse,
 }) {
   // Toujours masquer pending_payment du tableau de bord
   const visible = useMemo(() => orders.filter(isAdminVisible), [orders]);
@@ -90,6 +91,7 @@ export default function OrdersView({
               onUpdateStatus={onUpdateStatus}
               onPrint={onPrint}
               onRequestRefund={onRequestRefund}
+              onRequestRefuse={onRequestRefuse}
             />
           ))}
         </div>

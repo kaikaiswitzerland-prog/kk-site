@@ -131,6 +131,19 @@ export function useOrders({ enabled }) {
     await supabase.from('orders').update(patch).eq('id', id);
   }, []);
 
+  // Refus structuré (chantier 7) : passe status=refused + persiste le motif
+  // (code) et le commentaire libre. Patch optimiste local pour réactivité.
+  const refuseOrder = useCallback(async (id, { reason, comment }) => {
+    const patch = {
+      status: 'refused',
+      refusal_reason: reason,
+      refusal_comment: comment || null,
+    };
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+    const { error } = await supabase.from('orders').update(patch).eq('id', id);
+    if (error) throw error;
+  }, []);
+
   const setSoundEnabled = useCallback((on) => {
     soundEnabled.current = on;
     try { localStorage.setItem('kkAdminSound', on ? '1' : '0'); } catch { /* */ }
@@ -142,6 +155,7 @@ export function useOrders({ enabled }) {
     toast,
     dismissToast: () => setToast(null),
     updateStatus,
+    refuseOrder,
     soundEnabled: soundEnabled.current,
     setSoundEnabled,
   };

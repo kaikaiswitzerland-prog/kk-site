@@ -24,6 +24,7 @@ import PrintTicket from './admin/PrintTicket.jsx';
 import RefundModal from './admin/RefundModal.jsx';
 import ComptaView from './admin/ComptaView.jsx';
 import MenuView from './admin/MenuView.jsx';
+import RefusalModal from './admin/RefusalModal.jsx';
 import SettingsView from './admin/SettingsView.jsx';
 import Toast from './admin/Toast.jsx';
 
@@ -41,6 +42,7 @@ export default function AdminApp() {
     recentlyAddedIds,
     toast,
     updateStatus,
+    refuseOrder,
     soundEnabled,
     setSoundEnabled,
   } = useOrders({ enabled: !!user });
@@ -50,6 +52,7 @@ export default function AdminApp() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [printOrder, setPrintOrder] = useState(null);
   const [refundOrder, setRefundOrder] = useState(null);
+  const [refusalOrder, setRefusalOrder] = useState(null);
   const printTimerRef = useRef(null);
 
   // Compte les commandes "à traiter" (pending + paid, hors pending_payment)
@@ -90,6 +93,36 @@ export default function AdminApp() {
       printTimerRef.current = null;
     }, 2000);
   };
+  // Refus structuré (chantier 7). Persiste status=refused + motif/commentaire
+  // via le hook (RLS admin). Si la commande était payée carte (paid/accepted/
+  // ready/out_for_delivery/delivered), enchaîne sur un refund SumUp qui mettra
+  // status=refunded (refusal_reason / refusal_comment restent persistés en DB).
+  const handleRefuseOrder = async (order, { reason, comment }) => {
+    await refuseOrder(order.id, { reason, comment });
+
+    const wasPaidCard = order.payment_method === 'card' &&
+      ['paid', 'accepted', 'ready', 'out_for_delivery', 'delivered', 'picked_up'].includes(order.status);
+
+    if (wasPaidCard) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Session expirée — reconnectez-vous');
+      const reasonLabel = comment ? `${reason} — ${comment}` : reason;
+      const res = await fetch('/api/sumup-refund', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ order_id: order.id, reason: reasonLabel }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.error || `Refund SumUp échoué (HTTP ${res.status}) — à faire manuellement`);
+      }
+    }
+    // TODO chantier 7 — envoi email auto via /api/admin/send-refusal-email
+  };
+
   // Refund : appelle /api/sumup-refund avec le JWT admin courant. Throw si
   // échec pour que la modale affiche le message d'erreur.
   const handleRefund = async (order, reason) => {
@@ -141,6 +174,7 @@ export default function AdminApp() {
             onUpdateStatus={updateStatus}
             onPrint={handlePrint}
             onRequestRefund={setRefundOrder}
+            onRequestRefuse={setRefusalOrder}
           />
         )}
 
@@ -172,6 +206,7 @@ export default function AdminApp() {
           onUpdateStatus={updateStatus}
           onPrint={handlePrint}
           onRequestRefund={setRefundOrder}
+          onRequestRefuse={setRefusalOrder}
         />
       )}
 
@@ -180,6 +215,14 @@ export default function AdminApp() {
           order={refundOrder}
           onClose={() => setRefundOrder(null)}
           onConfirm={handleRefund}
+        />
+      )}
+
+      {refusalOrder && (
+        <RefusalModal
+          order={refusalOrder}
+          onClose={() => setRefusalOrder(null)}
+          onConfirm={handleRefuseOrder}
         />
       )}
 
