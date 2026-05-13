@@ -2258,7 +2258,7 @@ function AboutModal({ onClose, onShowZones = null }) {
             
             <div className="mt-4 rounded-2xl overflow-hidden border border-white/10">
               <iframe
-                src="https://www.google.com/maps?q=Boulevard+de+la+Tour+1,+1205+Gen%C3%A8ve,+Switzerland&output=embed"
+                src="https://maps.google.com/maps?q=Ka%C3%AFKa%C3%AF+Boulevard+de+la+Tour+1+1205+Gen%C3%A8ve&z=15&output=embed"
                 width="100%"
                 height="200"
                 style={{ border: 0 }}
