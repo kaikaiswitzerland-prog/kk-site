@@ -1,6 +1,23 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import OrderCard from './OrderCard.jsx';
 import { TAB_FILTERS, isAdminVisible, sortByPriority } from '../../lib/admin/orderHelpers.js';
+
+const SCOPE_STORAGE_KEY = 'admin_orders_tab';
+
+const PRIMARY_SCOPES = [
+  { id: 'active',    label: 'En cours' },
+  { id: 'completed', label: 'Terminées' },
+];
+
+function readInitialScope() {
+  try {
+    const stored = localStorage.getItem(SCOPE_STORAGE_KEY);
+    if (stored === 'active' || stored === 'completed') return stored;
+  } catch {
+    /* localStorage indisponible — fallback default */
+  }
+  return 'active';
+}
 
 export default function OrdersView({
   orders,
@@ -13,8 +30,21 @@ export default function OrdersView({
   onRequestRefund,
   onRequestRefuse,
 }) {
+  // Onglet primaire (En cours / Terminées) persistant en localStorage.
+  const [primaryScope, setPrimaryScope] = useState(readInitialScope);
+
+  useEffect(() => {
+    try { localStorage.setItem(SCOPE_STORAGE_KEY, primaryScope); } catch { /* */ }
+  }, [primaryScope]);
+
   // Toujours masquer pending_payment du tableau de bord
   const visible = useMemo(() => orders.filter(isAdminVisible), [orders]);
+
+  // Sous-onglets affichés = ceux du scope primaire courant.
+  const scopedTabs = useMemo(
+    () => TAB_FILTERS.filter((t) => t.scope === primaryScope),
+    [primaryScope]
+  );
 
   const counts = useMemo(() => {
     const c = {};
@@ -24,22 +54,72 @@ export default function OrdersView({
     return c;
   }, [visible]);
 
+  // Total par scope primaire (badge sur l'onglet niveau 1).
+  const scopeCounts = useMemo(() => {
+    const c = { active: 0, completed: 0 };
+    for (const tab of TAB_FILTERS) {
+      c[tab.scope] += counts[tab.id] || 0;
+    }
+    return c;
+  }, [counts]);
+
+  // Si on bascule de scope et que l'activeTab courant n'appartient plus au
+  // nouveau scope, on jump vers le premier sous-onglet du scope.
+  useEffect(() => {
+    const stillValid = scopedTabs.some((t) => t.id === activeTab);
+    if (!stillValid && scopedTabs.length > 0) {
+      setActiveTab(scopedTabs[0].id);
+    }
+  }, [scopedTabs, activeTab, setActiveTab]);
+
   const filtered = useMemo(() => {
-    const tab = TAB_FILTERS.find((t) => t.id === activeTab) || TAB_FILTERS[0];
+    const tab = scopedTabs.find((t) => t.id === activeTab) || scopedTabs[0];
+    if (!tab) return [];
     const inTab = visible.filter((o) => tab.statuses.includes(o.status));
     return sortByPriority(inTab, tab.id);
-  }, [visible, activeTab]);
+  }, [visible, activeTab, scopedTabs]);
 
   return (
     <div>
-      {/* Tabs — scroll horizontal avec snap proximity (peut déborder, scroll naturel).
-          Sur mobile : padding/text/badge ultra-compacts pour maximiser le nombre
-          de tabs visibles d'un coup sans déborder. */}
+      {/* Niveau 1 : onglets primaires En cours / Terminées (segmented control).
+          Persistant en localStorage. */}
+      <div className="mb-3 inline-flex rounded-xl border border-line bg-bg p-1 md:mb-4">
+        {PRIMARY_SCOPES.map((scope) => {
+          const active = scope.id === primaryScope;
+          const count = scopeCounts[scope.id] || 0;
+          return (
+            <button
+              key={scope.id}
+              onClick={() => setPrimaryScope(scope.id)}
+              className={[
+                'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-medium transition-colors',
+                active
+                  ? 'bg-bg-elev-2 text-ink shadow-sm'
+                  : 'text-ink-3 hover:text-ink-2',
+              ].join(' ')}
+            >
+              {scope.label}
+              {count > 0 && (
+                <span
+                  className={[
+                    'rounded-full px-2 py-0.5 font-mono text-[10px]',
+                    active ? 'bg-accent font-bold text-black' : 'bg-bg-elev-2 text-ink-2',
+                  ].join(' ')}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Niveau 2 : sous-onglets filtrés par scope (scroll horizontal sur mobile). */}
       <div
         className="kk-scroll mb-5 flex gap-0.5 overflow-x-auto border-b border-line md:mb-7 md:gap-1"
         style={{ scrollSnapType: 'x proximity' }}
       >
-        {TAB_FILTERS.map((tab) => {
+        {scopedTabs.map((tab) => {
           const active = tab.id === activeTab;
           return (
             <button
