@@ -35,6 +35,7 @@ const SLIDES = [
     price: "18.90 CHF",
     description: "Riz sauté au wok, porc caramélisé, sauce champignons noirs et oignons dorés",
     image: "/hero-kaifan-v2.jpg",
+    fit: "contain",
   },
   {
     name: "Coulant Chocolat",
@@ -168,8 +169,8 @@ export default function HeroSliderV2() {
         <motion.div
           key={`img-${cur}`}
           className="absolute inset-0 z-0"
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1.12 }}
+          initial={slide.fit === "contain" ? { opacity: 0 } : { opacity: 0, scale: 1.05 }}
+          animate={slide.fit === "contain" ? { opacity: 1 } : { opacity: 1, scale: 1.12 }}
           exit={{ opacity: 0 }}
           transition={{
             opacity: { duration: 1.2, ease: "easeInOut" },
@@ -179,7 +180,7 @@ export default function HeroSliderV2() {
           <ImageWithFallback
             src={slide.image}
             alt={slide.name}
-            className="w-full h-full object-cover"
+            className={`w-full h-full ${slide.fit === "contain" ? "object-contain" : "object-cover"}`}
           />
         </motion.div>
       </AnimatePresence>
