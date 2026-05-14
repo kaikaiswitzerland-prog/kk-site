@@ -30,10 +30,9 @@ const SLIDES = [
     image: "/hero-chaomen-v2.jpg",
   },
   {
-    name: "Kai Fan",
-    category: "PLAT CHAUD",
-    price: "18.90 CHF",
-    description: "Riz sauté au wok, porc caramélisé, sauce champignons noirs et oignons dorés",
+    name: "L'ART DU WOK",
+    category: "SANS FEU, PAS DE CUISINE",
+    description: "Une flamme, un wok, une passion. Le reste n'a pas d'importance",
     image: "/hero-kaifan-v2.jpg",
     objectPosition: "center 30%",
   },
@@ -44,6 +43,7 @@ const SLIDES = [
     description: "Dessert traditionnel tahitien à base de banane",
     image: "/hero-poe.jpg",
     objectPosition: "center 60%",
+    scale: 1.10,
   },
 ];
 
@@ -182,7 +182,10 @@ export default function HeroSliderV2() {
             src={slide.image}
             alt={slide.name}
             className="w-full h-full object-cover"
-            style={slide.objectPosition ? { objectPosition: slide.objectPosition } : undefined}
+            style={{
+              ...(slide.objectPosition ? { objectPosition: slide.objectPosition } : {}),
+              ...(slide.scale ? { transform: `scale(${slide.scale})` } : {}),
+            }}
           />
         </motion.div>
       </AnimatePresence>
@@ -235,17 +238,19 @@ export default function HeroSliderV2() {
             >
               {slide.name}
             </motion.h2>
-            <motion.p
-              variants={itemVariants}
-              className="text-white/90 mt-2"
-              style={{
-                fontSize: "clamp(1.1rem, 2.2vw, 1.5rem)",
-                fontFamily: "'Playfair Display', serif",
-                fontStyle: "italic",
-              }}
-            >
-              {slide.price}
-            </motion.p>
+            {slide.price && (
+              <motion.p
+                variants={itemVariants}
+                className="text-white/90 mt-2"
+                style={{
+                  fontSize: "clamp(1.1rem, 2.2vw, 1.5rem)",
+                  fontFamily: "'Playfair Display', serif",
+                  fontStyle: "italic",
+                }}
+              >
+                {slide.price}
+              </motion.p>
+            )}
             <motion.p
               variants={itemVariants}
               className="text-white/50 mt-1.5"
@@ -333,13 +338,15 @@ export default function HeroSliderV2() {
             >
               {slide.name}
             </motion.h2>
-            <motion.p
-              variants={itemVariants}
-              className="text-white/90 mt-1.5"
-              style={{ fontSize: "1.1rem", fontFamily: "'Playfair Display', serif", fontStyle: "italic" }}
-            >
-              {slide.price}
-            </motion.p>
+            {slide.price && (
+              <motion.p
+                variants={itemVariants}
+                className="text-white/90 mt-1.5"
+                style={{ fontSize: "1.1rem", fontFamily: "'Playfair Display', serif", fontStyle: "italic" }}
+              >
+                {slide.price}
+              </motion.p>
+            )}
             <motion.p
               variants={itemVariants}
               className="text-white/50 mt-1"
