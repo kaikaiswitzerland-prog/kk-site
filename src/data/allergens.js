@@ -41,9 +41,11 @@ export const ITEM_ALLERGENS = {
   "1":  { contains: [], traces: [] },                                                          // Velouté Koko
   "2":  { contains: ['GLUTEN', 'PEANUTS', 'SOY', 'MUSTARD'], traces: [] },                                              // Salade Tropicale (vinaigrette = soja + gluten)
   "3":  { contains: ['GLUTEN', 'SOY', 'MUSTARD', 'SESAME', 'MOLLUSCS'], traces: [] },          // Salade de poulet
-  "4":  {  // Tartare de thon rouge (entrée) AVEC salade — UNION 3 variantes
-    contains: ['FISH', 'SESAME'],
-    fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
+  "4":  {  // Tartare de thon rouge (entrée) — 3 variantes Tahiti/Hawaï/Samoa
+    // aux allergènes très différents. On affiche 'Allergènes : selon
+    // votre composition' au lieu de l'UNION worst-case qui était imprécise.
+    isComposite: true,
+    contains: [],
     traces: []
   },
 

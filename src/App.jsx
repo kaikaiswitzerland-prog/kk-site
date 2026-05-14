@@ -317,7 +317,7 @@ const CHAUD_PHOTOS = {
 };
 const CHAUD_PHOTO_POS = {
   "5": "center 50%",
-  "6": "center 70%",
+  "6": "center top",
   "7": "center 40%",
   "8": "center 45%",
 };
@@ -1130,7 +1130,7 @@ function MenuItem({ item, cart, add, remove, outOfStock = false, isFormula = fal
             </div>
             <div className="mt-1 text-sm text-white/60">{item.desc}</div>
             <div className="mt-2 text-white/90">{format(item.price)}</div>
-            {isFormula ? (
+            {(isFormula || allergens.isComposite) ? (
               <div className="mt-2 text-[11px] text-white/55">
                 Allergènes : selon votre composition
               </div>
@@ -1519,7 +1519,7 @@ function CoulisModal({ item, onSelect, onClose }) {
   return (
     <BottomSheet title={item.name} subtitle="Choisissez votre coulis" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
       {item.coulisVariants.map((v, i) => (
-        <OptionTile key={v.id} emoji={v.id === 'mangue' ? '🥭' : '🍓'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
+        <OptionTile key={v.id} emoji={v.id === 'mangue' ? '🥭' : '🫐'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
       ))}
     </BottomSheet>
   );
