@@ -34,7 +34,7 @@ const SLIDES = [
     category: "PLAT CHAUD",
     price: "18.90 CHF",
     description: "Riz sauté au wok, porc caramélisé, sauce champignons noirs et oignons dorés",
-    image: "/chaud-kaifan.jpg",
+    image: "/hero-kaifan-v2.jpg",
   },
   {
     name: "Coulant Chocolat",
