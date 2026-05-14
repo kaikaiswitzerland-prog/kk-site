@@ -1114,8 +1114,16 @@ function MenuItem({ item, cart, add, remove, outOfStock = false, isFormula = fal
       <div className={`relative rounded-3xl border border-white/10 overflow-hidden transition-all hover:border-white/20 hover:shadow-lg hover:shadow-white/5 ${isFormula ? 'bg-gradient-to-br from-white/5 to-transparent' : ''} ${outOfStock ? 'opacity-50' : ''}`}>
         {photo && (
           <div className={`w-full ${photoHeight} overflow-hidden`}>
-            <img src={photo} alt={item.name} className="w-full h-full object-cover" style={{ objectPosition: photoPos }}
-              onError={e => { e.target.style.display = 'none'; e.target.parentNode.style.display = 'none'; }} />
+            <img
+              src={photo}
+              alt={item.name}
+              className="w-full h-full object-cover"
+              style={{
+                objectPosition: photoPos,
+                ...(item.id === "6" ? { transform: "scale(1.05)", transformOrigin: "center center" } : {}),
+              }}
+              onError={e => { e.target.style.display = 'none'; e.target.parentNode.style.display = 'none'; }}
+            />
           </div>
         )}
         <div className="flex items-start justify-between gap-4 p-5">
