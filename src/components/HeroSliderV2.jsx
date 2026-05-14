@@ -27,7 +27,7 @@ const SLIDES = [
     category: "PLAT CHAUD",
     price: "18.90 CHF",
     description: "Nouilles sautées au wok, porc fondant, sauce crevettes parfumée et légumes croquants",
-    image: "/chaud-chaomen.jpg",
+    image: "/hero-chaomen-v2.jpg",
   },
   {
     name: "Kai Fan",
