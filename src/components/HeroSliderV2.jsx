@@ -38,11 +38,12 @@ const SLIDES = [
     objectPosition: "center 30%",
   },
   {
-    name: "Coulant Chocolat",
+    name: "Po'e Banane",
     category: "DESSERT",
     price: "9.90 CHF",
-    description: "Coulant au chocolat noir fondant, cœur coulant, servi chaud à la commande",
-    image: "/dessert-coulant.jpg",
+    description: "Dessert traditionnel tahitien à base de banane",
+    image: "/hero-poe.jpg",
+    objectPosition: "center 60%",
   },
 ];
 
