@@ -9,6 +9,13 @@ const DURATION = 5500;
 
 const SLIDES = [
   {
+    name: "Tartare Tahiti",
+    category: "SIGNATURE",
+    price: "Dès 12.90 CHF",
+    description: "Thon rouge mariné citron vert, coco râpée fraîche et oignons verts ciselés",
+    image: "/hero-tartare-coco.jpg",
+  },
+  {
     name: "Tahiti",
     category: "POISSON CRU",
     price: "22.90 CHF",
