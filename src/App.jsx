@@ -316,7 +316,7 @@ const CHAUD_PHOTOS = {
   "8": "/chaud-boeuf.jpg",
 };
 const CHAUD_PHOTO_POS = {
-  "5": "center 70%",
+  "5": "center 60%",
   "6": "center bottom",
   "7": "center 40%",
   "8": "center 45%",
