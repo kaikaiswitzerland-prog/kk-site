@@ -317,7 +317,7 @@ const CHAUD_PHOTOS = {
 };
 const CHAUD_PHOTO_POS = {
   "5": "center 50%",
-  "6": "75% 50%",
+  "6": "70% 50%",
   "7": "center 40%",
   "8": "center 45%",
 };
@@ -1120,7 +1120,7 @@ function MenuItem({ item, cart, add, remove, outOfStock = false, isFormula = fal
               className="w-full h-full object-cover"
               style={{
                 objectPosition: photoPos,
-                ...(item.id === "6" ? { transform: "scale(1.5)", transformOrigin: "center center" } : {}),
+                ...(item.id === "6" ? { transform: "scale(1.25)", transformOrigin: "center center" } : {}),
               }}
               onError={e => { e.target.style.display = 'none'; e.target.parentNode.style.display = 'none'; }}
             />
