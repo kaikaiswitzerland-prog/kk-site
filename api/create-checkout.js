@@ -67,33 +67,44 @@ export default async function handler(req, res) {
 
   try {
     // 0. Garde-fou anti-cheat : refuser le checkout si le restaurant est
-    //    fermé. On vérifie d'abord le flag manuel (kitchen_open), puis les
-    //    horaires automatiques. Politique fail-open sur erreur DB pour ne
-    //    pas bloquer toute la chaîne paiement à cause d'un souci infra.
+    //    fermé. Sémantique 3 états de app_settings.kitchen_open :
+    //      - true  → FORCE ouvert (bypass horaires, ex: ouverture lundi)
+    //      - false → FORCE fermé (stop commandes)
+    //      - null/absent → AUTO (suit les horaires)
+    //    Politique fail-open sur erreur DB pour ne pas bloquer la chaîne
+    //    paiement à cause d'un souci infra (manualOverride reste null → auto).
+    let manualOverride = null;
     try {
       const { data: flag } = await supabaseAdmin
         .from('app_settings')
         .select('value')
         .eq('key', 'kitchen_open')
         .maybeSingle();
-      if (flag && flag.value === false) {
-        console.warn('[KaïKaï create-checkout] refus : kitchen_open=false', order_id);
-        return res.status(409).json({
-          error: 'kitchen_closed',
-          message: 'Le restaurant est temporairement fermé.',
-        });
+      if (flag && typeof flag.value === 'boolean') {
+        manualOverride = flag.value;
       }
     } catch (flagErr) {
-      console.warn('[KaïKaï create-checkout] lecture kitchen_open échec (fail-open)', flagErr);
+      console.warn('[KaïKaï create-checkout] lecture kitchen_open échec (fail-open auto)', flagErr);
     }
 
-    const status = getRestaurantStatus();
-    if (!status.isOpen) {
-      console.warn('[KaïKaï create-checkout] refus : hors heures', order_id, status.reason);
+    if (manualOverride === false) {
+      console.warn('[KaïKaï create-checkout] refus : kitchen_open=false', order_id);
       return res.status(409).json({
-        error: 'closed_hours',
-        message: formatStatusLabel(status),
+        error: 'kitchen_closed',
+        message: 'Le restaurant est temporairement fermé.',
       });
+    }
+
+    // Check horaires UNIQUEMENT si pas de force-open admin (true bypass).
+    if (manualOverride !== true) {
+      const status = getRestaurantStatus();
+      if (!status.isOpen) {
+        console.warn('[KaïKaï create-checkout] refus : hors heures', order_id, status.reason);
+        return res.status(409).json({
+          error: 'closed_hours',
+          message: formatStatusLabel(status),
+        });
+      }
     }
 
     // 1. Charger l'order

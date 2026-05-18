@@ -2,8 +2,12 @@
 // Hook qui combine deux sources d'ouverture pour KaïKaï :
 //   1. La règle horaires automatique (mardi-dim 11h-14h / 17h30-22h, lundi fermé)
 //      → calculée localement via getRestaurantStatus(now) dans restaurantHours.js.
-//   2. Le flag manuel app_settings.kitchen_open (admin "Stop commandes")
-//      → lu via Supabase anon, lecture publique RLS.
+//   2. Le flag manuel app_settings.kitchen_open (3 états — voir ci-dessous).
+//
+// Sémantique 3 états du flag admin (app_settings.kitchen_open) :
+//   - true  → FORCE ouvert (bypass horaires, ex: ouverture exceptionnelle lundi)
+//   - false → FORCE fermé (stop commandes immédiat)
+//   - null/absent → AUTO (suit les horaires programmés)
 //
 // Polling 30s :
 //   - refresh `now` toutes les 30s (déclenche un re-render avec un nouveau
@@ -26,17 +30,17 @@ async function fetchKitchenOpen() {
     .eq('key', 'kitchen_open')
     .maybeSingle();
   if (error) {
-    console.warn('[KaïKaï kitchen] lecture app_settings échec, fallback open=true', error);
-    return true;
+    console.warn('[KaïKaï kitchen] lecture app_settings échec, fallback auto', error);
+    return null;
   }
   // value est un JSONB qui contient `true` ou `false`. Supabase JS le décode
-  // déjà en bool ; on garde un fallback strict au cas où.
+  // déjà en bool ; tout le reste (absent, null, autre) → mode auto.
   if (data && typeof data.value === 'boolean') return data.value;
-  return true;
+  return null;
 }
 
 export function useRestaurantOpen() {
-  const [kitchenOpen, setKitchenOpen] = useState(true);
+  const [kitchenOpen, setKitchenOpen] = useState(null);
   const [now, setNow] = useState(() => new Date());
   const [loading, setLoading] = useState(true);
 
@@ -66,15 +70,25 @@ export function useRestaurantOpen() {
 
   const status = getRestaurantStatus(now);
   const manualClosure = kitchenOpen === false;
-  const isOpen = kitchenOpen && status.isOpen;
+  const manualOpening = kitchenOpen === true && !status.isOpen;
+  // 3-state logic — voir doc en haut de fichier.
+  const isOpen =
+    kitchenOpen === false ? false
+    : kitchenOpen === true ? true
+    : status.isOpen;
 
-  const statusLabel = manualClosure
-    ? 'Fermé temporairement'
+  // Label : si admin force ouvert ET schedule ouvert aussi, on garde le label
+  // schedule qui contient l'heure de fermeture (utile au client). Si force
+  // ouvert hors horaires (ex: lundi exceptionnel), label simple "Ouvert".
+  const statusLabel =
+    manualClosure ? 'Fermé temporairement'
+    : manualOpening ? 'Ouvert'
     : formatStatusLabel(status);
 
   return {
     isOpen,
     manualClosure,
+    manualOpening,
     statusLabel,
     status,
     loading,
