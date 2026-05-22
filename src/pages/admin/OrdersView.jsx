@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { CheckSquare, X } from 'lucide-react';
 import OrderCard from './OrderCard.jsx';
+import ConfirmModal from './ConfirmModal.jsx';
 import { TAB_FILTERS, isAdminVisible, orderNumber, sortByPriority } from '../../lib/admin/orderHelpers.js';
 
 const SCOPE_STORAGE_KEY = 'admin_orders_tab';
-const SEARCH_MIN_CHARS = 3;
 const SEARCH_DEBOUNCE_MS = 200;
 
 const PRIMARY_SCOPES = [
@@ -27,17 +28,29 @@ function normalize(s) {
   return String(s ?? '').normalize('NFD').replace(DIACRITICS_RE, '').toLowerCase();
 }
 
-function orderMatches(order, needle) {
+// Chiffres seuls — pour matcher un n° de téléphone quelle que soit la mise en
+// forme ("0791234567" doit matcher "079 123 45 67" / "+41 79 123 45 67").
+function digitsOnly(s) {
+  return String(s ?? '').replace(/\D/g, '');
+}
+
+function orderMatches(order, needle, digitsNeedle) {
   const fields = [
     order.customer_name,
     order.customer_email,
     order.customer_phone,
     order.customer_address,
-    orderNumber(order.id),
+    orderNumber(order.id), // n° affiché (8 premiers car. de l'UUID)
+    order.id,              // UUID complet (collage d'un ID exact)
     order.note_kitchen,
     order.note_delivery,
   ];
-  return fields.some((f) => f && normalize(f).includes(needle));
+  if (fields.some((f) => f && normalize(f).includes(needle))) return true;
+  // Repli téléphone : comparaison chiffres-à-chiffres si la requête est numérique.
+  if (digitsNeedle && order.customer_phone) {
+    return digitsOnly(order.customer_phone).includes(digitsNeedle);
+  }
+  return false;
 }
 
 export default function OrdersView({
@@ -50,9 +63,29 @@ export default function OrdersView({
   onPrint,
   onRequestRefund,
   onRequestRefuse,
+  onRequestTrash,
+  onTrashOrders,
 }) {
   // Onglet primaire (En cours / Terminées) persistant en localStorage.
   const [primaryScope, setPrimaryScope] = useState(readInitialScope);
+
+  // ─── Mode sélection multiple (corbeille en masse) ───────────
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [confirmBulkOpen, setConfirmBulkOpen] = useState(false);
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
 
   useEffect(() => {
     try { localStorage.setItem(SCOPE_STORAGE_KEY, primaryScope); } catch { /* */ }
@@ -66,8 +99,13 @@ export default function OrdersView({
     const id = setTimeout(() => setDebouncedQuery(query), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [query]);
-  const needle = normalize(debouncedQuery.trim());
-  const searchActive = needle.length >= SEARCH_MIN_CHARS;
+  // On retire un éventuel « # » de tête : le n° de commande est affiché
+  // « #A1B2C3D4 » mais stocké sans dièse → taper le numéro tel qu'affiché doit
+  // matcher. Le filtre s'active dès le 1er caractère (champ vide → tout).
+  const trimmed = debouncedQuery.trim().replace(/^#/, '');
+  const needle = normalize(trimmed);
+  const digitsNeedle = digitsOnly(trimmed);
+  const searchActive = needle.length > 0;
 
   // Toujours masquer pending_payment du tableau de bord
   const visible = useMemo(() => orders.filter(isAdminVisible), [orders]);
@@ -108,7 +146,7 @@ export default function OrdersView({
     // Mode recherche : on bypass les onglets et on fouille toutes les
     // commandes visibles. Tri par created_at desc (plus récentes en haut).
     if (searchActive) {
-      const matched = visible.filter((o) => orderMatches(o, needle));
+      const matched = visible.filter((o) => orderMatches(o, needle, digitsNeedle));
       return [...matched].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
@@ -117,37 +155,65 @@ export default function OrdersView({
     if (!tab) return [];
     const inTab = visible.filter((o) => tab.statuses.includes(o.status));
     return sortByPriority(inTab, tab.id);
-  }, [visible, activeTab, scopedTabs, searchActive, needle]);
+  }, [visible, activeTab, scopedTabs, searchActive, needle, digitsNeedle]);
+
+  const selectedCount = selectedIds.size;
+
+  // "Tout sélectionner" : ajoute toutes les commandes actuellement affichées
+  // (respecte recherche + onglet actif) à la sélection, sans perdre celles
+  // déjà cochées dans un autre onglet. "Tout désélectionner" : vide tout.
+  const selectAllVisible = () =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      filtered.forEach((o) => next.add(o.id));
+      return next;
+    });
+  const deselectAll = () => setSelectedIds(new Set());
 
   return (
     <div>
-      {/* Barre de recherche — full width, toujours visible. Si la query
-          contient ≥3 caractères (debounce 200ms), on bypass les onglets et
-          on affiche les résultats sur toutes les commandes (active + archives). */}
-      <div className="mb-3 relative md:mb-4">
-        <span
-          aria-hidden
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3"
-        >
-          🔍
-        </span>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher (nom, email, tél, n° commande, adresse, note…)"
-          className="w-full rounded-xl border border-line bg-bg py-2.5 pl-9 pr-9 text-[13px] outline-none transition-colors focus:border-line-strong"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => setQuery('')}
-            aria-label="Effacer la recherche"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 font-mono text-[14px] text-ink-3 transition-colors hover:bg-bg-elev-2 hover:text-ink"
+      {/* Barre de recherche + bouton "Sélectionner". Si la query contient du
+          texte (debounce 200ms), on bypass les onglets et on affiche les
+          résultats sur toutes les commandes (active + archives). */}
+      <div className="mb-3 flex gap-2 md:mb-4">
+        <div className="relative flex-1">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3"
           >
-            ✕
-          </button>
-        )}
+            🔍
+          </span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rechercher (nom, email, tél, n° commande, adresse, note…)"
+            className="w-full rounded-xl border border-line bg-bg py-2.5 pl-9 pr-9 text-[13px] outline-none transition-colors focus:border-line-strong"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              aria-label="Effacer la recherche"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 font-mono text-[14px] text-ink-3 transition-colors hover:bg-bg-elev-2 hover:text-ink"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+          className={[
+            'flex flex-shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2.5 text-[13px] font-medium transition-colors',
+            selectMode
+              ? 'border-line-strong bg-bg-elev-2 text-ink'
+              : 'border-line bg-bg text-ink-2 hover:border-line-strong hover:text-ink',
+          ].join(' ')}
+        >
+          {selectMode ? <X size={15} /> : <CheckSquare size={15} />}
+          <span className="hidden sm:inline">{selectMode ? 'Annuler' : 'Sélectionner'}</span>
+        </button>
       </div>
 
       {/* Mode recherche : header résultats à la place des onglets. */}
@@ -260,9 +326,66 @@ export default function OrdersView({
               onPrint={onPrint}
               onRequestRefund={onRequestRefund}
               onRequestRefuse={onRequestRefuse}
+              onRequestTrash={onRequestTrash}
+              selectMode={selectMode}
+              selected={selectedIds.has(order.id)}
+              onToggleSelect={toggleSelect}
             />
           ))}
         </div>
+      )}
+
+      {/* Espace pour que les dernières cartes ne soient pas masquées par la
+          barre flottante. */}
+      {selectMode && selectedCount > 0 && <div aria-hidden className="h-24" />}
+
+      {/* Barre d'actions flottante — apparaît dès 1 commande sélectionnée.
+          Positionnée au-dessus de la bottom-nav mobile (+ safe-area). */}
+      {selectMode && selectedCount > 0 && (
+        <div
+          className="fixed left-1/2 z-[60] flex w-[calc(100%-1.5rem)] max-w-xl -translate-x-1/2 flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-bg-elev/95 px-3 py-2.5 shadow-2xl backdrop-blur-[20px] md:px-4"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 4.75rem)' }}
+        >
+          <span className="font-mono text-[12px] font-bold text-ink">
+            {selectedCount} commande{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}
+          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={selectAllVisible}
+              className="rounded-lg border border-line px-2.5 py-1.5 text-[12px] font-medium text-ink-2 transition-colors hover:border-line-strong hover:text-ink"
+            >
+              Tout sélectionner
+            </button>
+            <button
+              type="button"
+              onClick={deselectAll}
+              className="rounded-lg border border-line px-2.5 py-1.5 text-[12px] font-medium text-ink-2 transition-colors hover:border-line-strong hover:text-ink"
+            >
+              Tout désélectionner
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmBulkOpen(true)}
+              className="rounded-lg border border-accent-red/30 bg-accent-red/15 px-3 py-1.5 text-[12px] font-bold text-accent-red transition-colors hover:bg-accent-red/25"
+            >
+              🗑️ Mettre à la corbeille
+            </button>
+          </div>
+        </div>
+      )}
+
+      {confirmBulkOpen && (
+        <ConfirmModal
+          title="Mettre à la corbeille ?"
+          message={`Mettre ${selectedCount} commande${selectedCount > 1 ? 's' : ''} à la corbeille ? Elle${selectedCount > 1 ? 's seront exclues' : ' sera exclue'} de l'écran d'accueil et de la compta.`}
+          confirmLabel="Confirmer"
+          onConfirm={async () => {
+            await onTrashOrders([...selectedIds]);
+            exitSelectMode();
+          }}
+          onClose={() => setConfirmBulkOpen(false)}
+        />
       )}
     </div>
   );

@@ -26,12 +26,15 @@ import ComptaView from './admin/ComptaView.jsx';
 import MenuView from './admin/MenuView.jsx';
 import RefusalModal from './admin/RefusalModal.jsx';
 import SettingsView from './admin/SettingsView.jsx';
+import TrashView from './admin/TrashView.jsx';
+import ConfirmModal from './admin/ConfirmModal.jsx';
 import Toast from './admin/Toast.jsx';
 
 const PAGE_TITLES = {
   orders: 'Commandes',
   compta: 'Compta',
   menu: 'Menu',
+  trash: 'Corbeille',
   settings: 'Paramètres',
 };
 
@@ -43,6 +46,10 @@ export default function AdminApp() {
     toast,
     updateStatus,
     refuseOrder,
+    trashOrder,
+    trashOrders,
+    restoreOrder,
+    deleteOrder,
     soundEnabled,
     setSoundEnabled,
   } = useOrders({ enabled: !!user });
@@ -53,13 +60,27 @@ export default function AdminApp() {
   const [printOrder, setPrintOrder] = useState(null);
   const [refundOrder, setRefundOrder] = useState(null);
   const [refusalOrder, setRefusalOrder] = useState(null);
+  const [orderToTrash, setOrderToTrash] = useState(null);
+  const [orderToDelete, setOrderToDelete] = useState(null);
   const printTimerRef = useRef(null);
 
-  // Compte les commandes "à traiter" (pending + paid, hors pending_payment)
+  // Corbeille : exclusion centralisée. `activeOrders` alimente l'écran
+  // d'accueil ET toute la compta (KPIs, transactions, export CSV) ;
+  // `trashedOrders` (triées par trashed_at DESC) alimentent la vue Corbeille.
+  const activeOrders = useMemo(() => orders.filter((o) => !o.is_trashed), [orders]);
+  const trashedOrders = useMemo(
+    () =>
+      orders
+        .filter((o) => o.is_trashed)
+        .sort((a, b) => new Date(b.trashed_at || 0).getTime() - new Date(a.trashed_at || 0).getTime()),
+    [orders]
+  );
+
+  // Compte les commandes "à traiter" (pending + paid, hors pending_payment + corbeille)
   const pendingCount = useMemo(() => {
     const todoStatuses = TAB_FILTERS.find((t) => t.id === 'todo').statuses;
-    return orders.filter((o) => isAdminVisible(o) && todoStatuses.includes(o.status)).length;
-  }, [orders]);
+    return activeOrders.filter((o) => isAdminVisible(o) && todoStatuses.includes(o.status)).length;
+  }, [activeOrders]);
 
   // Synchronise selectedOrder avec les updates Realtime
   const liveSelectedOrder = useMemo(() => {
@@ -173,6 +194,7 @@ export default function AdminApp() {
         page={page}
         setPage={setPage}
         pendingCount={pendingCount}
+        trashCount={trashedOrders.length}
         user={user}
         onSignOut={signOut}
       />
@@ -186,7 +208,7 @@ export default function AdminApp() {
 
         {page === 'orders' && (
           <OrdersView
-            orders={orders}
+            orders={activeOrders}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             recentlyAddedIds={recentlyAddedIds}
@@ -195,17 +217,27 @@ export default function AdminApp() {
             onPrint={handlePrint}
             onRequestRefund={setRefundOrder}
             onRequestRefuse={setRefusalOrder}
+            onRequestTrash={setOrderToTrash}
+            onTrashOrders={trashOrders}
           />
         )}
 
         {page === 'compta' && (
           <ComptaView
-            orders={orders}
+            orders={activeOrders}
             onSelectOrder={setSelectedOrder}
           />
         )}
 
         {page === 'menu' && <MenuView />}
+
+        {page === 'trash' && (
+          <TrashView
+            orders={trashedOrders}
+            onRestore={(order) => restoreOrder(order.id)}
+            onRequestDelete={setOrderToDelete}
+          />
+        )}
 
         {page === 'settings' && (
           <SettingsView
@@ -243,6 +275,27 @@ export default function AdminApp() {
           order={refusalOrder}
           onClose={() => setRefusalOrder(null)}
           onConfirm={handleRefuseOrder}
+        />
+      )}
+
+      {orderToTrash && (
+        <ConfirmModal
+          title="Mettre à la corbeille ?"
+          message="Mettre cette commande à la corbeille ? Elle sera exclue de l'écran d'accueil et de la compta."
+          confirmLabel="Confirmer"
+          onConfirm={() => trashOrder(orderToTrash.id)}
+          onClose={() => setOrderToTrash(null)}
+        />
+      )}
+
+      {orderToDelete && (
+        <ConfirmModal
+          title="Supprimer définitivement ?"
+          message="Cette action est irréversible. La commande sera définitivement supprimée de la base."
+          confirmLabel="Supprimer"
+          tone="danger"
+          onConfirm={() => deleteOrder(orderToDelete.id)}
+          onClose={() => setOrderToDelete(null)}
         />
       )}
 

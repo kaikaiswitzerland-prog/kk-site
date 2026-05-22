@@ -1,3 +1,4 @@
+import { Trash2, Check } from 'lucide-react';
 import {
   fmt,
   fmtTime,
@@ -30,7 +31,7 @@ const URGENCY_TONE_CLASS = {
   red: 'text-accent-red kk-urgent-blink',
 };
 
-export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPrint, onRequestRefund, onRequestRefuse }) {
+export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPrint, onRequestRefund, onRequestRefuse, onRequestTrash, selectMode = false, selected = false, onToggleSelect }) {
   const now = useNow();
   const items = Array.isArray(order.items) ? order.items : [];
   const visual = STATUS_VISUAL[order.status] || 'new';
@@ -53,13 +54,25 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
     <div
       data-status={visual}
       className={[
-        'kk-order-card group cursor-pointer rounded-xl border border-line bg-bg-elev p-3 md:p-4',
+        'kk-order-card group cursor-pointer rounded-xl border bg-bg-elev p-3 md:p-4',
         'transition-colors hover:border-line-strong hover:bg-bg-elev-2',
+        selected ? 'border-accent bg-accent/5' : 'border-line',
         isNew ? 'kk-new-pulse' : '',
       ].join(' ')}
-      onClick={() => onSelect(order)}
+      onClick={() => (selectMode ? onToggleSelect(order.id) : onSelect(order))}
     >
       <div className="mb-3 flex items-start justify-between gap-3">
+        {selectMode && (
+          <div
+            aria-hidden
+            className={[
+              'mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border transition-colors',
+              selected ? 'border-accent bg-accent text-black' : 'border-line-strong bg-bg',
+            ].join(' ')}
+          >
+            {selected && <Check size={14} strokeWidth={3} />}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="font-mono text-[11px] tracking-[0.1em] text-ink-3">
             #{orderNumber(order.id)}
@@ -71,11 +84,25 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
             {order.customer_name}
           </div>
         </div>
-        <div className="flex-shrink-0 text-right font-mono text-[13px] text-ink-2">
-          {fmtTime(order.created_at)}
-          <span className="mt-0.5 block text-[10px] text-ink-3">
-            {fmtRelative(order.created_at)}
-          </span>
+        <div className="flex flex-shrink-0 items-start gap-1.5">
+          <div className="text-right font-mono text-[13px] text-ink-2">
+            {fmtTime(order.created_at)}
+            <span className="mt-0.5 block text-[10px] text-ink-3">
+              {fmtRelative(order.created_at)}
+            </span>
+          </div>
+          {/* Icône poubelle individuelle — masquée en mode sélection multiple. */}
+          {!selectMode && onRequestTrash && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onRequestTrash(order); }}
+              title="Mettre à la corbeille"
+              aria-label="Mettre à la corbeille"
+              className="-mr-1 -mt-1 rounded-md p-1.5 text-ink-3 transition-colors hover:bg-accent-red/10 hover:text-accent-red"
+            >
+              <Trash2 size={15} strokeWidth={1.75} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -170,7 +197,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         </span>
       </div>
 
-      {isTodo && (
+      {!selectMode && isTodo && (
         <div
           className="flex flex-wrap gap-1.5"
           onClick={(e) => e.stopPropagation()}
@@ -201,7 +228,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         </div>
       )}
 
-      {order.status === 'accepted' && (
+      {!selectMode && order.status === 'accepted' && (
         <div onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onUpdateStatus(order.id, 'ready')}
@@ -212,7 +239,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         </div>
       )}
 
-      {order.status === 'ready' && (
+      {!selectMode && order.status === 'ready' && (
         <div onClick={(e) => e.stopPropagation()}>
           {isPickup ? (
             <button
@@ -232,7 +259,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
         </div>
       )}
 
-      {order.status === 'out_for_delivery' && (
+      {!selectMode && order.status === 'out_for_delivery' && (
         <div onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onUpdateStatus(order.id, 'delivered')}
@@ -245,7 +272,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
 
       {/* Bouton Rembourser : visible pour les commandes carte (paid →
           delivered). Cliquer ouvre la RefundModal de confirmation. */}
-      {isRefundable && onRequestRefund && (
+      {!selectMode && isRefundable && onRequestRefund && (
         <div className="mt-2" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onRequestRefund(order)}

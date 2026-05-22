@@ -2,6 +2,22 @@ import { fmt } from '../../lib/admin/orderHelpers.js';
 
 export default function Toast({ order }) {
   if (!order) return null;
+
+  // Toast générique (message libre) — utilisé p.ex. par la corbeille en masse.
+  if (order.message) {
+    return (
+      <div
+        className="
+          kk-toast-in fixed left-1/2 top-5 z-[100] -translate-x-1/2 whitespace-nowrap
+          rounded-xl px-4 py-2.5 text-sm font-bold shadow-2xl
+        "
+        style={{ background: 'var(--color-accent-warm)', color: '#000' }}
+      >
+        🗑️ {order.message}
+      </div>
+    );
+  }
+
   const isCard = order.payment_method === 'card';
   return (
     <div

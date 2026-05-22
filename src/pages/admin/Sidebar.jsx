@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { id: 'orders', label: 'Commandes', icon: '📋' },
   { id: 'compta', label: 'Compta', icon: '📊' },
   { id: 'menu', label: 'Menu', icon: '🍽️' },
+  { id: 'trash', label: 'Corbeille', icon: '🗑️' },
   { id: 'settings', label: 'Paramètres', icon: '⚙️' },
 ];
 
@@ -14,7 +15,9 @@ function userInitials(user) {
   return e ? e.slice(0, 2).toUpperCase() : 'KK';
 }
 
-export default function Sidebar({ page, setPage, pendingCount, user, onSignOut }) {
+export default function Sidebar({ page, setPage, pendingCount, trashCount = 0, user, onSignOut }) {
+  // Compteur affiché à droite de l'item : commandes à traiter / corbeille.
+  const navCount = (id) => (id === 'orders' ? pendingCount : id === 'trash' ? trashCount : 0);
   return (
     <>
       {/* ── Desktop ───────────────────────────────────── */}
@@ -40,6 +43,7 @@ export default function Sidebar({ page, setPage, pendingCount, user, onSignOut }
           </div>
           {NAV_ITEMS.map((item) => {
             const active = page === item.id;
+            const count = navCount(item.id);
             return (
               <button
                 key={item.id}
@@ -55,9 +59,16 @@ export default function Sidebar({ page, setPage, pendingCount, user, onSignOut }
                   <span>{item.icon}</span>
                   <span>{item.label}</span>
                 </span>
-                {item.id === 'orders' && pendingCount > 0 && (
-                  <span className="rounded-full bg-accent-warm px-2 py-0.5 font-mono text-[10px] font-bold text-black">
-                    {pendingCount}
+                {count > 0 && (
+                  <span
+                    className={[
+                      'rounded-full px-2 py-0.5 font-mono text-[10px] font-bold',
+                      item.id === 'orders'
+                        ? 'bg-accent-warm text-black'
+                        : 'bg-bg-elev-2 text-ink-2',
+                    ].join(' ')}
+                  >
+                    {count}
                   </span>
                 )}
               </button>
@@ -101,6 +112,7 @@ export default function Sidebar({ page, setPage, pendingCount, user, onSignOut }
       >
         {NAV_ITEMS.map((item) => {
           const active = page === item.id;
+          const count = navCount(item.id);
           return (
             <button
               key={item.id}
@@ -112,9 +124,14 @@ export default function Sidebar({ page, setPage, pendingCount, user, onSignOut }
             >
               <span className="relative inline-flex items-center justify-center text-base leading-none">
                 {item.icon}
-                {item.id === 'orders' && pendingCount > 0 && (
-                  <span className="absolute -right-3 -top-1.5 min-w-[16px] rounded-full bg-accent-warm px-1 py-px text-center font-mono text-[9px] font-bold leading-none text-black">
-                    {pendingCount}
+                {count > 0 && (
+                  <span
+                    className={[
+                      'absolute -right-3 -top-1.5 min-w-[16px] rounded-full px-1 py-px text-center font-mono text-[9px] font-bold leading-none',
+                      item.id === 'orders' ? 'bg-accent-warm text-black' : 'bg-bg-elev-2 text-ink-2',
+                    ].join(' ')}
+                  >
+                    {count}
                   </span>
                 )}
               </span>
