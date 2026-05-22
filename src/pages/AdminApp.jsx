@@ -49,7 +49,9 @@ export default function AdminApp() {
     trashOrder,
     trashOrders,
     restoreOrder,
+    restoreOrders,
     deleteOrder,
+    deleteOrders,
     soundEnabled,
     setSoundEnabled,
   } = useOrders({ enabled: !!user });
@@ -236,6 +238,8 @@ export default function AdminApp() {
             orders={trashedOrders}
             onRestore={(order) => restoreOrder(order.id)}
             onRequestDelete={setOrderToDelete}
+            onRestoreOrders={restoreOrders}
+            onDeleteOrders={deleteOrders}
           />
         )}
 

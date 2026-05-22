@@ -184,12 +184,39 @@ export function useOrders({ enabled }) {
     if (error) throw error;
   }, []);
 
+  // Restauration en masse : un seul UPDATE `.in('id', ids)`. Patch optimiste + toast.
+  const restoreOrders = useCallback(async (ids) => {
+    if (!ids || ids.length === 0) return;
+    const idSet = new Set(ids);
+    setOrders((prev) =>
+      prev.map((o) => (idSet.has(o.id) ? { ...o, is_trashed: false, trashed_at: null } : o))
+    );
+    const { error } = await supabase
+      .from('orders')
+      .update({ is_trashed: false, trashed_at: null })
+      .in('id', ids);
+    if (error) throw error;
+    const n = ids.length;
+    triggerToast({ message: `${n} commande${n > 1 ? 's' : ''} restaurée${n > 1 ? 's' : ''}` });
+  }, [triggerToast]);
+
   // Suppression définitive : DELETE en base (RLS policy delete requise).
   const deleteOrder = useCallback(async (id) => {
     setOrders((prev) => prev.filter((o) => o.id !== id));
     const { error } = await supabase.from('orders').delete().eq('id', id);
     if (error) throw error;
   }, []);
+
+  // Suppression définitive en masse : un seul DELETE `.in('id', ids)`. Optimiste + toast.
+  const deleteOrders = useCallback(async (ids) => {
+    if (!ids || ids.length === 0) return;
+    const idSet = new Set(ids);
+    setOrders((prev) => prev.filter((o) => !idSet.has(o.id)));
+    const { error } = await supabase.from('orders').delete().in('id', ids);
+    if (error) throw error;
+    const n = ids.length;
+    triggerToast({ message: `${n} commande${n > 1 ? 's' : ''} supprimée${n > 1 ? 's' : ''} définitivement` });
+  }, [triggerToast]);
 
   const setSoundEnabled = useCallback((on) => {
     soundEnabled.current = on;
@@ -206,7 +233,9 @@ export function useOrders({ enabled }) {
     trashOrder,
     trashOrders,
     restoreOrder,
+    restoreOrders,
     deleteOrder,
+    deleteOrders,
     soundEnabled: soundEnabled.current,
     setSoundEnabled,
   };
