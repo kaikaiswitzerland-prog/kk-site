@@ -173,6 +173,14 @@ export default async function handler(req, res) {
           // posté par le patch — on le fusionne pour cohérence si jamais le
           // template l'utilise plus tard. (Aujourd'hui il ne l'utilise pas.)
           const fullOrder = { ...order, sumup_transaction_id: patch.sumup_transaction_id };
+          console.log('[KaïKaï mail confirm] envoi', {
+            orderId: order.id,
+            mode: order.delivery_mode,
+            addressLen: (order.customer_address || '').length,
+            noteDeliveryLen: (order.note_delivery || '').length,
+            noteKitchenLen: (order.note_kitchen || '').length,
+            itemsCount: Array.isArray(order.items) ? order.items.length : 0,
+          });
           const { subject, html, text } = buildOrderConfirmationEmail(fullOrder);
           const result = await sendEmail({
             to: order.customer_email,
@@ -187,12 +195,21 @@ export default async function handler(req, res) {
               .eq('id', order.id);
             console.log('[KaïKaï mail confirm] envoyé', order.id, result.id);
           } else {
-            console.error('[KaïKaï mail confirm] échec envoi', order.id, result.error);
+            console.error('[KaïKaï mail confirm] échec envoi Resend', {
+              orderId: order.id,
+              mode: order.delivery_mode,
+              error: result.error,
+            });
           }
         }
       } catch (mailErr) {
         // Jamais bloquant — on a déjà retourné le statut 200 logiquement.
-        console.error('[KaïKaï mail confirm] exception', order.id, mailErr);
+        // Log enrichi : delivery_mode + stack pour diagnostiquer en prod.
+        console.error('[KaïKaï mail confirm] exception', {
+          orderId: order.id,
+          mode: order.delivery_mode,
+          err: mailErr?.stack || mailErr?.message || String(mailErr),
+        });
       }
     }
 

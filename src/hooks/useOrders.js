@@ -2,8 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { fmt, isAdminVisible } from '../lib/admin/orderHelpers.js';
 
-// Charge la liste des commandes + souscription Realtime + déclenche un toast
-// + une notification navigateur sur INSERT, et expose un updateStatus optimiste.
+// Intervalle du polling de secours (ms). Le Realtime reste la voie rapide,
+// ce refetch périodique garantit la cohérence si la WebSocket décroche
+// (mobile en veille, onglet en arrière-plan, perte réseau brève).
+// 15 000 ms = plancher raisonnable pour ne pas surcharger Supabase.
+const POLLING_INTERVAL_MS = 15000;
+
+// Charge la liste des commandes + souscription Realtime + polling de secours
+// + refetch au focus. Déclenche un toast et une notification navigateur sur
+// INSERT, et expose un updateStatus optimiste.
 export function useOrders({ enabled }) {
   const [orders, setOrders] = useState([]);
   const [recentlyAddedIds, setRecentlyAddedIds] = useState(() => new Set());
@@ -58,14 +65,22 @@ export function useOrders({ enabled }) {
 
     let mounted = true;
 
-    supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (!mounted) return;
-        if (!error && data) setOrders(data);
-      });
+    // Fetch unique réutilisé par : chargement initial, polling de secours,
+    // refetch au focus, et resync après reconnexion Realtime.
+    const fetchOrders = async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!mounted) return;
+      if (!error && data) setOrders(data);
+    };
+
+    fetchOrders();
+
+    // Track la première souscription pour ne refetcher qu'aux RE-connexions
+    // (la première SUBSCRIBED arrive juste après notre fetch initial).
+    let hasBeenSubscribed = false;
 
     const channel = supabase
       .channel('admin-orders')
@@ -110,10 +125,30 @@ export function useOrders({ enabled }) {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // À chaque reconnexion (SUBSCRIBED après une coupure), on refetch
+        // pour rattraper les events tombés pendant la déconnexion.
+        if (status === 'SUBSCRIBED') {
+          if (hasBeenSubscribed) fetchOrders();
+          hasBeenSubscribed = true;
+        }
+      });
+
+    // Polling de secours — garantit la fraîcheur même Realtime KO.
+    const pollingId = setInterval(fetchOrders, POLLING_INTERVAL_MS);
+
+    // Refetch immédiat quand l'admin revient sur l'onglet/l'app (mobile++).
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchOrders();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', fetchOrders);
 
     return () => {
       mounted = false;
+      clearInterval(pollingId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', fetchOrders);
       supabase.removeChannel(channel);
     };
   }, [enabled, markRecentlyAdded, triggerToast, triggerBrowserNotification]);
@@ -130,9 +165,25 @@ export function useOrders({ enabled }) {
     if (status === 'delivered')         patch.delivered_at        = nowIso;
     if (status === 'picked_up')         patch.picked_up_at        = nowIso;
 
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
-    await supabase.from('orders').update(patch).eq('id', id);
-  }, []);
+    // Snapshot pour rollback si l'UPDATE échoue (CHECK constraint, RLS, etc.).
+    // Sans ce rollback, l'optimistic patch laissait la commande dans un statut
+    // que la DB n'avait jamais accepté — invisible au reload suivant.
+    let previousOrder = null;
+    setOrders((prev) => prev.map((o) => {
+      if (o.id !== id) return o;
+      previousOrder = o;
+      return { ...o, ...patch };
+    }));
+
+    const { error } = await supabase.from('orders').update(patch).eq('id', id);
+    if (error) {
+      console.error('[KaïKaï admin] updateStatus échec', id, status, error);
+      if (previousOrder) {
+        setOrders((prev) => prev.map((o) => (o.id === id ? previousOrder : o)));
+      }
+      triggerToast({ message: `Échec mise à jour : ${error.message || 'erreur DB'}` });
+    }
+  }, [triggerToast]);
 
   // Refus structuré (chantier 7) : passe status=refused + persiste le motif
   // (code) et le commentaire libre. Patch optimiste local pour réactivité.

@@ -4,10 +4,10 @@
 // useOrders.refuseOrder (RLS admin) ; cet endpoint sert uniquement à
 // construire et envoyer l'email best-effort via Resend.
 //
-// Auth : JWT Supabase admin (Authorization: Bearer ...). Même pattern que
-// api/admin/toggle-kitchen / toggle-item-stock.
+// Auth : allowlist admin via requireAdmin (cohérente avec la RLS).
 
 import { supabaseAdmin } from '../_lib/supabaseServer.js';
+import { requireAdmin } from '../_lib/requireAdmin.js';
 import { sendEmail } from '../_lib/resend.js';
 import { buildOrderRefusedEmail } from '../_lib/emails/orderRefused.js';
 
@@ -18,17 +18,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // 1. Auth check
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token) {
-    return res.status(401).json({ error: 'Authentification requise' });
-  }
-  const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(token);
-  if (authError || !userData?.user) {
-    console.warn('[KaïKaï refusal-email] auth invalide', authError);
-    return res.status(401).json({ error: 'Token invalide' });
-  }
+  // 1. Auth admin (401 si pas/invalide token, 403 si non-admin)
+  const adminUser = await requireAdmin(req, res);
+  if (!adminUser) return;
 
   // 2. Validation body
   const { orderId, reason, comment } = req.body || {};
@@ -73,7 +65,7 @@ export default async function handler(req, res) {
   });
 
   console.log(
-    `[KaïKaï refusal-email] admin ${userData.user.email} sent to ${order.customer_email} ` +
+    `[KaïKaï refusal-email] admin ${adminUser.email} sent to ${order.customer_email} ` +
     `for order #${String(order.id).slice(0, 8)} (reason=${reason}, success=${sendResult.success})`
   );
 

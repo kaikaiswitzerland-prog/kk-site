@@ -6,10 +6,11 @@
 //   Body : { "amount": <number> } optionnel — omis → refund total.
 //   Response : 204 (empty body) en cas de succès.
 //
-// Auth : seuls les admins authentifiés (JWT Supabase valide) peuvent appeler
-// cet endpoint. On valide le token côté serveur via getUser().
+// Auth : seuls les admins (allowlist ADMIN_EMAILS, fallback hardcodé) peuvent
+// appeler cet endpoint. Voir api/_lib/requireAdmin.js.
 
 import { supabaseAdmin } from './_lib/supabaseServer.js';
+import { requireAdmin } from './_lib/requireAdmin.js';
 import { sendEmail } from './_lib/resend.js';
 import { buildRefundEmail } from './_lib/emails/orderRefund.js';
 
@@ -18,18 +19,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // 1. Auth check : JWT Supabase dans le header Authorization
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token) {
-    return res.status(401).json({ error: 'Authentification requise' });
-  }
-
-  const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(token);
-  if (authError || !userData?.user) {
-    console.warn('[KaïKaï refund] auth invalide', authError);
-    return res.status(401).json({ error: 'Token invalide' });
-  }
+  // 1. Auth admin (401 si pas/invalide token, 403 si non-admin)
+  const adminUser = await requireAdmin(req, res);
+  if (!adminUser) return;
 
   // 2. Lire l'order_id du body
   const { order_id, reason } = req.body || {};

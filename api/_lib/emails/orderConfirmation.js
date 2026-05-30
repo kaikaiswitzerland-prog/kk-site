@@ -21,8 +21,62 @@ const ETA = {
 /**
  * @param {Object} order — ligne brute de la table orders Supabase.
  * @returns {{ subject:string, html:string, text:string }}
+ *
+ * Filet de sécurité : wrap entier en try/catch + fallback minimal pour
+ * garantir qu'un client reçoit toujours une confirmation, même si une
+ * donnée inattendue casse le template (cas reproduit en prod pour les
+ * commandes livraison — cause runtime non-identifiable statiquement).
  */
 export function buildOrderConfirmationEmail(order) {
+  try {
+    return buildFullConfirmation(order);
+  } catch (err) {
+    console.error('[KaïKaï mail tmpl] échec build, fallback minimal', {
+      orderId: order?.id,
+      deliveryMode: order?.delivery_mode,
+      hasAddress: !!order?.customer_address,
+      addressLen: (order?.customer_address || '').length,
+      hasNoteDelivery: !!order?.note_delivery,
+      noteDeliveryLen: (order?.note_delivery || '').length,
+      hasNoteKitchen: !!order?.note_kitchen,
+      itemsCount: Array.isArray(order?.items) ? order.items.length : 0,
+      err: err?.stack || err?.message || String(err),
+    });
+    return buildMinimalConfirmation(order);
+  }
+}
+
+// Fallback ultra-minimal : aucun accès conditionnel, aucune branche
+// delivery, juste shortId + total + adresse restaurant. Garantit qu'un
+// throw du template principal n'empêche pas le client de recevoir confirmation.
+function buildMinimalConfirmation(order) {
+  const shortId = orderShortId(order?.id);
+  const subject = `Commande KaïKaï confirmée — #${shortId}`;
+  const total = fmtCHF(order?.total);
+  const bodyHtml = `
+<p style="margin:0 0 12px 0;font-size:16px;">Bonjour ${esc(order?.customer_name || '')},</p>
+<p style="margin:0 0 20px 0;color:${COLORS.text};">
+  Votre commande #${esc(shortId)} a bien été reçue. Merci !
+</p>
+${total ? `<p style="margin:0 0 12px 0;font-size:18px;font-weight:700;color:${COLORS.accent};">Total : ${esc(total)}</p>` : ''}
+<p style="margin:20px 0 0 0;font-size:13px;color:${COLORS.textMuted};">
+  Une question ? ${esc(RESTAURANT.phoneDisplay)} · ${esc(RESTAURANT.site)}
+</p>`;
+  const html = htmlShell({ subject, bodyHtml });
+  const text = [
+    `KaïKaï — Commande confirmée #${shortId}`,
+    '',
+    `Bonjour ${order?.customer_name || ''},`,
+    '',
+    'Votre commande a bien été reçue. Merci !',
+    total ? `\nTotal : ${total}` : '',
+    '',
+    `Une question ? ${RESTAURANT.phoneDisplay} · ${RESTAURANT.site}`,
+  ].filter((l) => l !== null && l !== undefined).join('\n');
+  return { subject, html, text };
+}
+
+function buildFullConfirmation(order) {
   const shortId = orderShortId(order.id);
   const subject = `Commande KaïKaï confirmée — #${shortId}`;
   const items = Array.isArray(order.items) ? order.items : [];
