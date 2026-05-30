@@ -773,7 +773,13 @@ export default function KaiKaiApp() {
         ? sanitizeNote(form.noteDelivery, NOTE_DELIVERY_MAX)
         : '';
 
-      const { data: inserted, error } = await supabase.from('orders').insert([{
+      // UUID pré-généré côté client : la RLS orders ne donne plus de
+      // SELECT à anon, donc on ne peut pas récupérer l'id via .select()
+      // après l'INSERT. On le génère ici et on l'utilise directement.
+      const newOrderId = crypto.randomUUID();
+
+      const { error } = await supabase.from('orders').insert([{
+        id: newOrderId,
         customer_name: `${form.firstName} ${form.lastName}`.trim(),
         customer_email: form.email?.trim() || null,
         customer_phone: form.phone,
@@ -790,9 +796,10 @@ export default function KaiKaiApp() {
         note_kitchen:  noteKitchen,
         note_delivery: noteDelivery,
         delivery_mode: mode,
-      }]).select('id').single();
+      }]);
 
       if (error) throw error;
+      const inserted = { id: newOrderId };
 
       if (isCard) {
         // Le total est recalculé côté serveur depuis order.items pour empêcher

@@ -1,12 +1,13 @@
 // src/pages/OrderSuccessPage.jsx — Page /payment-success
 //
-// Vérifie le VRAI statut de l'order côté Supabase et adapte l'affichage.
+// Vérifie le VRAI statut de l'order et adapte l'affichage. La lecture
+// passe par /api/get-order-status (service_role) — la RLS de la table
+// orders est verrouillée admin-only, anon n'a plus de SELECT.
 // Pour les paiements carte (asynchrones via webhook SumUp), polling court
 // tant que l'order est en pending_payment, jusqu'à 10 essais × 2s = 20s.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Check, Info, Loader2, RefreshCw } from 'lucide-react';
-import { supabase } from '../lib/supabase.js';
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_MAX_ATTEMPTS = 10;
@@ -49,16 +50,22 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null }
 
   const fetchOrder = useCallback(async () => {
     if (!orderId) return null;
-    const { data, error } = await supabase
-      .from('orders')
-      .select('id, status, payment_method, total, customer_name, customer_email, items, delivery_mode')
-      .eq('id', orderId)
-      .single();
-    if (error) {
-      console.warn('[KaïKaï] OrderSuccessPage fetchOrder error', error);
+    try {
+      const res = await fetch(
+        `/api/get-order-status?order_id=${encodeURIComponent(orderId)}`,
+        { headers: { Accept: 'application/json' } }
+      );
+      if (!res.ok) {
+        if (res.status !== 404) {
+          console.warn('[KaïKaï] OrderSuccessPage fetchOrder HTTP', res.status);
+        }
+        return null;
+      }
+      return await res.json();
+    } catch (err) {
+      console.warn('[KaïKaï] OrderSuccessPage fetchOrder error', err);
       return null;
     }
-    return data;
   }, [orderId]);
 
   // Initial fetch + démarrage du polling si pending_payment
