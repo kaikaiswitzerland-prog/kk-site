@@ -1060,6 +1060,13 @@ export default function KaiKaiApp() {
             </button>
           </div>
           <div className="mt-2">© {new Date().getFullYear()} KaïKaï — Tous droits réservés.</div>
+          <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-white/45">
+            <a href="/mentions-legales" className="hover:text-white transition-colors">Mentions légales</a>
+            <span aria-hidden="true">·</span>
+            <a href="/confidentialite" className="hover:text-white transition-colors">Confidentialité</a>
+            <span aria-hidden="true">·</span>
+            <a href="/cgv" className="hover:text-white transition-colors">CGV</a>
+          </div>
 
         </div>
       </footer>
