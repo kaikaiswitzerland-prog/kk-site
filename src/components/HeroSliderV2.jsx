@@ -182,6 +182,8 @@ export default function HeroSliderV2() {
             src={slide.image}
             alt={slide.name}
             className="w-full h-full object-cover"
+            loading={cur === 0 ? "eager" : "lazy"}
+            fetchPriority={cur === 0 ? "high" : "auto"}
             style={{
               ...(slide.objectPosition ? { objectPosition: slide.objectPosition } : {}),
               ...(slide.scale ? { transform: `scale(${slide.scale})` } : {}),
