@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /payment-success
+
+Sitemap: https://www.kaikaifood.com/sitemap.xml
