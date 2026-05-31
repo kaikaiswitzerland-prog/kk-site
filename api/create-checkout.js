@@ -19,12 +19,14 @@
 import { supabaseAdmin } from './_lib/supabaseServer.js';
 import { getRestaurantStatus, formatStatusLabel } from './_lib/restaurantHours.js';
 import { getZoneByNpa } from './_lib/deliveryZones.js';
+import { getServerPrice } from './_lib/menuPrices.js';
 
 // Recompute du total côté serveur — miroir de la logique du front
-// (App.jsx:519-522). On utilise items[].price tel que stocké en DB ; un
-// durcissement ultérieur consisterait à dupliquer MENU côté serveur pour
-// ignorer aussi item.price (mais le scope du chantier 1 est limité au
-// recompute du total, pas des prix unitaires).
+// (App.jsx:577). Les prix unitaires viennent de api/_lib/menuPrices.js
+// (source de vérité serveur) et NON de items[].price reçu via l'INSERT
+// anon — sinon un client peut payer 0.01 CHF en modifiant le price.
+// Si un id du panier est inconnu côté serveur, on renvoie un sentinel
+// pour que le caller renvoie 409.
 //
 // Pour le deliveryFee : on prend le NPA du body de la requête (pas de la
 // DB — l'order ne stocke pas le NPA séparément, juste dans customer_address)
@@ -32,10 +34,15 @@ import { getZoneByNpa } from './_lib/deliveryZones.js';
 // ou rien, on refuse.
 function computeOrderTotal(order, npa) {
   const items = Array.isArray(order.items) ? order.items : [];
-  const subtotal = items.reduce(
-    (s, it) => s + Number(it.price || 0) * Number(it.qty || 0),
-    0
-  );
+
+  let subtotal = 0;
+  for (const it of items) {
+    const serverPrice = getServerPrice(it?.id);
+    if (typeof serverPrice !== 'number') {
+      return { error: 'unknown_item', itemId: String(it?.id ?? '') };
+    }
+    subtotal += serverPrice * Number(it?.qty || 0);
+  }
   // TODO réactiver -10% quand Mode Île revient (cohérent avec couponApplied
   // côté front App.jsx). Tant que le programme membre est OFF, pas de remise.
   const discount = 0;
@@ -167,6 +174,14 @@ export default async function handler(req, res) {
       return res.status(409).json({
         error: 'invalid_delivery_zone',
         message: 'Code postal hors zone de livraison',
+      });
+    }
+    if (computed.error === 'unknown_item') {
+      console.warn('[KaïKaï create-checkout] refus : item inconnu', order.id, computed.itemId);
+      return res.status(409).json({
+        error: 'unknown_item',
+        itemId: computed.itemId,
+        message: 'Un plat de la commande est introuvable.',
       });
     }
     const { total, deliveryFee, subtotal } = computed;
