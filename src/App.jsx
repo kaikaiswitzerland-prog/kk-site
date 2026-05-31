@@ -1132,8 +1132,6 @@ function MenuItem({ item, cart, add, remove, outOfStock = false, isFormula = fal
               src={photo}
               alt={item.name}
               className="w-full h-full object-cover"
-              loading="lazy"
-              decoding="async"
               style={{
                 objectPosition: photoPos,
                 ...(item.id === "6" ? { transform: "scale(1.25)", transformOrigin: "center center" } : {}),
