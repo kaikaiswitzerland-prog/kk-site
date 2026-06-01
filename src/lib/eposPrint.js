@@ -184,9 +184,11 @@ function buildItemsBlock(order) {
 }
 
 function buildTotalBlock(order) {
+  // Pas de dh/dw ici : le corps du ticket reste intégralement en Font B
+  // sans agrandissement. Le gras (em) suffit à faire ressortir le total.
   const totalLine = dottedLine('TOTAL', fmt(order.total ?? 0));
   return [
-    textTag(totalLine, { em: true, dh: true }),
+    textTag(totalLine, { em: true }),
     textTag(separator('=')),
   ].join('');
 }
