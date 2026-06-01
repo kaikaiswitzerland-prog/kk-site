@@ -20,8 +20,11 @@ import {
   renderVariantLines,
 } from './admin/orderHelpers.js';
 
-// 48 colonnes : largeur "Font A" standard sur TM-m30II en 80 mm.
-const LINE_WIDTH = 48;
+// Largeur de ligne (en colonnes) calibrée pour la police par défaut du corps
+// du ticket (Font B, 9 px de large). Sur TM-m30II en 80 mm, Font B fait
+// 64 colonnes — Font A en ferait 48. À mettre à jour si on change la police
+// par défaut dans textTag().
+const LINE_WIDTH = 64;
 
 const DEFAULT_PRINTER_URL =
   'https://192.168.1.103/cgi-bin/epos/service.cgi?devid=local_printer&timeout=10000';
@@ -78,11 +81,16 @@ function separator(ch = '-') {
 
 // ─── Construction du XML ePOS-Print ────────────────────────────────────
 // Une commande ePOS = succession de <text>, <feed>, <cut>. Chaque
-// <text> ouvre/ferme ses attributs : alignement, double largeur/hauteur,
-// emphasis. On envoie un LF (\n) à la fin de chaque ligne, ou via
-// <feed line="N"/> pour aérer.
-function textTag(content, { align, em, dw, dh } = {}) {
+// <text> ouvre/ferme ses attributs : police (font_a/font_b), alignement,
+// double largeur/hauteur, emphasis. On envoie un LF (\n) à la fin de
+// chaque ligne, ou via <feed line="N"/> pour aérer.
+//
+// Police par défaut : font_b (plus petite, 64 colonnes en 80 mm). Seul
+// le bandeau "KaïKaï" passe explicitement en font_a avec dw/dh/em pour
+// rester très grand. LINE_WIDTH doit suivre la police par défaut.
+function textTag(content, { font = 'font_b', align, em, dw, dh } = {}) {
   const attrs = [];
+  if (font)  attrs.push(`font="${font}"`);
   if (align) attrs.push(`align="${align}"`);
   if (em)    attrs.push('em="true"');
   if (dw)    attrs.push('dw="true"');
@@ -114,8 +122,9 @@ function buildItemBlock(item) {
 function buildHeader(order) {
   const lines = [];
 
-  // En-tête centré, double largeur/hauteur + emphasis.
-  lines.push(textTag('KaïKaï', { align: 'center', dw: true, dh: true, em: true }));
+  // En-tête centré : seule ligne en Font A — double largeur/hauteur + gras
+  // pour ressortir au-dessus du corps du ticket (qui est en Font B).
+  lines.push(textTag('KaïKaï', { font: 'font_a', align: 'center', dw: true, dh: true, em: true }));
   lines.push(textTag('Bd de la Tour 1 - 1205 Geneve', { align: 'center' }));
   lines.push(textTag(separator('=')));
 
