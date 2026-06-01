@@ -36,3 +36,8 @@ dist-ssr
 .env.production
 # Exception : le template documenté DOIT pouvoir être commité.
 !.env.example
+
+# print-agent (démon local d'impression auto sur TM-m30II) — jamais commiter
+# la clé service Supabase ni l'état d'impression local.
+print-agent/.env.agent
+print-agent/.state.json
