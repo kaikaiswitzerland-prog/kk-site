@@ -12,7 +12,6 @@ import { useAdminAuth } from '../hooks/useAdminAuth.js';
 import { useOrders } from '../hooks/useOrders.js';
 import { TAB_FILTERS, isAdminVisible } from '../lib/admin/orderHelpers.js';
 import { supabase } from '../lib/supabase.js';
-import { printOrderTicket } from '../lib/eposPrint.js';
 
 import LoadingScreen from './admin/LoadingScreen.jsx';
 import LoginScreen from './admin/LoginScreen.jsx';
@@ -109,22 +108,27 @@ export default function AdminApp() {
   if (loading) return <LoadingScreen />;
   if (!user) return <LoginScreen />;
 
-  // Impression thermique directe via ePOS-Print (Epson TM-m30II).
-  // Le module src/lib/eposPrint.js construit le XML et POST vers l'IP locale
-  // de l'imprimante. Pendant l'attente on affiche un toast "Impression…",
-  // remplacé en fin de promesse par succès ou message d'erreur.
+  // Impression via le print-agent local. Le navigateur (HTTPS) ne peut pas
+  // parler à l'imprimante en HTTP (mixed-content) ni HTTPS (cert auto-signé
+  // bloqué). On délègue donc à l'agent qui tourne sur le poste cuisine :
+  // on pose reprint_at = now sur la commande, l'agent détecte au prochain
+  // poll et imprime. Même client/auth Supabase que les autres updates admin.
   const handlePrint = async (order) => {
-    pushPrintToast({ message: `Impression #${order.id?.slice(0, 8).toUpperCase()}…` }, null);
-    try {
-      await printOrderTicket(order);
-      pushPrintToast({ message: '✅ Ticket imprimé', tone: 'success' }, 3000);
-    } catch (err) {
-      console.error('[KaïKaï admin] impression échouée', err);
+    const short = order.id?.slice(0, 8).toUpperCase();
+    pushPrintToast({ message: `Impression #${short} demandée…` }, null);
+    const { error } = await supabase
+      .from('orders')
+      .update({ reprint_at: new Date().toISOString() })
+      .eq('id', order.id);
+    if (error) {
+      console.error('[KaïKaï admin] reprint_at update échoué', error);
       pushPrintToast(
-        { message: `❌ ${err?.message || 'Impression échouée'}`, tone: 'error' },
+        { message: `❌ ${error.message || 'Demande d\'impression échouée'}`, tone: 'error' },
         5000,
       );
+      return;
     }
+    pushPrintToast({ message: '✅ Impression envoyée au poste cuisine', tone: 'success' }, 3000);
   };
   // Refus structuré (chantier 7). Persiste status=refused + motif/commentaire
   // via le hook (RLS admin). Si la commande était payée carte (paid/accepted/
