@@ -6,13 +6,13 @@
 // Le rendu des sections vit dans src/pages/admin/*.
 
 import { useMemo, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
 import './admin/admin.css';
 
 import { useAdminAuth } from '../hooks/useAdminAuth.js';
 import { useOrders } from '../hooks/useOrders.js';
 import { TAB_FILTERS, isAdminVisible } from '../lib/admin/orderHelpers.js';
 import { supabase } from '../lib/supabase.js';
+import { printOrderTicket } from '../lib/eposPrint.js';
 
 import LoadingScreen from './admin/LoadingScreen.jsx';
 import LoginScreen from './admin/LoginScreen.jsx';
@@ -20,7 +20,6 @@ import Sidebar from './admin/Sidebar.jsx';
 import TopBar from './admin/TopBar.jsx';
 import OrdersView from './admin/OrdersView.jsx';
 import OrderModal from './admin/OrderModal.jsx';
-import PrintTicket from './admin/PrintTicket.jsx';
 import RefundModal from './admin/RefundModal.jsx';
 import ComptaView from './admin/ComptaView.jsx';
 import MenuView from './admin/MenuView.jsx';
@@ -59,12 +58,29 @@ export default function AdminApp() {
   const [page, setPage] = useState('orders');
   const [activeTab, setActiveTab] = useState('todo');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [printOrder, setPrintOrder] = useState(null);
   const [refundOrder, setRefundOrder] = useState(null);
   const [refusalOrder, setRefusalOrder] = useState(null);
   const [orderToTrash, setOrderToTrash] = useState(null);
   const [orderToDelete, setOrderToDelete] = useState(null);
-  const printTimerRef = useRef(null);
+
+  // Toast local pour le feedback impression (idle / printing / success / error).
+  // Indépendant du `toast` global de useOrders (nouvelles commandes) — on les
+  // empile l'un au-dessus de l'autre dans le coin haut.
+  const [printToast, setPrintToast] = useState(null);
+  const printToastTimerRef = useRef(null);
+  const pushPrintToast = (next, autoHideMs) => {
+    if (printToastTimerRef.current) {
+      clearTimeout(printToastTimerRef.current);
+      printToastTimerRef.current = null;
+    }
+    setPrintToast(next);
+    if (autoHideMs) {
+      printToastTimerRef.current = setTimeout(() => {
+        setPrintToast(null);
+        printToastTimerRef.current = null;
+      }, autoHideMs);
+    }
+  };
 
   // Corbeille : exclusion centralisée. `activeOrders` alimente l'écran
   // d'accueil ET toute la compta (KPIs, transactions, export CSV) ;
@@ -93,28 +109,22 @@ export default function AdminApp() {
   if (loading) return <LoadingScreen />;
   if (!user) return <LoginScreen />;
 
-  // Safari iOS bloque window.print() hors user gesture. Pour rester dans le
-  // gesture du clic, on commit synchronement le ticket via flushSync, puis
-  // on appelle window.print() dans le même call stack que le onClick. Le
-  // composant PrintTicket est pré-monté en permanence dans l'arbre (avec
-  // order=null par défaut) ; flushSync ne fait qu'un update de prop.
-  const handlePrint = (order) => {
-    // Si une impression précédente est encore en flight (timer pas
-    // encore expiré), on annule son cleanup pour éviter de vider le
-    // portal pendant la capture de la nouvelle impression.
-    if (printTimerRef.current) {
-      clearTimeout(printTimerRef.current);
-      printTimerRef.current = null;
+  // Impression thermique directe via ePOS-Print (Epson TM-m30II).
+  // Le module src/lib/eposPrint.js construit le XML et POST vers l'IP locale
+  // de l'imprimante. Pendant l'attente on affiche un toast "Impression…",
+  // remplacé en fin de promesse par succès ou message d'erreur.
+  const handlePrint = async (order) => {
+    pushPrintToast({ message: `Impression #${order.id?.slice(0, 8).toUpperCase()}…` }, null);
+    try {
+      await printOrderTicket(order);
+      pushPrintToast({ message: '✅ Ticket imprimé', tone: 'success' }, 3000);
+    } catch (err) {
+      console.error('[KaïKaï admin] impression échouée', err);
+      pushPrintToast(
+        { message: `❌ ${err?.message || 'Impression échouée'}`, tone: 'error' },
+        5000,
+      );
     }
-    flushSync(() => setPrintOrder(order));
-    window.print();
-    // iOS Safari : window.print() retourne immédiatement, AirPrint
-    // capture le DOM en arrière-plan. On laisse 2s avant de vider
-    // le portal pour garantir que la capture est terminée.
-    printTimerRef.current = setTimeout(() => {
-      setPrintOrder(null);
-      printTimerRef.current = null;
-    }, 2000);
   };
   // Refus structuré (chantier 7). Persiste status=refused + motif/commentaire
   // via le hook (RLS admin). Si la commande était payée carte (paid/accepted/
@@ -254,6 +264,7 @@ export default function AdminApp() {
       </main>
 
       {toast && <Toast order={toast} />}
+      {printToast && <Toast order={printToast} />}
 
       {liveSelectedOrder && (
         <OrderModal
@@ -303,10 +314,6 @@ export default function AdminApp() {
         />
       )}
 
-      {/* PrintTicket est rendu en permanence (portal masqué hors @media print)
-          pour que window.print() puisse être appelé synchronement dans le
-          user gesture du clic Ticket — voir handlePrint. */}
-      <PrintTicket order={printOrder} />
     </div>
   );
 }

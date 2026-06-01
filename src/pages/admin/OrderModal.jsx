@@ -237,7 +237,7 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint, on
             onClick={() => onPrint(order)}
             className="flex-1 rounded-lg border border-line-strong bg-bg px-4 py-3 text-sm font-medium text-ink transition-colors hover:bg-bg-elev-2"
           >
-            🖨️ Ticket cuisine
+            🖨️ Imprimer
           </button>
         </div>
 

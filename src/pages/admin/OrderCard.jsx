@@ -206,7 +206,7 @@ export default function OrderCard({ order, isNew, onSelect, onUpdateStatus, onPr
             onClick={() => onPrint(order)}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-bg px-3 py-2.5 text-[12px] font-medium text-ink transition-colors hover:bg-bg-elev-2"
           >
-            🖨️ Ticket
+            🖨️ Imprimer
           </button>
           <button
             onClick={() => onUpdateStatus(order.id, 'accepted')}
