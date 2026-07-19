@@ -380,7 +380,13 @@ export function urgencyFor(order, now = Date.now()) {
   if (status === 'ready') {
     const ref = order.ready_at || order.accepted_at || order.created_at;
     const minutes = Math.max(0, Math.floor((now - new Date(ref).getTime()) / 60000));
-    return classify(minutes, [5, 10], `Prête depuis ${minutes} min — livreur en route ?`);
+    // Le suffixe dépend du mode réel : emporter → le client vient chercher,
+    // livraison → le livreur part. Évite "livreur en route ?" sur un pickup.
+    const isPickup = order.delivery_mode === 'pickup';
+    const label = isPickup
+      ? `Prête depuis ${minutes} min — client en route ?`
+      : `Prête depuis ${minutes} min — livreur en route ?`;
+    return classify(minutes, [5, 10], label);
   }
   if (status === 'out_for_delivery') {
     const ref = order.out_for_delivery_at || order.ready_at || order.accepted_at || order.created_at;
