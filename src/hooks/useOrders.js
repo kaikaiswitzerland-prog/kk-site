@@ -20,6 +20,9 @@ export function useOrders({ enabled }) {
       ? localStorage.getItem('kkAdminSound') !== '0'
       : true
   );
+  // AudioContext réutilisé entre les bips : les navigateurs plafonnent le
+  // nombre de contextes simultanés, en créer un par commande finit par échouer.
+  const audioCtx = useRef(null);
 
   const triggerToast = useCallback((order) => {
     setToast(order);
@@ -39,6 +42,78 @@ export function useOrders({ enabled }) {
       tag: 'kaikai-order',
     });
   }, []);
+
+  // Crée (si besoin) et débloque l'AudioContext. Safari et Chrome n'autorisent
+  // la lecture qu'après un geste utilisateur : appelé depuis un handler de clic,
+  // le resume() est accepté et le contexte reste `running` pour les bips
+  // ultérieurs, qui eux arrivent hors geste (event Realtime).
+  const ensureAudioCtx = useCallback(() => {
+    const Ctx =
+      typeof window !== 'undefined' &&
+      (window.AudioContext || window.webkitAudioContext);
+    if (!Ctx) return null;
+    try {
+      if (!audioCtx.current || audioCtx.current.state === 'closed') {
+        audioCtx.current = new Ctx();
+      }
+      if (audioCtx.current.state === 'suspended') {
+        audioCtx.current.resume().catch(() => { /* geste requis : réessayé plus tard */ });
+      }
+      return audioCtx.current;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Déblocage au premier geste sur la page — typiquement le clic de connexion,
+  // bien avant la première commande. Sans ça, l'AudioContext naît `suspended`
+  // et les bips sont programmés sur une horloge à l'arrêt : aucun son, aucune
+  // erreur. `once: true` car un seul déblocage suffit pour toute la session.
+  useEffect(() => {
+    const unlock = () => {
+      ensureAudioCtx();
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('touchstart', unlock);
+    };
+    window.addEventListener('click', unlock, { once: true });
+    window.addEventListener('touchstart', unlock, { once: true });
+    return () => {
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('touchstart', unlock);
+    };
+  }, [ensureAudioCtx]);
+
+  // Sonnerie de nouvelle commande, synthétisée à la volée (aucun fichier
+  // audio à servir). Deux bips de deux notes montantes, espacés de 450 ms.
+  const playNotificationSound = useCallback(() => {
+    if (!soundEnabled.current) return;
+    // Fallback : recrée/relance le contexte si le déblocage n'a pas eu lieu ou
+    // si le navigateur l'a resuspendu (onglet longtemps en arrière-plan).
+    const ctx = ensureAudioCtx();
+    if (!ctx) return;
+
+    try {
+      const start = ctx.currentTime + 0.02;
+      // Bip 1 à t+0, bip 2 à t+0.45 ; chacun = deux notes [Hz, décalage].
+      for (const bip of [0, 0.45]) {
+        for (const [freq, delay] of [[880, 0], [1320, 0.14]]) {
+          const t = start + bip + delay;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t);
+          // Enveloppe courte : montée quasi instantanée puis extinction
+          // exponentielle, sinon l'arrêt net produit un clic.
+          gain.gain.setValueAtTime(0.0001, t);
+          gain.gain.exponentialRampToValueAtTime(0.5, t + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.14);
+        }
+      }
+    } catch { /* audio indisponible : ignoré */ }
+  }, [ensureAudioCtx]);
 
   const markRecentlyAdded = useCallback((id) => {
     setRecentlyAddedIds((prev) => {
@@ -97,13 +172,7 @@ export function useOrders({ enabled }) {
               markRecentlyAdded(order.id);
               triggerToast(order);
               triggerBrowserNotification(order);
-              if (soundEnabled.current) {
-                try {
-                  const a = new Audio('/notif.mp3');
-                  a.volume = 0.5;
-                  a.play().catch(() => { /* autoplay bloqué : ignoré */ });
-                } catch { /* fichier absent : ignoré */ }
-              }
+              playNotificationSound();
             }
           } else if (payload.eventType === 'UPDATE') {
             const next = payload.new;
@@ -118,6 +187,7 @@ export function useOrders({ enabled }) {
               markRecentlyAdded(next.id);
               triggerToast(next);
               triggerBrowserNotification(next);
+              playNotificationSound();
             }
           } else if (payload.eventType === 'DELETE') {
             // Suppression définitive (corbeille) — retire la row côté autres clients.
@@ -151,7 +221,13 @@ export function useOrders({ enabled }) {
       window.removeEventListener('focus', fetchOrders);
       supabase.removeChannel(channel);
     };
-  }, [enabled, markRecentlyAdded, triggerToast, triggerBrowserNotification]);
+  }, [
+    enabled,
+    markRecentlyAdded,
+    triggerToast,
+    triggerBrowserNotification,
+    playNotificationSound,
+  ]);
 
   const updateStatus = useCallback(async (id, status) => {
     // Patch optimiste : on inclut l'horodatage de la transition pour que la
@@ -271,8 +347,11 @@ export function useOrders({ enabled }) {
 
   const setSoundEnabled = useCallback((on) => {
     soundEnabled.current = on;
+    // Activer le son est un geste utilisateur : on en profite pour débloquer
+    // l'audio, au cas où ce serait le tout premier clic de la session.
+    if (on) ensureAudioCtx();
     try { localStorage.setItem('kkAdminSound', on ? '1' : '0'); } catch { /* */ }
-  }, []);
+  }, [ensureAudioCtx]);
 
   return {
     orders,
