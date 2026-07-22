@@ -8,6 +8,16 @@ import { fmt, isAdminVisible } from '../lib/admin/orderHelpers.js';
 // 15 000 ms = plancher raisonnable pour ne pas surcharger Supabase.
 const POLLING_INTERVAL_MS = 15000;
 
+// Cadence de répétition de l'alarme tant qu'une commande n'est pas prise en
+// charge. La sonnerie dure ~1,6 s : 3 s laisse un silence audible entre deux
+// salves, sans laisser le temps d'oublier la commande.
+const ALARM_REPEAT_MS = 3000;
+
+// Statuts d'une commande « pas encore prise en charge » — ceux de l'onglet
+// « À traiter ». Dès que la commande en sort (acceptée, refusée…), son alarme
+// s'arrête.
+const ALARM_STATUSES = ['pending', 'paid'];
+
 // Charge la liste des commandes + souscription Realtime + polling de secours
 // + refetch au focus. Déclenche un toast et une notification navigateur sur
 // INSERT, et expose un updateStatus optimiste.
@@ -23,6 +33,12 @@ export function useOrders({ enabled }) {
   // AudioContext réutilisé entre les bips : les navigateurs plafonnent le
   // nombre de contextes simultanés, en créer un par commande finit par échouer.
   const audioCtx = useRef(null);
+  // Ids des commandes arrivées en temps réel et pas encore prises en charge.
+  // Uniquement alimenté par les events Realtime — jamais par le fetch initial,
+  // pour qu'un rechargement de l'admin ne déclenche pas l'alarme sur des
+  // commandes déjà à l'écran.
+  const alarmIds = useRef(new Set());
+  const alarmTimer = useRef(null);
 
   const triggerToast = useCallback((order) => {
     setToast(order);
@@ -84,7 +100,8 @@ export function useOrders({ enabled }) {
   }, [ensureAudioCtx]);
 
   // Sonnerie de nouvelle commande, synthétisée à la volée (aucun fichier
-  // audio à servir). Deux bips de deux notes montantes, espacés de 450 ms.
+  // audio à servir). Alarme de 3 salves de deux notes aiguës, ~1,6 s au total,
+  // calibrée pour percer le bruit ambiant d'une cuisine.
   const playNotificationSound = useCallback(() => {
     if (!soundEnabled.current) return;
     // Fallback : recrée/relance le contexte si le déblocage n'a pas eu lieu ou
@@ -94,26 +111,76 @@ export function useOrders({ enabled }) {
 
     try {
       const start = ctx.currentTime + 0.02;
-      // Bip 1 à t+0, bip 2 à t+0.45 ; chacun = deux notes [Hz, décalage].
-      for (const bip of [0, 0.45]) {
-        for (const [freq, delay] of [[880, 0], [1320, 0.14]]) {
-          const t = start + bip + delay;
+      // 3 salves à t+0 / +0.6 / +1.2 ; chacune = deux notes [Hz, décalage].
+      // Onde carrée + aigus 1200/1800 Hz : riche en harmoniques, ça tranche
+      // dans le bruit de cuisine là où une sinusoïde douce se fait couvrir.
+      for (const salve of [0, 0.6, 1.2]) {
+        for (const [freq, delay] of [[1200, 0], [1800, 0.2]]) {
+          const t = start + salve + delay;
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
-          osc.type = 'triangle';
+          osc.type = 'square';
           osc.frequency.setValueAtTime(freq, t);
-          // Enveloppe courte : montée quasi instantanée puis extinction
-          // exponentielle, sinon l'arrêt net produit un clic.
+          // Enveloppe : montée quasi instantanée, plateau au volume max sur
+          // l'essentiel de la note, extinction juste avant l'arrêt pour éviter
+          // le clic. Les notes ne se recouvrent jamais — pas de saturation.
           gain.gain.setValueAtTime(0.0001, t);
-          gain.gain.exponentialRampToValueAtTime(0.5, t + 0.01);
-          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+          gain.gain.exponentialRampToValueAtTime(1.0, t + 0.01);
+          gain.gain.setValueAtTime(1.0, t + 0.17);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.19);
           osc.connect(gain).connect(ctx.destination);
           osc.start(t);
-          osc.stop(t + 0.14);
+          osc.stop(t + 0.2);
         }
       }
     } catch { /* audio indisponible : ignoré */ }
   }, [ensureAudioCtx]);
+
+  const stopAlarm = useCallback(() => {
+    if (alarmTimer.current) {
+      clearInterval(alarmTimer.current);
+      alarmTimer.current = null;
+    }
+  }, []);
+
+  // Démarre (ou prolonge) l'alarme pour une commande fraîchement arrivée.
+  // Plusieurs commandes en attente partagent un seul timer : la sonnerie ne se
+  // superpose pas, elle continue simplement tant que `alarmIds` n'est pas vide.
+  const startAlarm = useCallback((id) => {
+    // Son coupé : aucune alarme, et on n'enregistre pas l'id — sinon la
+    // remettre sur ON relancerait l'alarme toute seule.
+    if (!soundEnabled.current) return;
+    alarmIds.current.add(id);
+    playNotificationSound(); // première sonnerie immédiate
+    if (alarmTimer.current) return; // timer déjà en route
+    alarmTimer.current = setInterval(playNotificationSound, ALARM_REPEAT_MS);
+  }, [playNotificationSound]);
+
+  // Arbitrage de l'alarme sur l'état réel des commandes plutôt que dans chaque
+  // mutation : `updateStatus`, `refuseOrder`, `trashOrder`… patchent tous
+  // `orders` de façon optimiste, donc accepter une commande (ici ou depuis une
+  // autre tablette, via Realtime) la fait sortir de `ALARM_STATUSES` et retire
+  // son id. L'alarme ne s'arrête qu'une fois le dernier id parti.
+  useEffect(() => {
+    if (alarmIds.current.size === 0) return;
+    for (const id of alarmIds.current) {
+      const order = orders.find((o) => o.id === id);
+      // Absente de la liste → on garde l'alarme. Un refetch parti avant
+      // l'arrivée de la commande (polling 15 s, retour au premier plan) revient
+      // sans elle : la retirer ici couperait l'alarme après une seule sonnerie.
+      // Une commande ne disparaît jamais pour de bon sans passer par la
+      // corbeille, cas couvert par `is_trashed` juste en dessous.
+      if (!order) continue;
+      if (order.is_trashed || !ALARM_STATUSES.includes(order.status)) {
+        alarmIds.current.delete(id);
+      }
+    }
+    if (alarmIds.current.size === 0) stopAlarm();
+  }, [orders, stopAlarm]);
+
+  // Filet de sécurité : pas de timer fantôme si le hook est démonté alors que
+  // l'alarme sonne (déconnexion, navigation hors admin).
+  useEffect(() => stopAlarm, [stopAlarm]);
 
   const markRecentlyAdded = useCallback((id) => {
     setRecentlyAddedIds((prev) => {
@@ -172,7 +239,7 @@ export function useOrders({ enabled }) {
               markRecentlyAdded(order.id);
               triggerToast(order);
               triggerBrowserNotification(order);
-              playNotificationSound();
+              startAlarm(order.id);
             }
           } else if (payload.eventType === 'UPDATE') {
             const next = payload.new;
@@ -187,7 +254,7 @@ export function useOrders({ enabled }) {
               markRecentlyAdded(next.id);
               triggerToast(next);
               triggerBrowserNotification(next);
-              playNotificationSound();
+              startAlarm(next.id);
             }
           } else if (payload.eventType === 'DELETE') {
             // Suppression définitive (corbeille) — retire la row côté autres clients.
@@ -226,7 +293,7 @@ export function useOrders({ enabled }) {
     markRecentlyAdded,
     triggerToast,
     triggerBrowserNotification,
-    playNotificationSound,
+    startAlarm,
   ]);
 
   const updateStatus = useCallback(async (id, status) => {
@@ -347,11 +414,19 @@ export function useOrders({ enabled }) {
 
   const setSoundEnabled = useCallback((on) => {
     soundEnabled.current = on;
-    // Activer le son est un geste utilisateur : on en profite pour débloquer
-    // l'audio, au cas où ce serait le tout premier clic de la session.
-    if (on) ensureAudioCtx();
+    if (on) {
+      // Activer le son est un geste utilisateur : on en profite pour débloquer
+      // l'audio, au cas où ce serait le tout premier clic de la session.
+      ensureAudioCtx();
+    } else {
+      // 🔕 coupe l'alarme en cours. On vide aussi la liste d'attente pour que
+      // repasser sur ON ne relance pas la sonnerie de son propre chef : seule
+      // une nouvelle commande pourra la redéclencher.
+      stopAlarm();
+      alarmIds.current.clear();
+    }
     try { localStorage.setItem('kkAdminSound', on ? '1' : '0'); } catch { /* */ }
-  }, [ensureAudioCtx]);
+  }, [ensureAudioCtx, stopAlarm]);
 
   return {
     orders,
