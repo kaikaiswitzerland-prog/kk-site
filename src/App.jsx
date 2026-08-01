@@ -21,6 +21,20 @@ import {
   formatAllergenNamesShort,
 } from "./data/allergens.js";
 import {
+  VARIANTS_VELOUTE,
+  VARIANTS_TARTARE,
+  PROTEIN_OPTS_STANDARD,
+  PROTEIN_OPTS_OMELETTE,
+  COULIS_OPTS,
+  JUS_OPTS,
+  EAU_OPTS,
+  FORMULE_PROTEIN_OPTS_STANDARD,
+  FORMULE_PROTEIN_OPTS_OMELETTE,
+  FORMULE_COULIS_OPTS,
+  FORMULE_JUS_OPTS,
+  FORMULE_EAU_OPTS,
+} from "./data/menuMeta.js";
+import {
   DELIVERY_ZONES,
   NPA_TO_ZONE,
   getZoneByNpa,
@@ -130,10 +144,7 @@ const MENU = [
     category: "entrees",
     hasVariants: true,
     variantSubtitle: "Servi froid ou chaud ?",
-    variants: [
-      { id: "froid", name: "Servi froid", desc: "Idéal pour les beaux jours" },
-      { id: "chaud", name: "Servi chaud", desc: "Réconfortant et parfumé" }
-    ]
+    variants: VARIANTS_VELOUTE
   },
   { id: "2",  name: "Salade Tropicale", desc: "Salade, tomate, patate, concombre, guacamole maison, cacahuètes", price: 7.90, category: "entrees" },
   { id: "3",  name: "Salade de poulet", desc: "Salade, tomate, patate, concombre, poulet", price: 9.90, category: "entrees" },
@@ -144,11 +155,7 @@ const MENU = [
     price: 12.90, 
     category: "entrees",
     hasVariants: true,
-    variants: [
-      { id: "tahiti", name: "Tartare Tahiti", desc: "Sauce coco" },
-      { id: "hawaii", name: "Tartare Hawaï", desc: "Sauce sésame, mangue et ananas" },
-      { id: "samoa", name: "Tartare Samoa", desc: "Sauce piment maison" }
-    ]
+    variants: VARIANTS_TARTARE
   },
 
   // PLATS CHAUDS
@@ -159,12 +166,7 @@ const MENU = [
     price: 18.90, 
     category: "chaud",
     hasProteinVariants: true,
-    proteinVariants: [
-      { id: "porc", name: "Porc", desc: "Viande de porc mijotée façon KaïKaï" },
-      { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
-      { id: "porc-poulet", name: "Porc + Poulet", desc: "Mix des deux viandes" },
-      { id: "veggie", name: "Veggie", desc: "100% végétarien" }
-    ]
+    proteinVariants: PROTEIN_OPTS_STANDARD
   },
   { 
     id: "6",  
@@ -173,12 +175,7 @@ const MENU = [
     price: 18.90, 
     category: "chaud",
     hasProteinVariants: true,
-    proteinVariants: [
-      { id: "porc", name: "Porc", desc: "Viande de porc mijotée façon KaïKaï" },
-      { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
-      { id: "porc-poulet", name: "Porc + Poulet", desc: "Mix des deux viandes" },
-      { id: "veggie", name: "Veggie", desc: "100% végétarien" }
-    ]
+    proteinVariants: PROTEIN_OPTS_STANDARD
   },
   { 
     id: "7",  
@@ -187,10 +184,7 @@ const MENU = [
     price: 17.90, 
     category: "chaud",
     hasProteinVariants: true,
-    proteinVariants: [
-      { id: "veggie", name: "Veggie", desc: "100% végétarien" },
-      { id: "poulet", name: "Poulet", desc: "Avec poulet" }
-    ]
+    proteinVariants: PROTEIN_OPTS_OMELETTE
   },
   { id: "8",  name: "Wok de Bœuf", desc: "Wok de bœuf, légumes de saison, sauce sésame, servi avec du riz et une salade", price: 26.90, category: "chaud" },
 
@@ -229,10 +223,7 @@ const MENU = [
     price: 9.90, 
     category: "desserts",
     hasCoulisVariants: true,
-    coulisVariants: [
-      { id: "mangue", name: "Coulis Mangue", desc: "Doux et tropical" },
-      { id: "fruits-rouges", name: "Coulis Fruits Rouges", desc: "Frais et acidulé" }
-    ]
+    coulisVariants: COULIS_OPTS
   },
   { id: "17", name: "Po'e Banane", desc: "Dessert traditionnel tahitien à base de banane", price: 9.90, category: "desserts" },
   { 
@@ -242,10 +233,7 @@ const MENU = [
     price: 12.90, 
     category: "desserts",
     hasCoulisVariants: true,
-    coulisVariants: [
-      { id: "mangue", name: "Coulis Mangue", desc: "Doux et tropical" },
-      { id: "fruits-rouges", name: "Coulis Fruits Rouges", desc: "Frais et acidulé" }
-    ]
+    coulisVariants: COULIS_OPTS
   },
 
   // BOISSONS
@@ -256,12 +244,7 @@ const MENU = [
     price: 3.50, 
     category: "boissons",
     hasJusVariants: true,
-    jusVariants: [
-      { id: "pomme-kiwi", name: "🍏 Pomme/Kiwi", desc: "Frais et vitaminé" },
-      { id: "fraise-framboise", name: "🍓 Fraise/Framboise", desc: "Doux et fruité" },
-      { id: "ananas-citron", name: "🍍 Ananas/Citron/Gingembre", desc: "Tropical et piquant" },
-      { id: "ace", name: "🍊 Cocktail ACE", desc: "Vitaminé (A, C, E)" }
-    ]
+    jusVariants: JUS_OPTS
   },
   { 
     id: "20", 
@@ -270,10 +253,7 @@ const MENU = [
     price: 3.00, 
     category: "boissons",
     hasEauVariants: true,
-    eauVariants: [
-      { id: "plate", name: "💧 Eau Plate", desc: "Eau minérale naturelle" },
-      { id: "gazeuse", name: "🫧 Eau Gazeuse", desc: "Eau pétillante" }
-    ]
+    eauVariants: EAU_OPTS
   },
 ];
 
@@ -1725,12 +1705,12 @@ function FormuleModal({ item, onConfirm, onClose }) {
   const dessertEmojis = { 'Coulant au chocolat':'🍫','Crème Tropicale':'🥥',"Po'e Banane":'🍌','Cheesecake':'🍰' };
 
   const proteinOpts = (plat) => plat === 'Omelette Fu Young'
-    ? [{ id:'veggie', name:'Veggie', desc:'100% végétarien', emoji:'🥦' },{ id:'poulet', name:'Poulet', desc:'Avec poulet', emoji:'🍗' }]
-    : [{ id:'porc', name:'Porc', desc:'Viande de porc mijotée façon KaïKaï', emoji:'🍖' },{ id:'poulet', name:'Poulet', desc:'Wok de poulet', emoji:'🍗' },{ id:'porc-poulet', name:'Porc + Poulet', desc:'Mix des deux', emoji:'🍽️' },{ id:'veggie', name:'Veggie', desc:'100% végétarien', emoji:'🥦' }];
+    ? FORMULE_PROTEIN_OPTS_OMELETTE
+    : FORMULE_PROTEIN_OPTS_STANDARD;
 
-  const jusOpts = [{ id:'pomme-kiwi', name:'Pomme / Kiwi', desc:'Frais et vitaminé', emoji:'🍏' },{ id:'fraise-framboise', name:'Fraise / Framboise', desc:'Doux et fruité', emoji:'🍓' },{ id:'ananas-citron', name:'Ananas / Citron / Gingembre', desc:'Tropical et piquant', emoji:'🍍' },{ id:'ace', name:'Cocktail ACE', desc:'Vitaminé A, C, E', emoji:'🍊' }];
-  const eauOpts = [{ id:'plate', name:'Eau Plate', desc:'Eau minérale naturelle', emoji:'💧' },{ id:'gazeuse', name:'Eau Gazeuse', desc:'Eau pétillante', emoji:'🫧' }];
-  const coulisOpts = [{ id:'mangue', name:'Coulis Mangue', desc:'Doux et tropical', emoji:'🥭' },{ id:'fruits-rouges', name:'Coulis Fruits Rouges', desc:'Frais et acidulé', emoji:'🫐' }];
+  const jusOpts = FORMULE_JUS_OPTS;
+  const eauOpts = FORMULE_EAU_OPTS;
+  const coulisOpts = FORMULE_COULIS_OPTS;
 
   const getProgress = () => {
     if (item.formuleType === 'decouverte') {
