@@ -197,6 +197,145 @@ async function runScenario(name, rows, options = {}) {
   check('pending_payment + paid : 0 fetch', res.fetchOnRow.length === 0);
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// RENDU DU TICKET — génération du XML SANS imprimer
+// ══════════════════════════════════════════════════════════════════════
+// Deux commandes de test passées à buildEposXml(), puis :
+//   · audit automatique (débordement de colonnes, caractères hors ASCII,
+//     échelles hors bornes 1..8, balises non fermées)
+//   · aperçu texte pour juger la hiérarchie visuelle à l'œil
+
+const { buildEposXml } = await import('../src/lib/eposPrint.js');
+
+const COLS = { font_a: 48, font_b: 64, font_c: 72 };
+
+// Parse les <text .../> du XML et recalcule la largeur disponible de chaque
+// ligne selon sa police et son échelle — c'est exactement le piège que
+// l'ancien LINE_WIDTH=64 global masquait.
+function auditTicket(xml) {
+  const lines = [];
+  const violations = [];
+  const re = /<text ([^>]*)>([\s\S]*?)<\/text>/g;
+  let m;
+  while ((m = re.exec(xml)) !== null) {
+    const attrs = Object.fromEntries(
+      [...m[1].matchAll(/(\w+)="([^"]*)"/g)].map((a) => [a[1], a[2]]),
+    );
+    const text = m[2]
+      .replace(/&#10;$/, '')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+    const font = attrs.font || 'font_b';
+    const width = Number(attrs.width || 1);
+    const height = Number(attrs.height || 1);
+    const cols = Math.floor((COLS[font] || 64) / width);
+
+    if (text.length > cols) {
+      violations.push(`debordement (${text.length}>${cols} col, ${font} x${width}) : "${text}"`);
+    }
+    if (width < 1 || width > 8 || height < 1 || height > 8) {
+      violations.push(`echelle hors bornes 1..8 : width=${width} height=${height}`);
+    }
+    if (/[^\x20-\x7E]/.test(text)) {
+      violations.push(`caractere non-ASCII non replie : "${text}"`);
+    }
+    lines.push({ text, font, width, height, cols, reverse: attrs.reverse === 'true', em: attrs.em === 'true' });
+  }
+  return { lines, violations };
+}
+
+function preview(xml) {
+  const { lines } = auditTicket(xml);
+  const out = [];
+  for (const l of lines) {
+    const tag = `${l.font === 'font_a' ? 'A' : 'B'}${l.width > 1 ? `x${l.width}` : '  '}${l.reverse ? ' INV' : '    '}${l.em ? ' B' : '  '}`;
+    out.push(`  ${tag} │ ${l.text}`);
+  }
+  return out.join('\n');
+}
+
+function checkTicket(label, order) {
+  console.log(`\n── Ticket : ${label} ──`);
+  const xml = buildEposXml(order);
+  const { violations } = auditTicket(xml);
+
+  check(`${label} : XML bien forme (balises text equilibrees)`,
+    (xml.match(/<text /g) || []).length === (xml.match(/<\/text>/g) || []).length);
+  check(`${label} : enveloppe SOAP + namespace epos-print`,
+    xml.startsWith('<?xml version="1.0" encoding="utf-8"?>') &&
+    xml.includes('http://www.epson-pos.com/schemas/2011/03/epos-print') &&
+    xml.endsWith('</s:Envelope>'));
+  check(`${label} : bandeau et mode en video inverse`,
+    (xml.match(/reverse="true"/g) || []).length >= 2);
+  check(`${label} : se termine par feed + cut`,
+    xml.includes('<feed line="3"/><cut type="feed"/>'));
+  check(`${label} : aucun debordement / non-ASCII / echelle invalide`,
+    violations.length === 0, violations.join(' | '));
+
+  console.log(preview(xml));
+  return xml;
+}
+
+// Commande 1 — à emporter, 2 articles dont un avec choix de protéine.
+checkTicket('a emporter', makeOrder({
+  id: '7f3a9c21-1111-2222-3333-444444444444',
+  delivery_mode: 'pickup',
+  payment_method: 'card',
+  status: 'paid',
+  customer_name: 'Élodie Küng',
+  customer_phone: '+41 79 123 45 67',
+  note_kitchen: 'Sans coriandre s’il vous plaît',
+  items: [
+    {
+      id: '5', name: 'Chao Men', qty: 2, price: 18.9, subtotal: 37.8,
+      variants: [
+        { id: 'porc', name: 'Porc', desc: 'Viande de porc mijotée façon KaïKaï' },
+        { id: 'veggie', name: 'Veggie', desc: '100% végétarien' },
+      ],
+    },
+    { id: '15', name: 'Coulant au chocolat', qty: 1, price: 9.9, subtotal: 9.9, variants: [] },
+  ],
+  total: 47.7,
+}));
+
+// Commande 2 — livraison avec formule Voyage (sous-lignes longues), adresse
+// longue, notes cuisine ET livreur, paiement cash non encaissé.
+checkTicket('livraison + formule', makeOrder({
+  id: 'b2c4e6a8-5555-6666-7777-888888888888',
+  delivery_mode: 'delivery',
+  payment_method: 'cash',
+  status: 'accepted',
+  customer_name: 'Jean-Christophe de la Tour-Bergerac',
+  customer_phone: '+41 78 987 65 43',
+  customer_address: 'Avenue de Champel 123bis, appartement 4B, 3e étage, 1206 Genève',
+  note_kitchen: 'Allergie arachides — attention au guacamole',
+  note_delivery: 'Sonner chez « Bergerac », code portail 4512A',
+  items: [
+    {
+      id: '14', name: 'Formule Voyage', qty: 1, price: 49.9, subtotal: 49.9,
+      variants: [{
+        type: 'voyage',
+        plats: ['Chao Men', 'Kai Fan'],
+        proteins: ['Porc + Poulet', 'Veggie'],
+        boissons: ['Jus exotique', 'Eau'],
+        jus: ['Ananas / Citron / Gingembre'],
+        eau: ['Eau Gazeuse'],
+        dessert: 'Crème Tropicale',
+        coulisDessert: 'Coulis Fruits Rouges',
+      }],
+    },
+    {
+      id: '4', name: 'Tartare de thon rouge', qty: 3, price: 12.9, subtotal: 38.7,
+      variants: [
+        { id: 'tahiti', name: 'Tartare Tahiti', desc: 'Sauce coco' },
+        { id: 'hawaii', name: 'Tartare Hawaï', desc: 'Sauce sésame, mangue et ananas' },
+        { id: 'samoa', name: 'Tartare Samoa', desc: 'Sauce piment maison' },
+      ],
+    },
+  ],
+  total: 93.5,
+}));
+
 // ─── Bilan ────────────────────────────────────────────────────────────
 console.log('\n────────────────────────────────────────');
 if (failures === 0) {

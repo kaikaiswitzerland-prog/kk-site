@@ -2,13 +2,23 @@
 // Envoie un ticket de commande directement à l'imprimante thermique via le
 // serveur ePOS-Print embarqué (http(s)://<ip>/cgi-bin/epos/service.cgi).
 //
-// L'appel doit partir du navigateur (l'admin tourne sur l'iPad, sur le même
-// Wi-Fi local que l'imprimante). On construit le XML SOAP "à la main" pour
-// éviter toute dépendance NPM Epson, et on parse la réponse pour remonter
-// proprement les erreurs d'imprimante (papier vide, capot ouvert, etc.).
+// Appelé soit depuis le navigateur admin (même Wi-Fi que l'imprimante), soit
+// depuis print-agent/agent.mjs (démon local). On construit le XML SOAP "à la
+// main" pour éviter toute dépendance NPM Epson, et on parse la réponse pour
+// remonter proprement les erreurs d'imprimante (papier vide, capot ouvert…).
 //
-// Doc Epson de référence : ePOS-Print API Reference, schéma
-// http://www.epson-pos.com/schemas/2011/03/epos-print.
+// Doc de référence : ePOS-Print XML User's Manual, schéma
+// http://www.epson-pos.com/schemas/2011/03/epos-print
+//
+// Attributs <text> utilisés (vérifiés dans la spec) :
+//   font    font_a | font_b | font_c
+//   width   entier 1..8   (échelle horizontale ; prime sur dw quand les deux
+//                          sont présents — on n'utilise donc plus dw/dh)
+//   height  entier 1..8   (échelle verticale ; prime sur dh)
+//   em      true|false    (gras)
+//   reverse true|false    (vidéo inverse, blanc sur noir)
+//   align   left|center|right
+// <feed unit="0..255"/> avance en POINTS, <feed line="0..255"/> en lignes.
 
 import {
   fmt,
@@ -20,11 +30,38 @@ import {
   renderVariantLines,
 } from './admin/orderHelpers.js';
 
-// Largeur de ligne (en colonnes) calibrée pour la police par défaut du corps
-// du ticket (Font B, 9 px de large). Sur TM-m30II en 80 mm, Font B fait
-// 64 colonnes — Font A en ferait 48. À mettre à jour si on change la police
-// par défaut dans textTag().
-const LINE_WIDTH = 64;
+// ─── Géométrie ─────────────────────────────────────────────────────────
+// TM-m30II en 80 mm = 576 points de large.
+//   Font A : 12 pts/car → 48 colonnes
+//   Font B :  9 pts/car → 64 colonnes
+// Une ligne agrandie (width=N) divise d'autant le nombre de colonnes : une
+// ligne Font A ×2 ne fait plus que 24 colonnes. C'est pourquoi dottedLine()
+// et separator() reçoivent TOUJOURS la largeur du style de la ligne — il n'y
+// a plus de LINE_WIDTH global (l'ancienne constante 64 débordait dès qu'on
+// sortait de Font B).
+const COLS_FONT_A = 48;
+const COLS_FONT_B = 64;
+
+const clampScale = (n) => Math.min(8, Math.max(1, Math.round(Number(n) || 1)));
+
+function colsFor(style = {}) {
+  const base = style.font === 'font_a' ? COLS_FONT_A : COLS_FONT_B;
+  return Math.max(1, Math.floor(base / clampScale(style.width)));
+}
+
+// Styles nommés — une seule source pour la police ET la largeur associée.
+const S = {
+  banner:    { font: 'font_a', width: 2, height: 2, em: true, reverse: true },
+  orderNo:   { font: 'font_a', width: 3, height: 3, em: true },
+  orderTime: { font: 'font_a', width: 2, height: 2, em: true },
+  mode:      { font: 'font_a', width: 2, height: 2, em: true, reverse: true },
+  address:   { font: 'font_a', em: true },
+  item:      { font: 'font_a', em: true },
+  total:     { font: 'font_a', width: 2, height: 2, em: true },
+  thanks:    { font: 'font_a', em: true },
+  body:      { font: 'font_b' },
+  small:     { font: 'font_b' },
+};
 
 const DEFAULT_PRINTER_URL =
   'https://192.168.1.103/cgi-bin/epos/service.cgi?devid=local_printer&timeout=10000';
@@ -42,14 +79,34 @@ function resolvePrinterUrl() {
 // ─── Helpers texte ─────────────────────────────────────────────────────
 const COMBINING_MARKS = /[̀-ͯ]/g;
 
-// Imprimante thermique : codepage limité → on retire les diacritiques et on
-// passe en MAJ pour rester lisible. Identique à printText() côté PrintTicket.
-function toAscii(s) {
-  return String(s ?? '')
-    .normalize('NFD')
-    .replace(COMBINING_MARKS, '')
-    .toUpperCase();
-}
+// Ponctuation typographique absente du codepage imprimante. Les notes client
+// arrivent d'iOS avec des apostrophes courbes et des tirets longs : sans ce
+// repli elles sortent en caractère parasite. Les espaces insécables, eux,
+// viennent de toLocaleString('fr-CH') sur les montants.
+const TYPO_FOLD = [
+  [/[‘’‛]/g, "'"],
+  [/[“”„]/g, '"'],
+  [/[–—−]/g, '-'],
+  [/[‹›]/g, '>'],
+  [/[«»]/g, '"'],
+  [/…/g, '...'],
+  // Espaces insecables / fines, ecrits en echappements : en litteral ils sont
+  // invisibles a la relecture et declenchent no-irregular-whitespace.
+  [/[\u00A0\u202F\u2007\u2009\u200A]/g, ' '],
+];
+
+const foldTypo = (s) => {
+  let out = String(s ?? '');
+  for (const [re, rep] of TYPO_FOLD) out = out.replace(re, rep);
+  return out;
+};
+
+// Imprimante thermique : codepage limité → on replie la typographie, on retire
+// les diacritiques et on passe en MAJ pour rester lisible.
+const toAscii = (s) => foldTypo(s).normalize('NFD').replace(COMBINING_MARKS, '').toUpperCase();
+
+// Même repli, sans les majuscules (pied de ticket).
+const toAsciiMixed = (s) => foldTypo(s).normalize('NFD').replace(COMBINING_MARKS, '');
 
 // Échappement XML strict (5 caractères réservés).
 function xmlEscape(s) {
@@ -61,149 +118,203 @@ function xmlEscape(s) {
     .replace(/'/g, '&apos;');
 }
 
-// Ligne "Gauche .......... Droite" calibrée sur LINE_WIDTH. Si la concat
-// dépasse, on tronque la partie gauche pour préserver le prix à droite.
-function dottedLine(left, right) {
+// Ligne "Gauche .......... Droite" calibrée sur `cols`, montant collé à droite.
+//
+// La longueur finale est exactement `cols` : gauche + espace + points + espace
+// + droite. L'ancienne version oubliait l'un des deux espaces dans son calcul
+// et rendait des lignes de cols+1, qui débordaient d'un caractère.
+function dottedLine(left, right, cols) {
   const l = String(left ?? '');
   const r = String(right ?? '');
-  const remaining = LINE_WIDTH - r.length - 1; // -1 = espace mini avant le prix
-  if (remaining <= 0) return `${l} ${r}`;
-  if (l.length >= remaining) {
-    return `${l.slice(0, remaining)} ${r}`;
-  }
-  const dots = '.'.repeat(remaining - l.length);
-  return `${l} ${dots} ${r}`;
+  const dots = cols - l.length - r.length - 2;
+  if (dots >= 1) return `${l} ${'.'.repeat(dots)} ${r}`;
+  // Plus la place pour des points : on tronque la gauche, le montant prime.
+  const maxLeft = Math.max(0, cols - r.length - 1);
+  return `${l.slice(0, maxLeft).padEnd(maxLeft)} ${r}`.slice(0, cols);
 }
 
-function separator(ch = '-') {
-  return ch.repeat(LINE_WIDTH);
+// Séparateurs en ASCII pur : les filets Unicode (─ ═) ne sont pas garantis
+// dans le codepage de l'imprimante et sortiraient en caractères parasites.
+const separator = (ch, cols) => ch.repeat(cols);
+
+// Remplit la ligne sur toute la largeur pour qu'un bloc reverse="true" donne
+// un vrai bandeau plein, et pas seulement les caractères surlignés.
+function centerPad(s, cols) {
+  const t = s.length > cols ? s.slice(0, cols) : s;
+  const left = Math.floor((cols - t.length) / 2);
+  return ' '.repeat(left) + t + ' '.repeat(cols - t.length - left);
+}
+
+// Coupe sur les espaces, et coupe brutalement un mot plus long que la ligne
+// (adresse sans espace, note collée) plutôt que de le laisser déborder.
+function wrapText(s, cols) {
+  const words = String(s ?? '').split(/\s+/).filter(Boolean);
+  const lines = [];
+  let cur = '';
+  const flushLongWord = () => {
+    while (cur.length > cols) {
+      lines.push(cur.slice(0, cols));
+      cur = cur.slice(cols);
+    }
+  };
+  for (const w of words) {
+    if (!cur) cur = w;
+    else if (cur.length + 1 + w.length <= cols) cur += ` ${w}`;
+    else { lines.push(cur); cur = w; }
+    flushLongWord();
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [''];
+}
+
+// "CLIENT    Marie Dupont" avec retrait suspendu sur les lignes suivantes.
+const LABEL_W = 9;
+function labelLines(label, value, cols) {
+  const avail = Math.max(1, cols - LABEL_W);
+  return wrapText(value, avail).map((line, i) =>
+    (i === 0 ? label.padEnd(LABEL_W) : ' '.repeat(LABEL_W)) + line,
+  );
 }
 
 // ─── Construction du XML ePOS-Print ────────────────────────────────────
-// Une commande ePOS = succession de <text>, <feed>, <cut>. Chaque
-// <text> ouvre/ferme ses attributs : police (font_a/font_b), alignement,
-// double largeur/hauteur, emphasis. On envoie un LF (\n) à la fin de
-// chaque ligne, ou via <feed line="N"/> pour aérer.
-//
-// Police par défaut : font_b (plus petite, 64 colonnes en 80 mm). Seul
-// le bandeau "KaïKaï" passe explicitement en font_a avec dw/dh/em pour
-// rester très grand. LINE_WIDTH doit suivre la police par défaut.
-function textTag(content, { font = 'font_b', align, em, dw, dh } = {}) {
-  const attrs = [];
-  if (font)  attrs.push(`font="${font}"`);
+function textTag(content, style = {}) {
+  const { font = 'font_b', align, em, ul, reverse, width, height } = style;
+  const attrs = [`font="${font}"`];
   if (align) attrs.push(`align="${align}"`);
-  if (em)    attrs.push('em="true"');
-  if (dw)    attrs.push('dw="true"');
-  if (dh)    attrs.push('dh="true"');
-  const attrStr = attrs.length ? ` ${attrs.join(' ')}` : '';
-  return `<text${attrStr}>${xmlEscape(content)}&#10;</text>`;
+  if (em) attrs.push('em="true"');
+  if (ul) attrs.push('ul="true"');
+  if (reverse) attrs.push('reverse="true"');
+  if (width && clampScale(width) > 1) attrs.push(`width="${clampScale(width)}"`);
+  if (height && clampScale(height) > 1) attrs.push(`height="${clampScale(height)}"`);
+  return `<text ${attrs.join(' ')}>${xmlEscape(content)}&#10;</text>`;
 }
 
-// Bloc d'un article : nom + prix sur 1 ligne, variantes en sous-lignes
-// préfixées "> " (indent 2 espaces, pas d'aligement à droite — on garde
-// l'info pertinente lisible même si la variante dépasse la marge).
-function buildItemBlock(item) {
-  const safeIt = item || {};
-  const qty = safeIt.qty ?? 1;
-  const subtotal = safeIt.subtotal ?? (Number(safeIt.price) || 0) * qty;
-  const name = toAscii(safeIt.name);
-  const lines = [];
+const textLines = (lines, style) => lines.map((l) => textTag(l, style)).join('');
 
-  lines.push(textTag(dottedLine(`${qty}x ${name}`, fmtAmount(subtotal))));
+const blankLine = () => '<feed line="1"/>';
+// Demi-interligne : une ligne Font A fait 24 points, donc 12 points d'air.
+const halfLine = () => '<feed unit="12"/>';
 
-  const variants = renderVariantLines(safeIt.variants);
-  variants.forEach((v) => {
-    lines.push(textTag(`  > ${toAscii(v)}`));
-  });
-
-  return lines.join('');
+// 1. EN-TÊTE
+function buildHeader() {
+  return [
+    textTag(centerPad('KAIKAI', colsFor(S.banner)), S.banner),
+    textTag('BD DE LA TOUR 1 - 1205 GENEVE', { ...S.small, align: 'center' }),
+    blankLine(),
+  ].join('');
 }
 
-function buildHeader(order) {
-  const lines = [];
+// 2. BLOC COMMANDE — numéro et heure sont les infos les plus consultées.
+function buildOrderBlock(order) {
+  return [
+    textTag(`#${orderNumber(order.id)}`, S.orderNo),
+    textTag(fmtTime(order.created_at), S.orderTime),
+    textTag(toAscii(fmtDate(order.created_at)), S.body),
+    blankLine(),
+  ].join('');
+}
 
-  // En-tête centré : seule ligne en Font A — double largeur/hauteur + gras
-  // pour ressortir au-dessus du corps du ticket (qui est en Font B).
-  lines.push(textTag('KaïKaï', { font: 'font_a', align: 'center', dw: true, dh: true, em: true }));
-  lines.push(textTag('Bd de la Tour 1 - 1205 Geneve', { align: 'center' }));
-  lines.push(textTag(separator('=')));
-
-  // N° de commande + heure (gros) ; date juste en dessous.
-  lines.push(textTag(`#${orderNumber(order.id)}    ${fmtTime(order.created_at)}`, { em: true }));
-  lines.push(textTag(fmtDate(order.created_at)));
-
-  // Mode : à emporter / livraison + adresse éventuelle.
-  if (order.delivery_mode === 'pickup') {
-    lines.push(textTag('>>> A EMPORTER <<<', { align: 'center', em: true }));
-  } else {
-    lines.push(textTag('>>> LIVRAISON <<<', { align: 'center', em: true }));
-    if (order.customer_address) {
-      lines.push(textTag(toAscii(order.customer_address), { em: true }));
-    }
+// 3. MODE — bandeau inversé pleine largeur.
+function buildModeBlock(order) {
+  const isPickup = order.delivery_mode === 'pickup';
+  const lines = [
+    textTag(centerPad(isPickup ? 'A EMPORTER' : 'LIVRAISON', colsFor(S.mode)), S.mode),
+  ];
+  if (!isPickup && order.customer_address) {
+    lines.push(...textLines(
+      wrapText(toAscii(order.customer_address), colsFor(S.address)),
+      S.address,
+    ));
   }
-
-  lines.push(textTag(separator('-')));
+  lines.push(blankLine());
   return lines.join('');
 }
 
+// 4. CLIENT — colonnes alignées.
 function buildCustomerBlock(order) {
-  const lines = [];
-  lines.push(textTag(`CLIENT  : ${toAscii(order.customer_name)}`));
+  const cols = colsFor(S.body);
+  const rows = [];
+
+  rows.push(...labelLines('CLIENT', toAscii(order.customer_name), cols));
   if (order.customer_phone) {
-    lines.push(textTag(`TEL     : ${order.customer_phone}`));
+    rows.push(...labelLines('TEL', toAscii(order.customer_phone), cols));
   }
 
   const payLabel = toAscii(PAYMENT_LABELS[order.payment_method] || order.payment_method || '');
   const paySuffix = order.status === 'paid' ? ' (ENCAISSEE)' : '';
-  lines.push(textTag(`PAIEMENT: ${payLabel}${paySuffix}`));
+  rows.push(...labelLines('PAIEMENT', `${payLabel}${paySuffix}`, cols));
 
   if (order.note_kitchen) {
-    lines.push(textTag(`CUISINE : ${toAscii(order.note_kitchen)}`));
+    rows.push(...labelLines('NOTE', toAscii(order.note_kitchen), cols));
   }
   if (order.delivery_mode === 'delivery' && order.note_delivery) {
-    lines.push(textTag(`LIVREUR : ${toAscii(order.note_delivery)}`));
+    rows.push(...labelLines('LIVREUR', toAscii(order.note_delivery), cols));
   }
   // Fallback legacy : commandes pré-migration "notes" séparées.
   if (!order.note_kitchen && !order.note_delivery && order.notes) {
-    lines.push(textTag(`NOTES   : ${toAscii(order.notes)}`));
+    rows.push(...labelLines('NOTE', toAscii(order.notes), cols));
   }
 
-  lines.push(textTag(separator('-')));
-  return lines.join('');
+  return textLines(rows, S.body);
+}
+
+// 5. ARTICLES — nom en Font A gras, variantes en Font B indentées.
+function buildItemBlock(item) {
+  const safeIt = item || {};
+  const qty = safeIt.qty ?? 1;
+  const subtotal = safeIt.subtotal ?? (Number(safeIt.price) || 0) * qty;
+
+  const out = [
+    textTag(
+      dottedLine(`${qty}x ${toAscii(safeIt.name)}`, toAscii(fmtAmount(subtotal)), colsFor(S.item)),
+      S.item,
+    ),
+  ];
+
+  // Préfixe ">" et non "›" : U+203A n'est pas garanti dans le codepage de
+  // l'imprimante (TYPO_FOLD le replierait de toute façon sur ">").
+  const subCols = colsFor(S.body) - 5; // 3 d'indentation + "> "
+  renderVariantLines(safeIt.variants).forEach((v) => {
+    wrapText(toAscii(v), subCols).forEach((line, i) => {
+      out.push(textTag(`   ${i === 0 ? '> ' : '  '}${line}`, S.body));
+    });
+  });
+
+  return out.join('');
 }
 
 function buildItemsBlock(order) {
   const items = Array.isArray(order.items) ? order.items : [];
-  const lines = [];
-  lines.push(textTag('ARTICLES', { em: true }));
-  items.forEach((it) => {
-    lines.push(buildItemBlock(it));
-  });
-  lines.push(textTag(separator('=')));
-  return lines.join('');
-}
-
-function buildTotalBlock(order) {
-  // Pas de dh/dw ici : le corps du ticket reste intégralement en Font B
-  // sans agrandissement. Le gras (em) suffit à faire ressortir le total.
-  const totalLine = dottedLine('TOTAL', fmt(order.total ?? 0));
+  const cols = colsFor(S.body);
   return [
-    textTag(totalLine, { em: true }),
-    textTag(separator('=')),
+    textTag(separator('-', cols), S.body),
+    items.map(buildItemBlock).join(halfLine()),
+    textTag(separator('-', cols), S.body),
   ].join('');
 }
 
+// 6. TOTAL
+function buildTotalBlock(order) {
+  return [
+    textTag(separator('=', colsFor(S.body)), S.body),
+    textTag(dottedLine('TOTAL', toAscii(fmt(order.total ?? 0)), colsFor(S.total)), S.total),
+  ].join('');
+}
+
+// 7. PIED
 function buildFooter() {
   return [
-    textTag('Merci de votre commande !', { align: 'center' }),
-    textTag('A bientot chez KaiKai', { align: 'center' }),
+    blankLine(),
+    textTag(toAsciiMixed('Mauruuru !'), { ...S.thanks, align: 'center' }),
+    textTag(toAsciiMixed('A bientot chez KaiKai'), { ...S.small, align: 'center' }),
   ].join('');
 }
 
-function buildEposXml(order) {
-  // Note ordering : header → client → articles → total → footer → feed → cut.
+export function buildEposXml(order) {
   const body =
     buildHeader(order) +
+    buildOrderBlock(order) +
+    buildModeBlock(order) +
     buildCustomerBlock(order) +
     buildItemsBlock(order) +
     buildTotalBlock(order) +
