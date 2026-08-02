@@ -33,7 +33,18 @@ import {
   FORMULE_COULIS_OPTS,
   FORMULE_JUS_OPTS,
   FORMULE_EAU_OPTS,
+  FORMULE_NAME_TO_ID,
+  FORMULE_OPTION_NAME_TO_ID,
+  FORMULE_JUS_ITEM_ID,
+  FORMULE_EAU_ITEM_ID,
+  isVariantUnavailable,
 } from "./data/menuMeta.js";
+import {
+  getItemOptions,
+  isItemExplicitlyOut,
+  isItemUnavailable,
+  isOptionOut,
+} from "./lib/stockRules.js";
 import {
   DELIVERY_ZONES,
   NPA_TO_ZONE,
@@ -275,6 +286,110 @@ const SEC_BOISSON  = byIds(IDS_BOISSON);
 
 const ORDERED_IDS = [...IDS_ENTREES, ...IDS_CHAUD, ...IDS_FROID, ...IDS_FORMULES, ...IDS_DESSERT, ...IDS_BOISSON];
 const MENU_SORTED = byIds(ORDERED_IDS);
+
+const MENU_BY_ID = Object.fromEntries(MENU.map(m => [m.id, m]));
+
+// ─── Disponibilité (ruptures plat + option) ─────────────────────────────────
+// Listes de composition des formules, remontées au niveau module : la carte a
+// besoin de savoir si une formule est encore composable AVANT d'ouvrir la
+// modale. Contenu strictement identique à ce qui vivait dans FormuleModal.
+const FORMULE_PLATS_DECOUVERTE = ['Chao Men','Kai Fan','Omelette Fu Young','Tartare Tahiti','Tartare Hawaï','Tartare Samoa'];
+const FORMULE_PLATS_VOYAGE = ['Chao Men','Kai Fan','Omelette Fu Young','Wok de Bœuf','Tartare Tahiti','Tartare Hawaï','Tartare Samoa'];
+const FORMULE_DESSERTS = ['Coulant au chocolat','Crème Tropicale',"Po'e Banane",'Cheesecake'];
+
+// Un libellé de formule est commandable si le plat de carte qu'il désigne
+// l'est (cascade comprise : un Chao Men dont les 4 protéines sont coupées
+// disparaît des formules).
+const formuleNamesAvailable = (stockList, names) =>
+  names.filter(n => {
+    const id = FORMULE_NAME_TO_ID[n];
+    return id && !isItemUnavailable(stockList, MENU_BY_ID[id]);
+  });
+
+// Dans une formule, jus et eau sont les plats 19 et 20 de la carte.
+const formuleBoissonsAvailable = (stockList) => {
+  const out = [];
+  if (!isItemUnavailable(stockList, MENU_BY_ID[FORMULE_JUS_ITEM_ID])) out.push('Jus exotique');
+  if (!isItemUnavailable(stockList, MENU_BY_ID[FORMULE_EAU_ITEM_ID])) out.push('Eau');
+  return out;
+};
+
+// Une formule devient incomposable bien avant que ses ingrédients soient tous
+// coupés : il faut 1 plat (Découverte) ou 2 (Voyage), au moins une boisson, et
+// au moins un dessert pour Voyage.
+function isFormuleUnavailable(stockList, item) {
+  if (isItemExplicitlyOut(stockList, item.id)) return true;
+  const isVoyage = item.formuleType === 'voyage';
+  const plats = formuleNamesAvailable(stockList, isVoyage ? FORMULE_PLATS_VOYAGE : FORMULE_PLATS_DECOUVERTE);
+  if (plats.length < (isVoyage ? 2 : 1)) return true;
+  if (formuleBoissonsAvailable(stockList).length === 0) return true;
+  if (isVoyage && formuleNamesAvailable(stockList, FORMULE_DESSERTS).length === 0) return true;
+  return false;
+}
+
+// Point d'entrée unique pour la carte : gère plats simples, plats à options
+// (cascade) et formules (composabilité).
+function isMenuItemUnavailable(stockList, item) {
+  if (!item) return false;
+  if (item.hasFormule) return isFormuleUnavailable(stockList, item);
+  return isItemUnavailable(stockList, item);
+}
+
+// Purge du panier après une bascule de rupture. Fonction pure : rend
+// { cart, variants, changed }, et rend les objets d'origine si rien n'a bougé
+// (pour que l'effet appelant soit idempotent).
+//
+// Invariants garantis en sortie :
+//   - jamais de qty > nombre de variants pour un plat à choix
+//   - jamais de qty <= 0 laissée en place
+//   - jamais d'entrée cartVariants orpheline (id absent du panier)
+function purgeCart(stockList, cart, cartVariants) {
+  let changed = false;
+  const nextCart = {};
+  const nextVariants = {};
+
+  for (const [id, rawQty] of Object.entries(cart || {})) {
+    const qty = Number(rawQty) || 0;
+    if (qty <= 0) { changed = true; continue; }
+
+    const menuItem = MENU_BY_ID[id];
+    if (!menuItem) { changed = true; continue; } // plat retiré du menu
+
+    // Plat entier indisponible (explicite, cascade, ou formule incomposable).
+    if (isMenuItemUnavailable(stockList, menuItem)) { changed = true; continue; }
+
+    const variants = Array.isArray(cartVariants?.[id]) ? cartVariants[id] : null;
+    const hasChoices = getItemOptions(menuItem).length > 0 || Boolean(menuItem.hasFormule);
+
+    // Plat sans choix (ou panier legacy sans variants) : rien à filtrer.
+    if (!hasChoices || !variants) {
+      nextCart[id] = qty;
+      if (variants && variants.length > 0) nextVariants[id] = variants;
+      continue;
+    }
+
+    // Granularité unité : on ne retire que les exemplaires touchés.
+    const kept = variants.filter(v => !isVariantUnavailable(stockList, id, v, MENU_BY_ID));
+    if (kept.length !== variants.length) changed = true;
+    if (kept.length === 0) { changed = true; continue; }
+
+    const nextQty = Math.min(qty, kept.length);
+    if (nextQty !== qty) changed = true;
+    nextCart[id] = nextQty;
+    nextVariants[id] = kept;
+  }
+
+  // Entrées de cartVariants dont le plat n'est plus au panier.
+  for (const id of Object.keys(cartVariants || {})) {
+    if (!(id in nextVariants)) changed = true;
+  }
+
+  return {
+    cart: changed ? nextCart : cart,
+    variants: changed ? nextVariants : cartVariants,
+    changed,
+  };
+}
 
 const ENTREE_PHOTOS = {
   "1": "/entree-veloute.jpg",
@@ -690,32 +805,26 @@ export default function KaiKaiApp() {
     }
   }, [cart, cartVariants]);
 
-  // Garde-fou rupture : si un plat passe en rupture pendant que l'utilisateur
-  // l'a dans son panier (toggle admin entre 2 polls), on le retire au prochain
-  // changement de la liste. On utilise setX(prev =>) pour éviter de dépendre
-  // de cart/cartVariants dans deps et retourner prev si rien à filtrer.
+  // Garde-fou rupture : si un plat OU une option passe en rupture pendant que
+  // l'utilisateur a l'article au panier (toggle admin entre 2 polls), on purge
+  // au prochain changement de la liste.
+  //
+  // Granularité unité : cartVariants[id] contient un élément par exemplaire,
+  // donc on retire seulement les exemplaires dont l'option est tombée et on
+  // décrémente cart[id] d'autant. Les autres exemplaires du même plat restent.
+  //
+  // cart et cartVariants doivent rester cohérents : on les calcule tous les
+  // deux en un seul passage (purgeCart) et on n'écrit que si quelque chose a
+  // bougé. Le garde `changed` rend l'effet idempotent, donc dépendre de
+  // cart/cartVariants ne provoque pas de boucle.
   useEffect(() => {
     if (outOfStockItems.length === 0) return;
-    const outSet = new Set(outOfStockItems);
-    setCart(prev => {
-      let changed = false;
-      const filtered = {};
-      for (const [id, qty] of Object.entries(prev)) {
-        if (outSet.has(id)) { changed = true; continue; }
-        filtered[id] = qty;
-      }
-      return changed ? filtered : prev;
-    });
-    setCartVariants(prev => {
-      let changed = false;
-      const filtered = {};
-      for (const [id, v] of Object.entries(prev)) {
-        if (outSet.has(id)) { changed = true; continue; }
-        filtered[id] = v;
-      }
-      return changed ? filtered : prev;
-    });
-  }, [outOfStockItems]);
+    const { cart: nextCart, variants: nextVariants, changed } =
+      purgeCart(outOfStockItems, cart, cartVariants);
+    if (!changed) return;
+    setCart(nextCart);
+    setCartVariants(nextVariants);
+  }, [outOfStockItems, cart, cartVariants]);
 
   const handleOrderSubmit = async ({ form, paymentMethod }) => {
     // Garde-fou front : si le restaurant a fermé entre l'ouverture du
@@ -914,39 +1023,39 @@ export default function KaiKaiApp() {
                 </div>
               )}
               {SEC_ENTREES.map(item => (
-                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={outOfStockItems.includes(item.id)}
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={isMenuItemUnavailable(outOfStockItems, item)} stockList={outOfStockItems}
                   photo={ENTREE_PHOTOS[item.id]} photoPos={ENTREE_PHOTO_POS[item.id]}
                   photoHeight="h-56" />
               ))}
 
               <h3 id="section-chaud" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🔥 Plat Chaud</h3>
               {SEC_CHAUD.map(item => (
-                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={outOfStockItems.includes(item.id)}
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={isMenuItemUnavailable(outOfStockItems, item)} stockList={outOfStockItems}
                   photo={CHAUD_PHOTOS[item.id]} photoPos={CHAUD_PHOTO_POS[item.id]}
                   photoHeight="h-56" />
               ))}
 
               <h3 id="section-froid" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">❄️ Plat Froid</h3>
               {SEC_FROID.map(item => (
-                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={outOfStockItems.includes(item.id)}
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={isMenuItemUnavailable(outOfStockItems, item)} stockList={outOfStockItems}
                   photo={FROID_PHOTOS[item.id]} photoPos={FROID_PHOTO_POS[item.id]} />
               ))}
 
               <h3 id="section-formules" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🎁 Formules</h3>
               {SEC_FORMULES.map(item => (
-                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={outOfStockItems.includes(item.id)} isFormula
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={isMenuItemUnavailable(outOfStockItems, item)} stockList={outOfStockItems} isFormula
                   photo={FORMULE_PHOTOS[item.id]} photoPos={FORMULE_PHOTO_POS[item.id]} photoHeight="h-64" />
               ))}
 
               <h3 id="section-desserts" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍰 Desserts</h3>
               {SEC_DESSERT.map(item => (
-                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={outOfStockItems.includes(item.id)}
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={isMenuItemUnavailable(outOfStockItems, item)} stockList={outOfStockItems}
                   photo={DESSERT_PHOTOS[item.id]} photoPos={DESSERT_PHOTO_POS[item.id]} />
               ))}
 
               <h3 id="section-boissons" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧉 Boissons</h3>
               {SEC_BOISSON.map(item => (
-                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={outOfStockItems.includes(item.id)}
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={isMenuItemUnavailable(outOfStockItems, item)} stockList={outOfStockItems}
                   photo={BOISSON_PHOTOS[item.id]} photoPos={BOISSON_PHOTO_POS[item.id]} />
               ))}
             </div>
@@ -1056,7 +1165,7 @@ export default function KaiKaiApp() {
 }
 
 // Composant MenuItem avec support de TOUS les modals
-function MenuItem({ item, cart, add, remove, outOfStock = false, isFormula = false, photo = null, photoPos = "center", photoHeight = "h-48" }) {
+function MenuItem({ item, cart, add, remove, outOfStock = false, stockList = [], isFormula = false, photo = null, photoPos = "center", photoHeight = "h-48" }) {
   const [showVariants, setShowVariants] = useState(false);
   const [showJus, setShowJus] = useState(false);
   const [showFormuleModal, setShowFormuleModal] = useState(false);
@@ -1181,48 +1290,54 @@ function MenuItem({ item, cart, add, remove, outOfStock = false, isFormula = fal
       </div>
       
       {showVariants && item.hasVariants && (
-        <VariantModal 
-          item={item} 
-          onSelect={handleAdd} 
-          onClose={() => setShowVariants(false)} 
+        <VariantModal
+          item={item}
+          stockList={stockList}
+          onSelect={handleAdd}
+          onClose={() => setShowVariants(false)}
         />
       )}
-      
+
       {showJus && item.hasJusVariants && (
-        <JusModal 
-          item={item} 
-          onSelect={handleAdd} 
-          onClose={() => setShowJus(false)} 
+        <JusModal
+          item={item}
+          stockList={stockList}
+          onSelect={handleAdd}
+          onClose={() => setShowJus(false)}
         />
       )}
-      
+
       {showFormuleModal && item.hasFormule && (
-        <FormuleModal 
-          item={item} 
-          onConfirm={handleFormuleConfirm} 
-          onClose={() => setShowFormuleModal(false)} 
+        <FormuleModal
+          item={item}
+          stockList={stockList}
+          onConfirm={handleFormuleConfirm}
+          onClose={() => setShowFormuleModal(false)}
         />
       )}
-      
+
       {showProteinModal && item.hasProteinVariants && (
-        <ProteinModal 
-          item={item} 
-          onSelect={handleAdd} 
-          onClose={() => setShowProteinModal(false)} 
+        <ProteinModal
+          item={item}
+          stockList={stockList}
+          onSelect={handleAdd}
+          onClose={() => setShowProteinModal(false)}
         />
       )}
-      
+
       {showCoulisModal && item.hasCoulisVariants && (
-        <CoulisModal 
-          item={item} 
-          onSelect={handleAdd} 
-          onClose={() => setShowCoulisModal(false)} 
+        <CoulisModal
+          item={item}
+          stockList={stockList}
+          onSelect={handleAdd}
+          onClose={() => setShowCoulisModal(false)}
         />
       )}
-      
+
       {showEauModal && item.hasEauVariants && (
         <EauModal
           item={item}
+          stockList={stockList}
           onSelect={handleAdd}
           onClose={() => setShowEauModal(false)}
         />
@@ -1431,7 +1546,10 @@ function SelectionList({ label, items, onRemove }) {
   );
 }
 
-function SubSheet({ title, subtitle, options, onSelect, onClose }) {
+// `outIds` : ids d'options en rupture — affichées grisées et non cliquables,
+// jamais masquées (même règle que les modales simples).
+function SubSheet({ title, subtitle, options, outIds = [], onSelect, onClose }) {
+  const outSet = new Set(outIds);
   return (
     <div
       className="modal-backdrop fixed inset-0 z-[100] flex items-end justify-center"
@@ -1465,9 +1583,12 @@ function SubSheet({ title, subtitle, options, onSelect, onClose }) {
         </div>
         <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
         <div style={{ overflowY: 'auto', flex: 1, padding: '8px 16px 28px' }}>
-          {options.map((opt, i) => (
-            <OptionTile key={opt.id} emoji={opt.emoji} name={opt.name} desc={opt.desc} isSelected={false} onClick={() => onSelect(opt)} index={i} />
-          ))}
+          {options.map((opt, i) => {
+            const out = outSet.has(opt.id);
+            return (
+              <OptionTile key={opt.id} emoji={opt.emoji} name={opt.name} desc={opt.desc} isSelected={false} onClick={() => onSelect(opt)} index={i} disabled={out} badge={out ? OUT_BADGE : null} />
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1483,56 +1604,76 @@ function getPhotoPos(id) {
   return ENTREE_PHOTO_POS[id] || CHAUD_PHOTO_POS[id] || FROID_PHOTO_POS[id] || FORMULE_PHOTO_POS[id] || DESSERT_PHOTO_POS[id] || BOISSON_PHOTO_POS[id] || 'center';
 }
 
-function VariantModal({ item, onSelect, onClose }) {
+// Une option en rupture reste AFFICHÉE (grisée, non cliquable, badge
+// « En rupture ») plutôt que masquée : le client doit comprendre pourquoi son
+// choix habituel n'est pas sélectionnable.
+const OUT_BADGE = 'En rupture';
+
+function VariantModal({ item, stockList = [], onSelect, onClose }) {
   const variantEmojis = { tahiti: '🥥', hawaii: '🥭', samoa: '🌶️', froid: '❄️', chaud: '🔥' };
   const subtitle = item.variantSubtitle || 'Choisissez votre sauce';
   return (
     <BottomSheet title={item.name} subtitle={subtitle} photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
-      {item.variants.map((v, i) => (
-        <OptionTile key={v.id} emoji={variantEmojis[v.id] || '🍽️'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
-      ))}
+      {item.variants.map((v, i) => {
+        const out = isOptionOut(stockList, item.id, v.id);
+        return (
+          <OptionTile key={v.id} emoji={variantEmojis[v.id] || '🍽️'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} disabled={out} badge={out ? OUT_BADGE : null} />
+        );
+      })}
     </BottomSheet>
   );
 }
 
-function JusModal({ item, onSelect, onClose }) {
+function JusModal({ item, stockList = [], onSelect, onClose }) {
   const jusEmojis = { 'pomme-kiwi': '🍏', 'fraise-framboise': '🍓', 'ananas-citron': '🍍', ace: '🍊' };
   return (
     <BottomSheet title="Jus exotiques maison" subtitle="Pressés à la commande" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
-      {item.jusVariants.map((v, i) => (
-        <OptionTile key={v.id} emoji={jusEmojis[v.id] || '🧃'} name={v.name.replace(/^[^\s]+ /, '')} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
-      ))}
+      {item.jusVariants.map((v, i) => {
+        const out = isOptionOut(stockList, item.id, v.id);
+        return (
+          <OptionTile key={v.id} emoji={jusEmojis[v.id] || '🧃'} name={v.name.replace(/^[^\s]+ /, '')} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} disabled={out} badge={out ? OUT_BADGE : null} />
+        );
+      })}
     </BottomSheet>
   );
 }
 
-function ProteinModal({ item, onSelect, onClose }) {
+function ProteinModal({ item, stockList = [], onSelect, onClose }) {
   const protEmojis = { porc: '🍖', poulet: '🍗', 'porc-poulet': '🍽️', veggie: '🥦' };
   return (
     <BottomSheet title={item.name} subtitle="Choisissez votre protéine" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
-      {item.proteinVariants.map((v, i) => (
-        <OptionTile key={v.id} emoji={protEmojis[v.id] || '🍽️'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
-      ))}
+      {item.proteinVariants.map((v, i) => {
+        const out = isOptionOut(stockList, item.id, v.id);
+        return (
+          <OptionTile key={v.id} emoji={protEmojis[v.id] || '🍽️'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} disabled={out} badge={out ? OUT_BADGE : null} />
+        );
+      })}
     </BottomSheet>
   );
 }
 
-function CoulisModal({ item, onSelect, onClose }) {
+function CoulisModal({ item, stockList = [], onSelect, onClose }) {
   return (
     <BottomSheet title={item.name} subtitle="Choisissez votre coulis" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
-      {item.coulisVariants.map((v, i) => (
-        <OptionTile key={v.id} emoji={v.id === 'mangue' ? '🥭' : '🫐'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
-      ))}
+      {item.coulisVariants.map((v, i) => {
+        const out = isOptionOut(stockList, item.id, v.id);
+        return (
+          <OptionTile key={v.id} emoji={v.id === 'mangue' ? '🥭' : '🫐'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} disabled={out} badge={out ? OUT_BADGE : null} />
+        );
+      })}
     </BottomSheet>
   );
 }
 
-function EauModal({ item, onSelect, onClose }) {
+function EauModal({ item, stockList = [], onSelect, onClose }) {
   return (
     <BottomSheet title="Eau minérale" subtitle="Plate ou gazeuse ?" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
-      {item.eauVariants.map((v, i) => (
-        <OptionTile key={v.id} emoji={v.id === 'plate' ? '💧' : '🫧'} name={v.name.replace(/^[^\s]+ /, '')} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} />
-      ))}
+      {item.eauVariants.map((v, i) => {
+        const out = isOptionOut(stockList, item.id, v.id);
+        return (
+          <OptionTile key={v.id} emoji={v.id === 'plate' ? '💧' : '🫧'} name={v.name.replace(/^[^\s]+ /, '')} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} disabled={out} badge={out ? OUT_BADGE : null} />
+        );
+      })}
     </BottomSheet>
   );
 }
@@ -1655,7 +1796,7 @@ function AllergensModal({ item, allergens, onClose }) {
 }
 
 // ─── FORMULE MODAL COMPLET ────────────────────────────────────────────────────
-function FormuleModal({ item, onConfirm, onClose }) {
+function FormuleModal({ item, stockList = [], onConfirm, onClose }) {
   const [selectedPlat, setSelectedPlat] = useState(null);
   const [selectedPlats, setSelectedPlats] = useState([]);
   const [selectedBoissons, setSelectedBoissons] = useState([]);
@@ -1695,13 +1836,15 @@ function FormuleModal({ item, onConfirm, onClose }) {
     };
   }, []);
 
-  const platsDec = ['Chao Men','Kai Fan','Omelette Fu Young','Tartare Tahiti','Tartare Hawaï','Tartare Samoa'];
-  const platsVoy = ['Chao Men','Kai Fan','Omelette Fu Young','Wok de Bœuf','Tartare Tahiti','Tartare Hawaï','Tartare Samoa'];
+  // Plats/desserts indisponibles (cascade comprise) : retirés de la liste,
+  // contrairement aux options qui restent visibles mais grisées.
+  const platsDec = formuleNamesAvailable(stockList, FORMULE_PLATS_DECOUVERTE);
+  const platsVoy = formuleNamesAvailable(stockList, FORMULE_PLATS_VOYAGE);
   const platEmojis = { 'Chao Men':'🍜','Kai Fan':'🍚','Omelette Fu Young':'🍳','Wok de Bœuf':'🥩','Tartare Tahiti':'🐟','Tartare Hawaï':'🥭','Tartare Samoa':'🌶️' };
   const platDescs = { 'Chao Men':'Nouilles sautées','Kai Fan':'Riz sauté','Omelette Fu Young':'Omelette aux légumes','Wok de Bœuf':'Wok de bœuf, sauce sésame','Tartare Tahiti':'Thon rouge, sauce coco','Tartare Hawaï':'Thon rouge, sauce sésame','Tartare Samoa':'Thon rouge, sauce piment' };
   const needsProtein = (p) => ['Chao Men','Kai Fan','Omelette Fu Young'].includes(p);
   const needsCoulis = (d) => ['Crème Tropicale','Cheesecake'].includes(d);
-  const desserts = ['Coulant au chocolat','Crème Tropicale',"Po'e Banane",'Cheesecake'];
+  const desserts = formuleNamesAvailable(stockList, FORMULE_DESSERTS);
   const dessertEmojis = { 'Coulant au chocolat':'🍫','Crème Tropicale':'🥥',"Po'e Banane":'🍌','Cheesecake':'🍰' };
 
   const proteinOpts = (plat) => plat === 'Omelette Fu Young'
@@ -1711,6 +1854,16 @@ function FormuleModal({ item, onConfirm, onClose }) {
   const jusOpts = FORMULE_JUS_OPTS;
   const eauOpts = FORMULE_EAU_OPTS;
   const coulisOpts = FORMULE_COULIS_OPTS;
+
+  // Ids d'options en rupture, résolus sur le plat de carte correspondant.
+  // Les protéines/coulis dépendent du plat choisi ; jus et eau des plats 19/20.
+  const outOptionIds = (opts, itemId) =>
+    itemId ? opts.filter(o => isOptionOut(stockList, itemId, o.id)).map(o => o.id) : [];
+  const outProteinIds = (platName) => outOptionIds(proteinOpts(platName), FORMULE_NAME_TO_ID[platName]);
+  const outJusIds = outOptionIds(jusOpts, FORMULE_JUS_ITEM_ID);
+  const outEauIds = outOptionIds(eauOpts, FORMULE_EAU_ITEM_ID);
+  const outCoulisIds = (dessertName) => outOptionIds(coulisOpts, FORMULE_NAME_TO_ID[dessertName]);
+  const boissonsDispo = formuleBoissonsAvailable(stockList);
 
   const getProgress = () => {
     if (item.formuleType === 'decouverte') {
@@ -1906,6 +2059,9 @@ function FormuleModal({ item, onConfirm, onClose }) {
           const selVoy = countVoy > 0;
           const sel = isVoyage ? selVoy : selDec;
           const boissonLimit = isVoyage && selectedBoissons.length >= 2;
+          // Jus et eau sont les plats 19 / 20 : si l'un est entièrement coupé
+          // (explicitement ou par cascade), la tuile est grisée, pas masquée.
+          const boissonOut = !boissonsDispo.includes(b);
           const subLabel = b === 'Jus exotique'
             ? (isVoyage ? (selectedJusVoyage[0] || 'Au choix') : (selectedJusDecouverte || 'Au choix'))
             : (isVoyage ? (selectedEauVoyage[0] || 'Plate ou gazeuse') : (selectedEauDecouverte || 'Plate ou gazeuse'));
@@ -1918,7 +2074,8 @@ function FormuleModal({ item, onConfirm, onClose }) {
               isSelected={sel}
               onClick={() => isVoyage ? handleBoissonVoy(b) : handleBoissonDec(b)}
               index={plats.length + i}
-              disabled={boissonLimit}
+              disabled={boissonLimit || boissonOut}
+              badge={boissonOut ? OUT_BADGE : null}
             />
           );
         })}
@@ -1971,6 +2128,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
           title="Choisissez votre protéine"
           subtitle={proteinForPlat}
           options={proteinOpts(proteinForPlat)}
+          outIds={outProteinIds(proteinForPlat)}
           onSelect={opt => {
             if (item.formuleType === 'voyage') {
               setSelectedProteins(prev => {
@@ -1992,6 +2150,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
         <SubSheet
           title="Choisissez votre jus"
           options={jusOpts}
+          outIds={outJusIds}
           onSelect={opt => {
             if (item.formuleType === 'decouverte') setSelectedJusDecouverte(opt.name);
             else { const n=[...selectedJusVoyage]; n[jusIndex]=opt.name; setSelectedJusVoyage(n); }
@@ -2004,6 +2163,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
         <SubSheet
           title="Plate ou gazeuse ?"
           options={eauOpts}
+          outIds={outEauIds}
           onSelect={opt => {
             if (item.formuleType === 'decouverte') setSelectedEauDecouverte(opt.name);
             else { const n=[...selectedEauVoyage]; n[eauIndex]=opt.name; setSelectedEauVoyage(n); }
@@ -2017,6 +2177,7 @@ function FormuleModal({ item, onConfirm, onClose }) {
           title="Choisissez votre coulis"
           subtitle={selectedDessert}
           options={coulisOpts}
+          outIds={outCoulisIds(selectedDessert)}
           onSelect={opt => { setSelectedCoulisDessert(opt.name); setShowCoulisSelector(false); }}
           onClose={() => setShowCoulisSelector(false)}
         />

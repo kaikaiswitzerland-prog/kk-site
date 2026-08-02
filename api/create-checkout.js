@@ -20,6 +20,8 @@ import { supabaseAdmin } from './_lib/supabaseServer.js';
 import { getRestaurantStatus, formatStatusLabel } from './_lib/restaurantHours.js';
 import { getZoneByNpa } from './_lib/deliveryZones.js';
 import { getServerPrice } from './_lib/menuPrices.js';
+import { MENU_ITEMS_BY_ID, isVariantUnavailable } from '../src/data/menuMeta.js';
+import { isItemUnavailable } from '../src/lib/stockRules.js';
 
 // Recompute du total côté serveur — miroir de la logique du front
 // (App.jsx:577). Les prix unitaires viennent de api/_lib/menuPrices.js
@@ -136,12 +138,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'create-checkout réservé aux paiements carte' });
     }
 
-    // 2.5. Garde-fou rupture : aucun item du panier ne doit être dans
-    // la liste app_settings.out_of_stock_items (chantier 5). Comme pour
-    // kitchen_open, on accepte un fail-open sur erreur DB pour ne pas
-    // bloquer toute la chaîne paiement à cause d'un souci infra. Le
-    // flow Cash/Twint n'a pas ce check côté serveur (cohérent avec
-    // chantiers 6/3/4 — décision business assumée).
+    // 2.5. Garde-fou rupture : aucun item du panier ne doit être touché par
+    // app_settings.out_of_stock_items (chantier 5), NI au niveau plat, NI au
+    // niveau option ("5:porc"). On inspecte donc aussi items[].variants — y
+    // compris les formules, dont les composants sont persistés par nom et
+    // résolus en ids via les tables de menuMeta.js.
+    //
+    // Comme pour kitchen_open, on accepte un fail-open sur erreur DB pour ne
+    // pas bloquer toute la chaîne paiement à cause d'un souci infra. Le flow
+    // Cash/Twint n'a pas ce check côté serveur (cohérent avec chantiers 6/3/4
+    // — décision business assumée).
     try {
       const { data: stockRow } = await supabaseAdmin
         .from('app_settings')
@@ -152,14 +158,36 @@ export default async function handler(req, res) {
         ? stockRow.value.filter(x => typeof x === 'string')
         : [];
       if (outList.length > 0 && Array.isArray(order.items)) {
-        const outSet = new Set(outList);
-        const blocked = order.items.find(it => it?.id && outSet.has(String(it.id)));
+        let blocked = null;
+        let reason = null;
+
+        for (const it of order.items) {
+          const itemId = it?.id != null ? String(it.id) : '';
+          if (!itemId) continue;
+
+          // a. Plat entier : rupture explicite ou cascade (toutes options coupées).
+          if (isItemUnavailable(outList, MENU_ITEMS_BY_ID[itemId])) {
+            blocked = it;
+            reason = itemId;
+            break;
+          }
+
+          // b. Chaque exemplaire commandé, avec ses choix.
+          const variants = Array.isArray(it?.variants) ? it.variants : [];
+          const badVariant = variants.find(v => isVariantUnavailable(outList, itemId, v));
+          if (badVariant) {
+            blocked = it;
+            reason = `${itemId} (option choisie)`;
+            break;
+          }
+        }
+
         if (blocked) {
-          console.warn('[KaïKaï create-checkout] refus : item en rupture', order.id, blocked.id);
+          console.warn('[KaïKaï create-checkout] refus : rupture', order.id, reason);
           return res.status(409).json({
             error: 'item_out_of_stock',
             itemId: String(blocked.id),
-            message: `« ${blocked.name || 'Un plat'} » est en rupture de stock.`,
+            message: `« ${blocked.name || 'Un plat'} » n'est plus disponible dans ce choix.`,
           });
         }
       }

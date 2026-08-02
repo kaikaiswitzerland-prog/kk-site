@@ -1,12 +1,21 @@
 // src/hooks/useOutOfStock.js
-// Lit la liste des plats en rupture stockée dans app_settings.out_of_stock_items
-// (JSONB array d'ids string). Polling 30s comme useRestaurantOpen.
+// Lit la liste des ruptures stockée dans app_settings.out_of_stock_items
+// (JSONB array de strings). Polling 30s comme useRestaurantOpen.
+//
+// La liste mélange deux formes de clé : "5" (plat entier) et "5:porc" (option
+// seule). Le décodage vit dans src/lib/stockRules.js — ce hook ne fait que
+// l'exposer lié à la liste courante.
 //
 // Lecture publique via la policy RLS SELECT de app_settings (chantier 6).
 // Pas de Realtime pour démarrer — la latence ≤30s est acceptable pour ce cas.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
+import {
+  availableOptions as availableOptionsRule,
+  isItemUnavailable as isItemUnavailableRule,
+  isOptionOut as isOptionOutRule,
+} from '../lib/stockRules.js';
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -50,5 +59,14 @@ export function useOutOfStock() {
     };
   }, []);
 
-  return { items, loading, isOutOfStock: (id) => items.includes(String(id)) };
+  // Signatures historiques (`items`, `isOutOfStock`) inchangées : d'autres
+  // appelants en dépendent. Les helpers option/cascade sont additifs.
+  return useMemo(() => ({
+    items,
+    loading,
+    isOutOfStock: (id) => items.includes(String(id)),
+    isOptionOut: (itemId, optionId) => isOptionOutRule(items, itemId, optionId),
+    availableOptions: (menuItem) => availableOptionsRule(items, menuItem),
+    isItemUnavailable: (menuItem) => isItemUnavailableRule(items, menuItem),
+  }), [items, loading]);
 }
