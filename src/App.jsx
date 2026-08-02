@@ -315,13 +315,17 @@ const formuleBoissonsAvailable = (stockList) => {
 };
 
 // Une formule devient incomposable bien avant que ses ingrédients soient tous
-// coupés : il faut 1 plat (Découverte) ou 2 (Voyage), au moins une boisson, et
+// coupés : il faut au moins 1 plat sélectionnable, au moins une boisson, et
 // au moins un dessert pour Voyage.
+//
+// Voyage demande 2 plats mais autorise le MÊME plat deux fois (avec des
+// protéines différentes, cf. togglePlatVoy) : 1 plat sélectionnable suffit
+// donc à composer la formule.
 function isFormuleUnavailable(stockList, item) {
   if (isItemExplicitlyOut(stockList, item.id)) return true;
   const isVoyage = item.formuleType === 'voyage';
   const plats = formuleNamesAvailable(stockList, isVoyage ? FORMULE_PLATS_VOYAGE : FORMULE_PLATS_DECOUVERTE);
-  if (plats.length < (isVoyage ? 2 : 1)) return true;
+  if (plats.length < 1) return true;
   if (formuleBoissonsAvailable(stockList).length === 0) return true;
   if (isVoyage && formuleNamesAvailable(stockList, FORMULE_DESSERTS).length === 0) return true;
   return false;
