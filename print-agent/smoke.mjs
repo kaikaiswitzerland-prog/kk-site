@@ -209,19 +209,50 @@ const { buildEposXml } = await import('../src/lib/eposPrint.js');
 
 const COLS = { font_a: 48, font_b: 64, font_c: 72 };
 
-// Parse les <text .../> du XML et recalcule la largeur disponible de chaque
-// ligne selon sa police et son échelle — c'est exactement le piège que
-// l'ancien LINE_WIDTH=64 global masquait.
+// Attributs de style que CHAQUE <text> doit déclarer explicitement. Les
+// attributs ePOS-Print sont des états persistants : un attribut omis ne vaut
+// pas "valeur par défaut", il vaut "ce que la balise précédente a laissé".
+// Un ticket qui en oublie un se contamine tout seul — c'est le bug que ce
+// contrôle empêche de revenir.
+const REQUIRED_ATTRS = ['font', 'smooth', 'width', 'height', 'reverse', 'ul', 'em', 'align'];
+
+// Reconstitue les LIGNES PHYSIQUES : une balise dont le contenu ne se termine
+// pas par &#10; continue la ligne en cours (nom d'article gras + montant non
+// gras sont deux <text> sur une seule ligne imprimée).
 function auditTicket(xml) {
   const lines = [];
   const violations = [];
   const re = /<text ([^>]*)>([\s\S]*?)<\/text>/g;
+  let current = null;
   let m;
+
+  const flush = () => {
+    if (!current) return;
+    // La largeur retenue est la plus contraignante des segments de la ligne.
+    if (current.text.length > current.cols) {
+      violations.push(
+        `debordement (${current.text.length}>${current.cols} col, ${current.font} x${current.width}) : "${current.text}"`,
+      );
+    }
+    lines.push(current);
+    current = null;
+  };
+
   while ((m = re.exec(xml)) !== null) {
+    const raw = m[2];
     const attrs = Object.fromEntries(
       [...m[1].matchAll(/(\w+)="([^"]*)"/g)].map((a) => [a[1], a[2]]),
     );
-    const text = m[2]
+
+    const missing = REQUIRED_ATTRS.filter((a) => !(a in attrs));
+    if (missing.length) {
+      violations.push(`attribut(s) de style non declare(s) [${missing.join(',')}] : "${raw.slice(0, 40)}"`);
+    }
+    if (attrs.reverse === 'true') {
+      violations.push(`reverse="true" residuel (design sobre attendu) : "${raw.slice(0, 40)}"`);
+    }
+
+    const text = raw
       .replace(/&#10;$/, '')
       .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
@@ -230,28 +261,31 @@ function auditTicket(xml) {
     const height = Number(attrs.height || 1);
     const cols = Math.floor((COLS[font] || 64) / width);
 
-    if (text.length > cols) {
-      violations.push(`debordement (${text.length}>${cols} col, ${font} x${width}) : "${text}"`);
-    }
     if (width < 1 || width > 8 || height < 1 || height > 8) {
       violations.push(`echelle hors bornes 1..8 : width=${width} height=${height}`);
     }
     if (/[^\x20-\x7E]/.test(text)) {
       violations.push(`caractere non-ASCII non replie : "${text}"`);
     }
-    lines.push({ text, font, width, height, cols, reverse: attrs.reverse === 'true', em: attrs.em === 'true' });
+
+    if (!current) {
+      current = { text, font, width, height, cols, align: attrs.align, em: attrs.em === 'true' };
+    } else {
+      current.text += text;
+      current.cols = Math.min(current.cols, cols);
+    }
+    if (raw.endsWith('&#10;')) flush();
   }
+  flush();
   return { lines, violations };
 }
 
 function preview(xml) {
-  const { lines } = auditTicket(xml);
-  const out = [];
-  for (const l of lines) {
-    const tag = `${l.font === 'font_a' ? 'A' : 'B'}${l.width > 1 ? `x${l.width}` : '  '}${l.reverse ? ' INV' : '    '}${l.em ? ' B' : '  '}`;
-    out.push(`  ${tag} │ ${l.text}`);
-  }
-  return out.join('\n');
+  return auditTicket(xml).lines.map((l) => {
+    const scale = `${l.width > 1 ? `w${l.width}` : '  '}${l.height > 1 ? `h${l.height}` : '  '}`;
+    const tag = `${l.font === 'font_a' ? 'A' : 'B'}${scale}${l.align === 'center' ? ' C' : '  '}${l.em ? ' B' : '  '}`;
+    return `  ${tag} │ ${l.text}`;
+  }).join('\n');
 }
 
 function checkTicket(label, order) {
@@ -265,8 +299,11 @@ function checkTicket(label, order) {
     xml.startsWith('<?xml version="1.0" encoding="utf-8"?>') &&
     xml.includes('http://www.epson-pos.com/schemas/2011/03/epos-print') &&
     xml.endsWith('</s:Envelope>'));
-  check(`${label} : bandeau et mode en video inverse`,
-    (xml.match(/reverse="true"/g) || []).length >= 2);
+  check(`${label} : aucun reverse (design sobre)`,
+    !xml.includes('reverse="true"'));
+  check(`${label} : chaque <text> declare les ${REQUIRED_ATTRS.length} attributs de style`,
+    (xml.match(/<text /g) || []).length ===
+      (xml.match(/<text [^>]*font="[^"]*"[^>]*smooth="[^"]*"[^>]*width="[^"]*"[^>]*height="[^"]*"[^>]*reverse="[^"]*"[^>]*ul="[^"]*"[^>]*em="[^"]*"[^>]*align="[^"]*"/g) || []).length);
   check(`${label} : se termine par feed + cut`,
     xml.includes('<feed line="3"/><cut type="feed"/>'));
   check(`${label} : aucun debordement / non-ASCII / echelle invalide`,

@@ -7,18 +7,25 @@
 // main" pour éviter toute dépendance NPM Epson, et on parse la réponse pour
 // remonter proprement les erreurs d'imprimante (papier vide, capot ouvert…).
 //
-// Doc de référence : ePOS-Print XML User's Manual, schéma
+// Doc de référence : ePOS-Print XML User's Manual (Rev. S), schéma
 // http://www.epson-pos.com/schemas/2011/03/epos-print
 //
-// Attributs <text> utilisés (vérifiés dans la spec) :
-//   font    font_a | font_b | font_c
-//   width   entier 1..8   (échelle horizontale ; prime sur dw quand les deux
-//                          sont présents — on n'utilise donc plus dw/dh)
-//   height  entier 1..8   (échelle verticale ; prime sur dh)
-//   em      true|false    (gras)
-//   reverse true|false    (vidéo inverse, blanc sur noir)
-//   align   left|center|right
-// <feed unit="0..255"/> avance en POINTS, <feed line="0..255"/> en lignes.
+// ⚠ LES ATTRIBUTS DE <text> SONT DES ÉTATS PERSISTANTS, PAS DE LA DÉCORATION.
+//
+// Le manuel Epson le montre dans son propre exemple (p.74) : chaque style est
+// posé sur une balise <text/> vide, puis le texte est imprimé par une balise
+// SANS attribut. Un réglage reste actif jusqu'à ce qu'on le change — c'est
+// confirmé p.75 : « The "align" setting specified in this element is also
+// applied to <image>, <logo>, <barcode>, and <symbol> ».
+//
+// Conséquence : n'émettre un attribut que lorsqu'il est "vrai" contamine tout
+// le reste du ticket (un reverse="true" jamais éteint imprime la suite en
+// blocs noirs ; un font_a jamais rendu fait déborder les séparateurs). C'est
+// exactement ce qui sortait avant ce correctif.
+//
+// RÈGLE : toute balise <text> émise déclare l'INTÉGRALITÉ des attributs de
+// style avec une valeur explicite. C'est le rôle de line() / seg() ci-dessous,
+// seules fonctions autorisées à produire un <text>.
 
 import {
   fmt,
@@ -30,38 +37,58 @@ import {
   renderVariantLines,
 } from './admin/orderHelpers.js';
 
-// ─── Géométrie ─────────────────────────────────────────────────────────
-// TM-m30II en 80 mm = 576 points de large.
-//   Font A : 12 pts/car → 48 colonnes
-//   Font B :  9 pts/car → 64 colonnes
-// Une ligne agrandie (width=N) divise d'autant le nombre de colonnes : une
-// ligne Font A ×2 ne fait plus que 24 colonnes. C'est pourquoi dottedLine()
-// et separator() reçoivent TOUJOURS la largeur du style de la ligne — il n'y
-// a plus de LINE_WIDTH global (l'ancienne constante 64 débordait dès qu'on
-// sortait de Font B).
-const COLS_FONT_A = 48;
-const COLS_FONT_B = 64;
+// ─── Style ─────────────────────────────────────────────────────────────
+// Valeurs par défaut = valeurs d'usine listées p.65 du manuel, sauf smooth
+// que l'on force à true (lissage des caractères agrandis).
+const DEFAULT_STYLE = {
+  font: 'font_b',
+  width: 1,
+  height: 1,
+  reverse: false,
+  ul: false,
+  em: false,
+  align: 'left',
+  smooth: true,
+};
 
 const clampScale = (n) => Math.min(8, Math.max(1, Math.round(Number(n) || 1)));
 
+// Largeur en colonnes — table unique, utilisée par TOUT le fichier.
+// TM-m30II en 80 mm = 576 points : Font A 12 pts/car → 48 colonnes,
+// Font B 9 pts/car → 64. Une échelle width=N divise d'autant.
+const COLS = {
+  font_a: { 1: 48, 2: 24, 3: 16, 4: 12 },
+  font_b: { 1: 64, 2: 32, 3: 21, 4: 16 },
+  font_c: { 1: 72, 2: 36, 3: 24, 4: 18 },
+};
+
 function colsFor(style = {}) {
-  const base = style.font === 'font_a' ? COLS_FONT_A : COLS_FONT_B;
-  return Math.max(1, Math.floor(base / clampScale(style.width)));
+  const s = { ...DEFAULT_STYLE, ...style };
+  const w = clampScale(s.width);
+  const table = COLS[s.font] || COLS.font_b;
+  return table[w] ?? Math.max(1, Math.floor(table[1] / w));
 }
 
-// Styles nommés — une seule source pour la police ET la largeur associée.
+// Styles nommés. Chacun porte sa police ET son échelle : la largeur de ligne
+// s'en déduit toujours par colsFor(), jamais par une constante globale.
 const S = {
-  banner:    { font: 'font_a', width: 2, height: 2, em: true, reverse: true },
-  orderNo:   { font: 'font_a', width: 3, height: 3, em: true },
-  orderTime: { font: 'font_a', width: 2, height: 2, em: true },
-  mode:      { font: 'font_a', width: 2, height: 2, em: true, reverse: true },
+  brand:     { font: 'font_a', width: 2, height: 2, em: true, align: 'center' },
+  brandAddr: { font: 'font_b', align: 'center' },
+  orderNo:   { font: 'font_a', width: 2, height: 2, em: true, align: 'center' },
+  orderWhen: { font: 'font_b', height: 2, em: true, align: 'center' },
+  mode:      { font: 'font_a', height: 2, em: true, align: 'center' },
   address:   { font: 'font_a', em: true },
-  item:      { font: 'font_a', em: true },
-  total:     { font: 'font_a', width: 2, height: 2, em: true },
-  thanks:    { font: 'font_a', em: true },
   body:      { font: 'font_b' },
-  small:     { font: 'font_b' },
+  rule:      { font: 'font_a' },                       // 48 col, référence unique
+  itemName:  { font: 'font_a', em: true },             // 48 col
+  itemPrice: { font: 'font_a' },                       // 48 col, non gras
+  total:     { font: 'font_a', height: 2, em: true },  // width=1 → 48 col
+  thanks:    { font: 'font_a', em: true, align: 'center' },
+  footer:    { font: 'font_b', align: 'center' },
 };
+
+// Largeur de référence des séparateurs et des lignes d'articles.
+const RULE_COLS = colsFor(S.rule);
 
 const DEFAULT_PRINTER_URL =
   'https://192.168.1.103/cgi-bin/epos/service.cgi?devid=local_printer&timeout=10000';
@@ -118,17 +145,14 @@ function xmlEscape(s) {
     .replace(/'/g, '&apos;');
 }
 
-// Ligne "Gauche .......... Droite" calibrée sur `cols`, montant collé à droite.
-//
-// La longueur finale est exactement `cols` : gauche + espace + points + espace
-// + droite. L'ancienne version oubliait l'un des deux espaces dans son calcul
-// et rendait des lignes de cols+1, qui débordaient d'un caractère.
-function dottedLine(left, right, cols) {
+// "Gauche          Droite" : alignement par espaces, sans pointillés. La
+// longueur rendue vaut exactement `cols` ; si ça ne tient pas, la gauche est
+// tronquée car le montant prime.
+function padLine(left, right, cols) {
   const l = String(left ?? '');
   const r = String(right ?? '');
-  const dots = cols - l.length - r.length - 2;
-  if (dots >= 1) return `${l} ${'.'.repeat(dots)} ${r}`;
-  // Plus la place pour des points : on tronque la gauche, le montant prime.
+  const gap = cols - l.length - r.length;
+  if (gap >= 1) return l + ' '.repeat(gap) + r;
   const maxLeft = Math.max(0, cols - r.length - 1);
   return `${l.slice(0, maxLeft).padEnd(maxLeft)} ${r}`.slice(0, cols);
 }
@@ -136,14 +160,6 @@ function dottedLine(left, right, cols) {
 // Séparateurs en ASCII pur : les filets Unicode (─ ═) ne sont pas garantis
 // dans le codepage de l'imprimante et sortiraient en caractères parasites.
 const separator = (ch, cols) => ch.repeat(cols);
-
-// Remplit la ligne sur toute la largeur pour qu'un bloc reverse="true" donne
-// un vrai bandeau plein, et pas seulement les caractères surlignés.
-function centerPad(s, cols) {
-  const t = s.length > cols ? s.slice(0, cols) : s;
-  const left = Math.floor((cols - t.length) / 2);
-  return ' '.repeat(left) + t + ' '.repeat(cols - t.length - left);
-}
 
 // Coupe sur les espaces, et coupe brutalement un mot plus long que la ligne
 // (adresse sans espace, note collée) plutôt que de le laisser déborder.
@@ -171,63 +187,66 @@ function wrapText(s, cols) {
 const LABEL_W = 9;
 function labelLines(label, value, cols) {
   const avail = Math.max(1, cols - LABEL_W);
-  return wrapText(value, avail).map((line, i) =>
-    (i === 0 ? label.padEnd(LABEL_W) : ' '.repeat(LABEL_W)) + line,
+  return wrapText(value, avail).map((line_, i) =>
+    (i === 0 ? label.padEnd(LABEL_W) : ' '.repeat(LABEL_W)) + line_,
   );
 }
 
-// ─── Construction du XML ePOS-Print ────────────────────────────────────
-function textTag(content, style = {}) {
-  const { font = 'font_b', align, em, ul, reverse, width, height } = style;
-  const attrs = [`font="${font}"`];
-  if (align) attrs.push(`align="${align}"`);
-  if (em) attrs.push('em="true"');
-  if (ul) attrs.push('ul="true"');
-  if (reverse) attrs.push('reverse="true"');
-  if (width && clampScale(width) > 1) attrs.push(`width="${clampScale(width)}"`);
-  if (height && clampScale(height) > 1) attrs.push(`height="${clampScale(height)}"`);
-  return `<text ${attrs.join(' ')}>${xmlEscape(content)}&#10;</text>`;
+// ─── Émission des <text> ───────────────────────────────────────────────
+// Seul endroit du fichier qui produit une balise <text>. Fusionne le style
+// demandé avec DEFAULT_STYLE et émet TOUS les attributs, toujours.
+function textTag(content, style, terminate) {
+  const s = { ...DEFAULT_STYLE, ...style };
+  const attrs = [
+    `font="${s.font}"`,
+    `smooth="${s.smooth ? 'true' : 'false'}"`,
+    `width="${clampScale(s.width)}"`,
+    `height="${clampScale(s.height)}"`,
+    `reverse="${s.reverse ? 'true' : 'false'}"`,
+    `ul="${s.ul ? 'true' : 'false'}"`,
+    `em="${s.em ? 'true' : 'false'}"`,
+    `align="${s.align}"`,
+  ].join(' ');
+  return `<text ${attrs}>${xmlEscape(content)}${terminate ? '&#10;' : ''}</text>`;
 }
 
-const textLines = (lines, style) => lines.map((l) => textTag(l, style)).join('');
+// Ligne complète (termine la ligne physique).
+const line = (content, style = {}) => textTag(content, style, true);
+// Segment : continue la ligne physique en cours, pour changer de style en
+// cours de ligne (nom d'article gras + montant non gras).
+const seg = (content, style = {}) => textTag(content, style, false);
 
+const linesOf = (arr, style) => arr.map((l) => line(l, style)).join('');
 const blankLine = () => '<feed line="1"/>';
-// Demi-interligne : une ligne Font A fait 24 points, donc 12 points d'air.
-const halfLine = () => '<feed unit="12"/>';
 
 // 1. EN-TÊTE
 function buildHeader() {
   return [
-    textTag(centerPad('KAIKAI', colsFor(S.banner)), S.banner),
-    textTag('BD DE LA TOUR 1 - 1205 GENEVE', { ...S.small, align: 'center' }),
+    line('KAIKAI', S.brand),
+    line('BD DE LA TOUR 1 - 1205 GENEVE', S.brandAddr),
     blankLine(),
   ].join('');
 }
 
-// 2. BLOC COMMANDE — numéro et heure sont les infos les plus consultées.
+// 2. BLOC COMMANDE
 function buildOrderBlock(order) {
+  const when = `${fmtTime(order.created_at)}  -  ${toAscii(fmtDate(order.created_at))}`;
   return [
-    textTag(`#${orderNumber(order.id)}`, S.orderNo),
-    textTag(fmtTime(order.created_at), S.orderTime),
-    textTag(toAscii(fmtDate(order.created_at)), S.body),
+    line(`#${orderNumber(order.id)}`, S.orderNo),
+    line(when, S.orderWhen),
     blankLine(),
   ].join('');
 }
 
-// 3. MODE — bandeau inversé pleine largeur.
+// 3. MODE
 function buildModeBlock(order) {
   const isPickup = order.delivery_mode === 'pickup';
-  const lines = [
-    textTag(centerPad(isPickup ? 'A EMPORTER' : 'LIVRAISON', colsFor(S.mode)), S.mode),
-  ];
+  const out = [line(isPickup ? 'A EMPORTER' : 'LIVRAISON', S.mode)];
   if (!isPickup && order.customer_address) {
-    lines.push(...textLines(
-      wrapText(toAscii(order.customer_address), colsFor(S.address)),
-      S.address,
-    ));
+    out.push(linesOf(wrapText(toAscii(order.customer_address), colsFor(S.address)), S.address));
   }
-  lines.push(blankLine());
-  return lines.join('');
+  out.push(blankLine());
+  return out.join('');
 }
 
 // 4. CLIENT — colonnes alignées.
@@ -255,28 +274,32 @@ function buildCustomerBlock(order) {
     rows.push(...labelLines('NOTE', toAscii(order.notes), cols));
   }
 
-  return textLines(rows, S.body);
+  return linesOf(rows, S.body);
 }
 
-// 5. ARTICLES — nom en Font A gras, variantes en Font B indentées.
+// 5. ARTICLES — nom gras à gauche, montant non gras à droite, aligné par
+// espaces. Les deux moitiés sont deux <text> sur la MÊME ligne physique :
+// seul le premier segment est en em, le second ferme la ligne.
 function buildItemBlock(item) {
   const safeIt = item || {};
   const qty = safeIt.qty ?? 1;
   const subtotal = safeIt.subtotal ?? (Number(safeIt.price) || 0) * qty;
 
+  const price = toAscii(fmtAmount(subtotal));
+  const name = `${qty}x ${toAscii(safeIt.name)}`;
+  const maxName = Math.max(0, RULE_COLS - price.length - 1);
+  const shown = name.length > maxName ? name.slice(0, maxName) : name;
+  const gap = RULE_COLS - shown.length - price.length;
+
   const out = [
-    textTag(
-      dottedLine(`${qty}x ${toAscii(safeIt.name)}`, toAscii(fmtAmount(subtotal)), colsFor(S.item)),
-      S.item,
-    ),
+    seg(shown, S.itemName),
+    line(' '.repeat(Math.max(1, gap)) + price, S.itemPrice),
   ];
 
-  // Préfixe ">" et non "›" : U+203A n'est pas garanti dans le codepage de
-  // l'imprimante (TYPO_FOLD le replierait de toute façon sur ">").
   const subCols = colsFor(S.body) - 5; // 3 d'indentation + "> "
   renderVariantLines(safeIt.variants).forEach((v) => {
-    wrapText(toAscii(v), subCols).forEach((line, i) => {
-      out.push(textTag(`   ${i === 0 ? '> ' : '  '}${line}`, S.body));
+    wrapText(toAscii(v), subCols).forEach((l, i) => {
+      out.push(line(`   ${i === 0 ? '> ' : '  '}${l}`, S.body));
     });
   });
 
@@ -285,28 +308,24 @@ function buildItemBlock(item) {
 
 function buildItemsBlock(order) {
   const items = Array.isArray(order.items) ? order.items : [];
-  const cols = colsFor(S.body);
   return [
-    textTag(separator('-', cols), S.body),
-    items.map(buildItemBlock).join(halfLine()),
-    textTag(separator('-', cols), S.body),
+    line(separator('-', RULE_COLS), S.rule),
+    items.map(buildItemBlock).join(blankLine()),
+    line(separator('-', RULE_COLS), S.rule),
   ].join('');
 }
 
-// 6. TOTAL
+// 6. TOTAL — height=2 mais width=1 : la ligne garde donc 48 colonnes.
 function buildTotalBlock(order) {
-  return [
-    textTag(separator('=', colsFor(S.body)), S.body),
-    textTag(dottedLine('TOTAL', toAscii(fmt(order.total ?? 0)), colsFor(S.total)), S.total),
-  ].join('');
+  return line(padLine('TOTAL', toAscii(fmt(order.total ?? 0)), colsFor(S.total)), S.total);
 }
 
 // 7. PIED
 function buildFooter() {
   return [
     blankLine(),
-    textTag(toAsciiMixed('Mauruuru !'), { ...S.thanks, align: 'center' }),
-    textTag(toAsciiMixed('A bientot chez KaiKai'), { ...S.small, align: 'center' }),
+    line(toAsciiMixed('Mauruuru !'), S.thanks),
+    line(toAsciiMixed('A bientot chez KaiKai'), S.footer),
   ].join('');
 }
 
