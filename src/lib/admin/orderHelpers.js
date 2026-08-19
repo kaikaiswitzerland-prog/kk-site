@@ -159,6 +159,12 @@ export const ITEM_CATEGORY_MAP = {
   '18': 'desserts',  // Cheesecake
   '19': 'boissons',  // Jus exotiques
   '20': 'boissons',  // Eau plate/gazeuse
+  // Bases du composeur de woks. Sans elles, getItemCategoryLabel rendrait « ? »
+  // sur chaque wok composé dans l'admin et la compta.
+  '21': 'chaud',     // Nouilles sautées
+  '22': 'chaud',     // Riz sauté curry
+  '23': 'chaud',     // Riz sauté
+  '24': 'chaud',     // Riz blanc jasmin
 };
 
 export const CATEGORY_LABELS = {
@@ -290,6 +296,16 @@ export function renderVariantLines(variants) {
     // 4. Variant simple { id, name, desc } — fallback
     if (v?.name) {
       lines.push(v.name);
+    }
+    // 4bis. Légumes du composeur de woks, sur leur propre ligne préfixée
+    // pour que la cuisine sépare d'un coup d'œil la protéine et les légumes.
+    // Ligne indépendante du `if` ci-dessus : un variant peut porter des
+    // légumes sans nom si le plat n'a pas d'option (Wok de Bœuf).
+    if (Array.isArray(v?.legumes) && v.legumes.length) {
+      const noms = v.legumes
+        .map((l) => (typeof l === 'string' ? l : l?.name))
+        .filter(Boolean);
+      if (noms.length) lines.push(`Légumes : ${noms.join(', ')}`);
     }
     } catch (err) {
       // Variant au format inattendu : on log côté console et on pousse une

@@ -19,7 +19,7 @@
 import { supabaseAdmin } from './_lib/supabaseServer.js';
 import { getRestaurantStatus, formatStatusLabel } from './_lib/restaurantHours.js';
 import { getZoneByNpa } from './_lib/deliveryZones.js';
-import { getServerPrice } from './_lib/menuPrices.js';
+import { getServerPrice, getServerUnitPrice } from './_lib/menuPrices.js';
 import { MENU_ITEMS_BY_ID, isVariantUnavailable } from '../src/data/menuMeta.js';
 import { isItemUnavailable } from '../src/lib/stockRules.js';
 
@@ -43,7 +43,20 @@ function computeOrderTotal(order, npa) {
     if (typeof serverPrice !== 'number') {
       return { error: 'unknown_item', itemId: String(it?.id ?? '') };
     }
-    subtotal += serverPrice * Number(it?.qty || 0);
+    // Recompute PAR EXEMPLAIRE, et non prix × qty : depuis le composeur de
+    // woks, deux exemplaires du même plat peuvent porter des légumes
+    // différents, donc des prix différents. Les exemplaires au-delà de
+    // variants[] (ou sans légumes) retombent sur le prix plein — comportement
+    // identique à l'ancien prix × qty pour tout le reste de la carte.
+    //
+    // qty est borné : un qty forgé à 10 000 gonflerait la boucle sans que le
+    // client paie davantage, mais autant ne pas offrir le levier.
+    const qty = Math.max(0, Math.min(Number(it?.qty || 0), 99));
+    const variants = Array.isArray(it?.variants) ? it.variants : [];
+    for (let k = 0; k < qty; k++) {
+      const unit = getServerUnitPrice(it?.id, variants[k]);
+      subtotal += typeof unit === 'number' ? unit : serverPrice;
+    }
   }
   // TODO réactiver -10% quand Mode Île revient (cohérent avec couponApplied
   // côté front App.jsx). Tant que le programme membre est OFF, pas de remise.

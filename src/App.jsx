@@ -102,6 +102,17 @@ const globalStyles = `
   .cat-nav::-webkit-scrollbar { display: none; }
   .cat-nav { -ms-overflow-style: none; scrollbar-width: none; }
 
+  /* Composeur de woks — « pop » du montant à chaque changement de total. */
+  @keyframes wokPricePop {
+    0%   { transform: scale(1); }
+    38%  { transform: scale(1.13); }
+    100% { transform: scale(1); }
+  }
+  .wok-price-pop { animation: wokPricePop 0.44s cubic-bezier(0.34,1.56,0.64,1); transform-origin: center; }
+  @media (prefers-reduced-motion: reduce) {
+    .wok-price-pop { animation: none; }
+  }
+
 `;
 
 // Informations du restaurant
@@ -143,6 +154,62 @@ const RESTAURANT_INFO = {
     lng: 6.1472
   }
 };
+
+// ─── Catalogues du composeur de woks ────────────────────────────────────────
+//
+// GARNITURES. C'est elle qui fait le prix, pas la base : Veggie 17.90,
+// Poulet / Porc / Mix 18.90, Bœuf 26.90 (cf. OPTION_PRICES). Le montant
+// n'apparaît nulle part sur ces lignes — uniquement dans le total.
+//
+// Les ids reprennent ceux des protéines déjà en base (porc, poulet,
+// porc-poulet, veggie, boeuf) : une clé de rupture « 21:poulet » suit donc la
+// même convention que partout ailleurs.
+const WOK_GARNITURES = [
+  { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
+  { id: "porc", name: "Porc", desc: "Viande de porc mijotée façon KaïKaï" },
+  { id: "porc-poulet", name: "Mix poulet-porc", desc: "Mix des deux viandes" },
+  { id: "veggie", name: "Veggie (omelette)", desc: "100% végétarien" },
+  { id: "boeuf", name: "Bœuf", desc: "Bœuf sauté au wok, sauce sésame" },
+];
+
+// LÉGUMES. Le premier est offert, chacun des suivants est facturé 1.50.
+const LEGUME_OPTS = [
+  { id: "choux", name: "Choux-carottes fondants", emoji: "🥬" },
+  { id: "patate", name: "Patate-patate douce au wok", emoji: "🍠" },
+  { id: "poivrons", name: "Poivrons sautés", emoji: "🫑" },
+];
+
+// Nombre de légumes offerts. Au-delà, chacun est facturé.
+// ⚠ Doit rester synchronisé avec LEGUMES_INCLUS dans api/_lib/menuPrices.js.
+const LEGUMES_INCLUS = 1;
+
+// Prix portés par une OPTION, pour les 4 bases du composeur UNIQUEMENT.
+//
+// Deux sémantiques cohabitent, distinguées par le préfixe de la clé :
+//   "21:veggie"      → surcharge ABSOLUE : remplace le prix de la base.
+//   "21:leg:choux"   → supplément ADDITIF : s'ajoute, au-delà du quota inclus.
+//
+// Aucun plat de la carte existante n'apparaît ici : leurs prix ne bougent pas.
+//
+// ⚠ Doit rester synchronisé avec MENU_OPTION_PRICES dans
+// api/_lib/menuPrices.js — c'est ce fichier-là qui fait foi au moment de
+// l'encaissement (le client ne fait qu'afficher).
+const OPTION_PRICES = {
+  "21:veggie": 17.90, "21:poulet": 18.90, "21:porc": 18.90, "21:porc-poulet": 18.90, "21:boeuf": 26.90,
+  "22:veggie": 17.90, "22:poulet": 18.90, "22:porc": 18.90, "22:porc-poulet": 18.90, "22:boeuf": 26.90,
+  "23:veggie": 17.90, "23:poulet": 18.90, "23:porc": 18.90, "23:porc-poulet": 18.90, "23:boeuf": 26.90,
+  "24:veggie": 17.90, "24:poulet": 18.90, "24:porc": 18.90, "24:porc-poulet": 18.90, "24:boeuf": 26.90,
+
+  "21:leg:choux": 1.50, "21:leg:patate": 1.50, "21:leg:poivrons": 1.50,
+  "22:leg:choux": 1.50, "22:leg:patate": 1.50, "22:leg:poivrons": 1.50,
+  "23:leg:choux": 1.50, "23:leg:patate": 1.50, "23:leg:poivrons": 1.50,
+  "24:leg:choux": 1.50, "24:leg:patate": 1.50, "24:leg:poivrons": 1.50,
+};
+
+// Un plat dont les options ne coûtent pas toutes la même chose : le prix de
+// fiche n'a alors aucun sens, seul le total par exemplaire en a un.
+const hasOptionPricing = (item) =>
+  !!item && Object.keys(OPTION_PRICES).some(k => k.startsWith(`${item.id}:`) && !k.includes(':leg:'));
 
 // --- Menu réel (CHF)
 const MENU = [
@@ -266,10 +333,117 @@ const MENU = [
     hasEauVariants: true,
     eauVariants: EAU_OPTS
   },
+
+  // ─── BASES DU COMPOSEUR DE WOKS (ids 21 à 24) ─────────────────────────────
+  //
+  // ⚠ Ces 4 entrées ne sont JAMAIS rendues en fiche plat. Elles n'existent que
+  // pour la section « Compose ton wok » : ce sont des BASES, pas des plats
+  // finis, et elles n'ont pas de prix propre — c'est la garniture qui fait le
+  // prix. Elles vivent quand même dans MENU parce que le panier, le checkout
+  // et le ticket cuisine travaillent tous à partir d'un id de MENU.
+  //
+  // Elles ne remplacent RIEN : Chao Men (5), Kai Fan (6), Omelette Fu Young (7)
+  // et Wok de Bœuf (8) restent des fiches classiques dans « Plat Chaud ».
+  //
+  // `price` n'est qu'un repli : le composeur exige une garniture, et la
+  // garniture porte toujours une surcharge dans OPTION_PRICES. Il ne sert que
+  // si un panier forgé arrivait sans garniture.
+  {
+    id: "21",
+    name: "Nouilles sautées",
+    desc: "Nouilles sautées au wok, légumes de saison",
+    price: 18.90,
+    category: "wok",
+    hasProteinVariants: true,
+    proteinVariants: WOK_GARNITURES,
+    legumeVariants: LEGUME_OPTS
+  },
+  {
+    id: "22",
+    name: "Riz sauté curry",
+    desc: "Riz sauté au wok, sauce curry",
+    price: 18.90,
+    category: "wok",
+    hasProteinVariants: true,
+    proteinVariants: WOK_GARNITURES,
+    legumeVariants: LEGUME_OPTS
+  },
+  {
+    id: "23",
+    name: "Riz sauté",
+    desc: "Riz sauté au wok à la tahitienne",
+    price: 18.90,
+    category: "wok",
+    hasProteinVariants: true,
+    proteinVariants: WOK_GARNITURES,
+    legumeVariants: LEGUME_OPTS
+  },
+  {
+    id: "24",
+    name: "Riz blanc jasmin",
+    desc: "Riz blanc jasmin, légumes croquants",
+    price: 18.90,
+    category: "wok",
+    hasProteinVariants: true,
+    proteinVariants: WOK_GARNITURES,
+    legumeVariants: LEGUME_OPTS
+  },
 ];
+
+// Prix d'UN exemplaire, garniture et légumes compris. Miroir exact de
+// getServerUnitPrice() dans api/_lib/menuPrices.js — mêmes règles de repli :
+// garniture absente ou inconnue → prix plein du plat, légume inconnu → ignoré
+// (aucun supplément, et il ne consomme pas le légume offert).
+//
+// Sans garniture tarifée ni légume, la fonction rend exactement item.price :
+// TOUS les plats de la carte passent par ici sans changer de prix.
+function unitPrice(item, variant) {
+  const optionId =
+    variant && typeof variant === "object" && typeof variant.id === "string"
+      ? variant.id.trim()
+      : "";
+  const override = optionId ? OPTION_PRICES[`${item.id}:${optionId}`] : undefined;
+  let price = typeof override === "number" ? override : item.price;
+
+  if (variant && typeof variant === "object" && Array.isArray(variant.legumes)) {
+    const seen = new Set();
+    const supplements = [];
+    for (const leg of variant.legumes) {
+      const legId = typeof leg === "string" ? leg : leg?.id;
+      if (typeof legId !== "string" || !legId.trim()) continue;
+      const key = `${item.id}:leg:${legId.trim()}`;
+      if (seen.has(key)) continue;
+      const p = OPTION_PRICES[key];
+      if (typeof p !== "number" || p < 0) continue;
+      seen.add(key);
+      supplements.push(p);
+    }
+    // C'est le légume le MOINS cher qui est offert, comme côté serveur.
+    supplements.sort((a, b) => a - b);
+    supplements.slice(LEGUMES_INCLUS).forEach((p) => { price += p; });
+  }
+
+  return Math.round(price * 100) / 100;
+}
+
+// Total d'une ligne de panier. Somme PAR EXEMPLAIRE, et non prix × qty : deux
+// exemplaires du même plat peuvent porter des légumes différents. Les
+// exemplaires au-delà de variants[] retombent sur le prix plein — donc le
+// résultat est identique à prix × qty pour tout le reste de la carte.
+//
+// Miroir de la boucle de computeOrderTotal() dans api/create-checkout.js.
+function lineSubtotal(item, qty, variants) {
+  const list = Array.isArray(variants) ? variants : [];
+  let sum = 0;
+  for (let k = 0; k < qty; k++) sum += unitPrice(item, list[k]);
+  return Math.round(sum * 100) / 100;
+}
 
 // Ordre des sections
 const IDS_ENTREES  = [1, 2, 3, 4];
+// Les bases du composeur. Elles ne sont PAS rendues en fiches : SEC_WOK n'a
+// qu'un seul consommateur, le composeur lui-même.
+const IDS_WOK      = [21, 22, 23, 24];
 const IDS_CHAUD    = [5, 6, 7, 8];
 const IDS_FROID    = [9, 10, 11, 12];
 const IDS_FORMULES = [13, 14];
@@ -278,13 +452,17 @@ const IDS_BOISSON  = [19, 20];
 
 const byIds = (ids) => ids.map(id => MENU.find(m => m.id === String(id))).filter(Boolean);
 const SEC_ENTREES  = byIds(IDS_ENTREES);
+const SEC_WOK      = byIds(IDS_WOK);
 const SEC_CHAUD    = byIds(IDS_CHAUD);
 const SEC_FROID    = byIds(IDS_FROID);
 const SEC_FORMULES = byIds(IDS_FORMULES);
 const SEC_DESSERT  = byIds(IDS_DESSERT);
 const SEC_BOISSON  = byIds(IDS_BOISSON);
 
-const ORDERED_IDS = [...IDS_ENTREES, ...IDS_CHAUD, ...IDS_FROID, ...IDS_FORMULES, ...IDS_DESSERT, ...IDS_BOISSON];
+// Les bases y figurent bien : MENU_SORTED sert au panier et à la validation du
+// panier restauré, pas seulement à l'affichage des fiches. Sans elles, un wok
+// composé disparaîtrait du panier au rechargement.
+const ORDERED_IDS = [...IDS_ENTREES, ...IDS_WOK, ...IDS_CHAUD, ...IDS_FROID, ...IDS_FORMULES, ...IDS_DESSERT, ...IDS_BOISSON];
 const MENU_SORTED = byIds(ORDERED_IDS);
 
 const MENU_BY_ID = Object.fromEntries(MENU.map(m => [m.id, m]));
@@ -524,6 +702,7 @@ function OpenStatus({ isOpen, manualClosure, statusLabel }) {
 // ─── NOUVEAU : Navigation sticky par catégorie ───────────────────────────────
 const CATEGORIES = [
   { id: "entrees",  label: "🥗 Entrées" },
+  { id: "wok",      label: "🍜 Compose ton wok" },
   { id: "chaud",    label: "🔥 Plats Chauds" },
   { id: "froid",    label: "❄️ Plats Froids" },
   { id: "formules", label: "🎁 Formules" },
@@ -673,7 +852,12 @@ export default function KaiKaiApp() {
   const activeCategory = useActiveCategory();
 
   const items = useMemo(() => MENU_SORTED.map(m => ({ ...m, qty: cart[m.id] || 0 })), [cart]);
-  const subtotal = useMemo(() => items.reduce((s, it) => s + it.price * it.qty, 0), [items]);
+  // Somme par exemplaire (cf. lineSubtotal) : identique à prix × qty partout,
+  // sauf sur un wok composé avec plus d'un légume.
+  const subtotal = useMemo(
+    () => items.reduce((s, it) => s + lineSubtotal(it, it.qty, cartVariants[it.id]), 0),
+    [items, cartVariants],
+  );
   const discount = useMemo(() => (couponApplied ? subtotal * 0.10 : 0), [couponApplied, subtotal]);
   // deliveryFee dépend du NPA (zone) : 4.90 / 6.90 / 9.90 CHF, ou 0 si
   // NPA hors zone ou mode pickup. Le total qui en découle est aussi
@@ -855,7 +1039,7 @@ export default function KaiKaiApp() {
         name: it.name,
         qty: it.qty,
         price: it.price,
-        subtotal: parseFloat((it.price * it.qty).toFixed(2)),
+        subtotal: lineSubtotal(it, it.qty, cartVariants[it.id]),
         variants: cartVariants[it.id] || [],
       }));
 
@@ -1032,6 +1216,22 @@ export default function KaiKaiApp() {
                   photoHeight="h-56" />
               ))}
 
+              {/* Section AJOUTÉE, entre les Entrées et les Plats Chauds. Elle
+                  ne retire rien : les 4 plats chauds gardent leur fiche
+                  ci-dessous, avec leur nom, leur prix et leur photo. Le
+                  composeur est un second chemin vers les mêmes ids. */}
+              <h3 id="section-wok" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🍜 Compose ton wok</h3>
+              <p className="col-span-full -mt-4 text-sm text-white/40">
+                Votre base, vos légumes, votre garniture — le prix s'ajuste à votre composition
+              </p>
+              <WokComposer
+                bases={SEC_WOK}
+                cart={cart}
+                add={add}
+                stockList={outOfStockItems}
+                outOfStockFor={(it) => isMenuItemUnavailable(outOfStockItems, it)}
+              />
+
               <h3 id="section-chaud" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🔥 Plat Chaud</h3>
               {SEC_CHAUD.map(item => (
                 <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={isMenuItemUnavailable(outOfStockItems, item)} stockList={outOfStockItems}
@@ -1165,6 +1365,252 @@ export default function KaiKaiApp() {
       </footer>
     </div>
     </>
+  );
+}
+
+// ─── COMPOSEUR DE WOKS ───────────────────────────────────────────────────────
+//
+// Section AJOUTÉE à la carte, elle n'en retire rien. On choisit un plat chaud,
+// des légumes (le 1er offert), une garniture, et le prix se met à jour en
+// direct. Les 4 fiches plat restent commandables comme avant, à l'identique.
+//
+// ⚠ C'est une COUCHE D'AFFICHAGE. Elle ne connaît aucun prix de plat ni aucune
+// règle de rupture : elle lit SEC_CHAUD et leurs proteinVariants via
+// getItemOptions() — la même fonction que le moteur de ruptures —, les prix
+// viennent de unitPrice() et l'ajout appelle exactement le même
+// `add(item.id, variant)` que ProteinModal.
+//
+// Le variant transmis est l'objet d'option d'origine ÉTENDU des légumes
+// choisis : { ...option, legumes: [{id, name}] }. C'est ce champ que lisent
+// getServerUnitPrice (facturation) et renderVariantLines (ticket cuisine).
+
+// Ligne d'option du composeur. Reprend le vocabulaire visuel d'OptionTile
+// (fond 0.03, bordure 0.08, sélection 0.11/0.28 + pastille blanche à coche
+// noire) en plus compact : trois colonnes côte à côte ne laissent pas la place
+// aux tuiles emoji de 46 px des bottom sheets.
+function WokOption({ emoji, label, note, out, active, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={out ? undefined : onClick}
+      disabled={out}
+      aria-pressed={active}
+      className="modal-tile"
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+        // 44 px minimum : c'est une cible tactile, pas une ligne de liste.
+        minHeight: 44,
+        padding: '11px 13px', marginBottom: 8,
+        background: active ? 'rgba(255,255,255,0.11)' : 'rgba(255,255,255,0.03)',
+        border: active ? '1px solid rgba(255,255,255,0.28)' : '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 16,
+        cursor: out ? 'not-allowed' : 'pointer',
+        textAlign: 'left',
+        opacity: out ? 0.4 : 1,
+      }}
+    >
+      {emoji && <span aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }}>{emoji}</span>}
+      <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: active ? 600 : 500, color: 'white' }}>
+        {label}
+        {note && <span style={{ display: 'block', fontSize: 11, color: 'rgba(255,255,255,0.40)', marginTop: 1 }}>{note}</span>}
+      </span>
+      {out && (
+        <span className="rounded-md border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-red-300" style={{ flexShrink: 0 }}>
+          Rupture
+        </span>
+      )}
+      {active && (
+        <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Check size={12} color="black" strokeWidth={3} />
+        </span>
+      )}
+    </button>
+  );
+}
+
+// Intitulé d'étape. Même graisse et même casse que SectionLabel, pour que le
+// composeur parle la langue des bottom sheets.
+function WokLegend({ step, title, note }) {
+  return (
+    <legend style={{ padding: '0 0 10px', width: '100%' }}>
+      <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', letterSpacing: '0.09em', textTransform: 'uppercase' }}>
+        {step} · {title}
+      </span>
+      {note && (
+        <span style={{ display: 'block', marginTop: 3, fontSize: 11, fontWeight: 500, color: '#C9A96E' }}>
+          {note}
+        </span>
+      )}
+    </legend>
+  );
+}
+
+function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
+  const [baseId, setBaseId] = useState(bases[0]?.id ?? null);
+  const [optionId, setOptionId] = useState(null);
+  const [legumeIds, setLegumeIds] = useState([]);
+
+  const base = bases.find(b => b.id === baseId) || bases[0];
+  const options = base ? getItemOptions(base) : [];
+  const option = options.find(o => o.id === optionId) || null;
+
+  const legumes = LEGUME_OPTS.filter(l => legumeIds.includes(l.id));
+
+  // Ce qui part réellement au panier — sert aussi au calcul du total, donc
+  // affiché et facturé sont calculés sur le MÊME objet.
+  const variant = option
+    ? { ...option, legumes: legumes.map(({ id, name }) => ({ id, name })) }
+    : null;
+
+  const baseOut = base ? outOfStockFor(base) : false;
+  const optionOut = option ? isOptionOut(stockList, base.id, option.id) : false;
+  // Une base seule ne se commande pas : sans garniture il n'y a pas de prix.
+  const canAdd = !!(base && option) && !baseOut && !optionOut;
+
+  const total = base && variant ? unitPrice(base, variant) : null;
+  const nbSupplements = Math.max(0, legumes.length - LEGUMES_INCLUS);
+
+  // « Pop » du prix à chaque changement de total. Le state est remis à false
+  // par un timer pour que l'animation puisse rejouer au changement suivant.
+  const [pop, setPop] = useState(false);
+  useEffect(() => {
+    if (total == null) return;
+    setPop(true);
+    const t = setTimeout(() => setPop(false), 440);
+    return () => clearTimeout(t);
+  }, [total]);
+
+  // Les 4 bases partagent aujourd'hui la même grille de garnitures, mais le
+  // composeur ne le présuppose pas : on conserve la garniture si son id existe
+  // encore sur la nouvelle base, sinon on repart de zéro.
+  const selectBase = (id) => {
+    setBaseId(id);
+    const next = bases.find(b => b.id === id);
+    if (!next) return;
+    if (!getItemOptions(next).some(o => o.id === optionId)) setOptionId(null);
+  };
+
+  // Multi-sélection : tout est décochable, zéro légume est un choix valide.
+  const toggleLegume = (id) => {
+    setLegumeIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleAdd = () => {
+    if (!canAdd) return;
+    add(base.id, variant);
+  };
+
+  if (!base) return null;
+
+  // Pas de photo : les 4 bases sont de nouveaux produits et n'en ont pas
+  // encore. Réutiliser celle d'un plat chaud existant afficherait un Chao Men
+  // sous le libellé « Nouilles sautées » — mieux vaut rien qu'une image fausse.
+  return (
+    <div className="col-span-full overflow-hidden rounded-3xl border border-white/10 bg-white/5">
+      <div className="p-5">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Étape 1 — la base. AUCUN prix : une base seule ne se vend pas,
+              c'est la garniture qui fait le montant. */}
+          <fieldset style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+            <WokLegend step="1" title="Votre base" />
+            {bases.map((b) => (
+              <WokOption
+                key={b.id}
+                label={b.name}
+                out={outOfStockFor(b)}
+                active={b.id === base.id}
+                onClick={() => selectBase(b.id)}
+              />
+            ))}
+          </fieldset>
+
+          {/* Étape 2 — les légumes, multi-sélection et facultative */}
+          <fieldset style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+            {/* Le tarif est annoncé UNE fois, ici. Le répéter sur chaque ligne
+                laisserait croire que chaque légume coûte 1.50. */}
+            <WokLegend step="2" title="Vos légumes" note={`1 inclus · +${format(1.5)} par légume en plus`} />
+            {LEGUME_OPTS.map((l) => (
+              <WokOption
+                key={l.id}
+                emoji={l.emoji}
+                label={l.name}
+                active={legumeIds.includes(l.id)}
+                onClick={() => toggleLegume(l.id)}
+              />
+            ))}
+          </fieldset>
+
+          {/* Étape 3 — la garniture. C'est elle qui fait le prix, mais aucun
+              montant n'apparaît ici : le prix ne vit que dans le total, qui
+              s'ajuste à chaque sélection. */}
+          <fieldset style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+            <WokLegend step="3" title="Votre garniture" />
+            {options.map((o) => (
+              <WokOption
+                key={o.id}
+                label={o.name}
+                out={isOptionOut(stockList, base.id, o.id)}
+                active={option?.id === o.id}
+                onClick={() => setOptionId(o.id)}
+              />
+            ))}
+          </fieldset>
+        </div>
+
+        {/* Récap + total en direct */}
+        <div className="mt-5 flex flex-wrap items-end justify-between gap-4 border-t border-white/10 pt-5">
+          <div className="min-w-0 flex-1">
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', letterSpacing: '0.09em', textTransform: 'uppercase' }}>
+              Votre wok
+            </div>
+            <div className="mt-1 text-[15px] text-white">
+              {base.name}
+              {option
+                ? <> <span className="text-white/40">+</span> {option.name}</>
+                : <span className="text-white/40"> — choisissez une garniture</span>}
+              {legumes.length > 0 && (
+                <span className="text-white/55"> · {legumes.map(l => l.name).join(', ')}</span>
+              )}
+            </div>
+            {nbSupplements > 0 && (
+              <div className="mt-1 text-[11.5px] text-white/45">
+                {LEGUMES_INCLUS} légume inclus · {nbSupplements} supplément{nbSupplements > 1 ? 's' : ''} à {format(1.5)}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div
+              className={`text-2xl font-bold text-white ${pop ? 'wok-price-pop' : ''}`}
+              style={{ fontVariantNumeric: 'tabular-nums', display: 'inline-block' }}
+              aria-live="polite"
+            >
+              {total == null ? '—' : format(total)}
+            </div>
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={!canAdd}
+              title={canAdd ? 'Ajouter au panier' : 'Choisissez une garniture'}
+              className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 font-medium transition-all ${
+                canAdd
+                  ? 'bg-white text-black hover:bg-white/90 active:scale-95'
+                  : 'border border-white/20 text-white/50 cursor-not-allowed'
+              }`}
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter
+            </button>
+          </div>
+        </div>
+
+        {cart[base.id] > 0 && (
+          <p className="mt-3 text-xs text-white/45">
+            {cart[base.id]} × {base.name} déjà au panier
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -2712,15 +3158,38 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                     {variantsToDisplay.length > 0 && !variantsToDisplay[0]?.type && (
                       <div className="mt-1 space-y-0.5">
                         {variantsToDisplay.map((v, idx) => (
-                          <div key={idx} className="text-xs text-white/60">• {v.name}</div>
+                          <div key={idx} className="text-xs text-white/60">
+                            • {v.name}
+                            {/* Légumes du composeur. Sans eux, un exemplaire à
+                                20,40 s'afficherait « Poulet » sans rien qui
+                                explique l'écart avec le 18,90 de la fiche. */}
+                            {Array.isArray(v.legumes) && v.legumes.length > 0 && (
+                              <span className="text-white/45">
+                                {v.name ? ' · ' : ''}{v.legumes.map(l => l?.name).filter(Boolean).join(', ')}
+                              </span>
+                            )}
+                            {/* Prix rappelé par exemplaire quand les options du
+                                plat n'ont pas toutes le même prix : sans lui,
+                                deux woks côte à côte à 17.90 et 26.90 ne
+                                s'expliquent pas. */}
+                            {hasOptionPricing(it) && ` — ${format(unitPrice(it, v))}`}
+                          </div>
                         ))}
                       </div>
                     )}
-                    
-                    <div className="text-sm text-white/60 mt-1">{it.qty} × {format(it.price)}</div>
+
+                    {/* « 2 × 18.90 » serait faux pour un wok composé : chaque
+                        exemplaire a son propre prix selon sa garniture et ses
+                        légumes. On ne l'affiche donc que pour les plats à prix
+                        unique — c'est-à-dire toute la carte sauf les bases. */}
+                    <div className="text-sm text-white/60 mt-1">
+                      {hasOptionPricing(it)
+                        ? `${it.qty} article${it.qty > 1 ? 's' : ''}`
+                        : `${it.qty} × ${format(it.price)}`}
+                    </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <div className="text-right font-medium">{format(it.price * it.qty)}</div>
+                    <div className="text-right font-medium">{format(lineSubtotal(it, it.qty, cartVariants[it.id]))}</div>
                     <div className="flex items-center gap-1 mt-1">
                       <button
                         onClick={() => onAdd(it.id)}

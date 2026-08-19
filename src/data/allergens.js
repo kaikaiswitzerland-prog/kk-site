@@ -90,6 +90,31 @@ export const ITEM_ALLERGENS = {
   // ─── BOISSONS ───
   "19": { contains: [], traces: [] },  // Jus exotiques
   "20": { contains: [], traces: [] },  // Eau plate/gazeuse
+
+  // ─── BASES DU COMPOSEUR DE WOKS ───
+  // UNION worst-case des 5 garnitures, comme le reste du fichier : les ŒUFS
+  // viennent de la garniture veggie (omelette), les SULFITES du bœuf. Un
+  // client allergique doit voir le pire cas, pas la moyenne.
+  "21": {  // Nouilles sautées
+    contains: ['GLUTEN', 'EGGS', 'SOY', 'SESAME', 'SULPHITES', 'MOLLUSCS'],
+    fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
+    traces: []
+  },
+  "22": {  // Riz sauté curry
+    contains: ['GLUTEN', 'EGGS', 'SOY', 'SESAME', 'SULPHITES', 'MOLLUSCS'],
+    fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
+    traces: []
+  },
+  "23": {  // Riz sauté
+    contains: ['GLUTEN', 'EGGS', 'SOY', 'SESAME', 'SULPHITES', 'MOLLUSCS'],
+    fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
+    traces: []
+  },
+  "24": {  // Riz blanc jasmin
+    contains: ['GLUTEN', 'EGGS', 'SOY', 'SESAME', 'SULPHITES', 'MOLLUSCS'],
+    fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
+    traces: []
+  },
 };
 
 // Lecture sûre — un id inconnu renvoie une structure vide cohérente.

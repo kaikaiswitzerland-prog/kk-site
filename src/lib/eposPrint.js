@@ -117,6 +117,12 @@ const TYPO_FOLD = [
   [/[‹›]/g, '>'],
   [/[«»]/g, '"'],
   [/…/g, '...'],
+  // Ligatures. normalize('NFD') ne les decompose PAS (ce ne sont pas des
+  // caracteres accentues), donc sans cette ligne « Boeuf » sort en caractere
+  // parasite sur le ticket. Ajoute pour la garniture « Bœuf » du composeur ;
+  // corrige au passage le plat « Wok de Bœuf », qui avait le meme defaut.
+  [/Œ/g, 'OE'], [/œ/g, 'oe'],
+  [/Æ/g, 'AE'], [/æ/g, 'ae'],
   // Espaces insecables / fines, ecrits en echappements : en litteral ils sont
   // invisibles a la relecture et declenchent no-irregular-whitespace.
   [/[\u00A0\u202F\u2007\u2009\u200A]/g, ' '],

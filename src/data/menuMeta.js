@@ -64,6 +64,21 @@ export const PROTEIN_OPTS_OMELETTE = [
   { id: "poulet", name: "Poulet", desc: "Avec poulet" }
 ];
 
+// Garnitures du composeur de woks (ids 21 à 24). Distinctes de
+// PROTEIN_OPTS_STANDARD : elles incluent le bœuf, et ce sont elles qui portent
+// le prix (cf. MENU_OPTION_PRICES dans api/_lib/menuPrices.js).
+//
+// ⚠ Doit rester synchronisé avec WOK_GARNITURES dans src/App.jsx, qui est ce
+// que voit le client. Ici c'est la copie que lisent le moteur de ruptures et
+// le garde-fou serveur.
+export const WOK_GARNITURES = [
+  { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
+  { id: "porc", name: "Porc", desc: "Viande de porc mijotée façon KaïKaï" },
+  { id: "porc-poulet", name: "Mix poulet-porc", desc: "Mix des deux viandes" },
+  { id: "veggie", name: "Veggie (omelette)", desc: "100% végétarien" },
+  { id: "boeuf", name: "Bœuf", desc: "Bœuf sauté au wok, sauce sésame" }
+];
+
 // Plats 16 (Crème Tropicale) et 18 (Cheesecake) — vérifiés identiques.
 export const COULIS_OPTS = [
   { id: "mangue", name: "Coulis Mangue", desc: "Doux et tropical" },
@@ -118,6 +133,16 @@ export const MENU_ITEMS = [
 
   { id: '19', name: 'Jus exotiques',        category: 'boissons', jusVariants: JUS_OPTS },
   { id: '20', name: 'Eau plate/gazeuse',    category: 'boissons', eauVariants: EAU_OPTS },
+
+  // Bases du composeur de woks. Elles ne sont pas rendues en fiche sur le site
+  // public, mais elles DOIVENT figurer ici : api/create-checkout.js résout
+  // MENU_ITEMS_BY_ID[itemId] pour son garde-fou rupture, et un id absent y
+  // passerait au travers (isItemUnavailable rend false sur un plat inconnu).
+  // C'est aussi ce qui les rend coupables depuis l'admin.
+  { id: '21', name: 'Nouilles sautées',     category: 'chaud', proteinVariants: WOK_GARNITURES },
+  { id: '22', name: 'Riz sauté curry',      category: 'chaud', proteinVariants: WOK_GARNITURES },
+  { id: '23', name: 'Riz sauté',            category: 'chaud', proteinVariants: WOK_GARNITURES },
+  { id: '24', name: 'Riz blanc jasmin',     category: 'chaud', proteinVariants: WOK_GARNITURES },
 ];
 
 export const MENU_ITEMS_BY_ID = Object.fromEntries(

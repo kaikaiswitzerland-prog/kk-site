@@ -373,6 +373,91 @@ checkTicket('livraison + formule', makeOrder({
   total: 93.5,
 }));
 
+// Composeur de woks — la cuisine doit lire la garniture ET les legumes, y
+// compris quand les 3 sont choisis (ligne la plus longue que le composeur
+// puisse produire).
+const wok = checkTicket('composeur wok + legumes', makeOrder({
+  id: 'd4e6f8a0-3333-4444-5555-666666666666',
+  delivery_mode: 'delivery',
+  customer_address: 'Rue de Carouge 42, 1205 Genève',
+  payment_method: 'twint',
+  status: 'paid',
+  customer_name: 'Composeur Test',
+  items: [
+    {
+      id: '24', name: 'Riz blanc jasmin', qty: 1, price: 18.9, subtotal: 29.9,
+      variants: [{
+        id: 'boeuf', name: 'Bœuf', desc: 'Bœuf sauté au wok, sauce sésame',
+        legumes: [
+          { id: 'choux', name: 'Choux-carottes fondants' },
+          { id: 'patate', name: 'Patate-patate douce au wok' },
+          { id: 'poivrons', name: 'Poivrons sautés' },
+        ],
+      }],
+    },
+    {
+      id: '21', name: 'Nouilles sautées', qty: 1, price: 18.9, subtotal: 17.9,
+      variants: [{
+        id: 'veggie', name: 'Veggie (omelette)', desc: '100% végétarien',
+        legumes: [{ id: 'choux', name: 'Choux-carottes fondants' }],
+      }],
+    },
+  ],
+  total: 47.8,
+}));
+const wokPlain = wok.replace(/<[^>]*>/g, '');
+check('wok : la garniture Boeuf est imprimee', wokPlain.includes('BOEUF'));
+check('wok : la garniture Veggie est imprimee', wokPlain.includes('VEGGIE'));
+check('wok : la ligature OE est repliee en ASCII (aucun caractere parasite)',
+  !wok.includes('Œ') && !wok.includes('œ'));
+// La ligne legumes depasse les 48 colonnes du ticket et est donc repliee par
+// wrapText : on decode les sauts de ligne XML (&#10;) puis on normalise les
+// espaces avant de comparer, sinon on testerait la largeur du papier plutot
+// que le contenu.
+const wokFlat = wokPlain.replace(/&#10;/g, ' ').replace(/\s+/g, ' ');
+check('wok : les 3 legumes sont listes sur une ligne dediee et prefixee',
+  wokFlat.includes('LEGUMES : CHOUX-CAROTTES FONDANTS, PATATE-PATATE DOUCE AU WOK, POIVRONS SAUTES'));
+check('wok : la ligne legumes du 2e wok ne liste que le choux',
+  (wokPlain.match(/LEGUMES :/g) || []).length === 2);
+check('wok : total du composeur correct (29.90 + 17.90)',
+  wokPlain.includes('47.80 CHF'));
+
+// Recalcul serveur : le miroir client/serveur est ce qui empeche le tampering.
+const { getServerUnitPrice } = await import('../api/_lib/menuPrices.js');
+const su = (id, g, legs) => getServerUnitPrice(id, { id: g, legumes: (legs || []).map(l => ({ id: l })) });
+
+// C'est la GARNITURE qui fait le prix, sur les 4 bases indifferemment.
+for (const base of ['21', '22', '23', '24']) {
+  check(`serveur : base ${base} + veggie = 17.90`, su(base, 'veggie') === 17.90);
+  check(`serveur : base ${base} + poulet = 18.90`, su(base, 'poulet') === 18.90);
+  check(`serveur : base ${base} + porc = 18.90`, su(base, 'porc') === 18.90);
+  check(`serveur : base ${base} + mix = 18.90`, su(base, 'porc-poulet') === 18.90);
+  check(`serveur : base ${base} + boeuf = 26.90`, su(base, 'boeuf') === 26.90);
+}
+check('serveur : 1 legume est offert', su('21', 'poulet', ['choux']) === 18.90);
+check('serveur : le 2e legume est facture 1.50', su('21', 'poulet', ['choux', 'patate']) === 20.40);
+check('serveur : veggie + 3 legumes = 20.90', su('21', 'veggie', ['choux', 'patate', 'poivrons']) === 20.90);
+check('serveur : boeuf + 3 legumes = 29.90', su('24', 'boeuf', ['choux', 'patate', 'poivrons']) === 29.90);
+
+// Anti-tampering.
+check('serveur : garniture inconnue -> prix de repli de la base',
+  su('21', 'jambon') === 18.90);
+check('serveur : sans garniture -> prix de repli de la base',
+  getServerUnitPrice('21', undefined) === 18.90);
+check('serveur : un legume inconnu est ignore', su('21', 'poulet', ['fake']) === 18.90);
+check('serveur : un legume inconnu ne consomme pas le legume offert',
+  su('21', 'poulet', ['fake', 'choux', 'patate']) === 20.40);
+check('serveur : les doublons sont ecartes', su('21', 'poulet', ['choux', 'choux']) === 18.90);
+check('serveur : un legume n abaisse jamais le total',
+  su('21', 'veggie', ['choux']) >= su('21', 'veggie'));
+
+// La carte existante ne bouge pas d un centime.
+check('serveur : Chao Men reste a 18.90', getServerUnitPrice('5', { id: 'poulet' }) === 18.90);
+check('serveur : Omelette Fu Young reste a 17.90', getServerUnitPrice('7', { id: 'veggie' }) === 17.90);
+check('serveur : Wok de Boeuf reste a 26.90', getServerUnitPrice('8', undefined) === 26.90);
+check('serveur : aucun autre plat ne change de prix',
+  getServerUnitPrice('9') === 22.90 && getServerUnitPrice('13') === 19.90 && getServerUnitPrice('20') === 3.00);
+
 // ─── Bilan ────────────────────────────────────────────────────────────
 console.log('\n────────────────────────────────────────');
 if (failures === 0) {
