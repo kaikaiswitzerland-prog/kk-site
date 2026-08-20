@@ -1,7 +1,7 @@
 // src/refonte/HeroScrub.jsx
 //
 // Hero vidéo « scrubbé » : le scroll ne fait pas défiler la vidéo, il la
-// PILOTE. Un track de 240vh laisse la scène collée en haut de l'écran pendant
+// PILOTE. Un track de 200vh laisse la scène collée en haut de l'écran pendant
 // que la position de scroll est convertie en `video.currentTime`.
 //
 // Trois précautions qui font toute la différence :
@@ -102,13 +102,24 @@ export default function HeroScrub({ ctaTargetId = 'rf-entrees' }) {
     let unlocked = false;
 
     // iOS : un seul play()/pause() muet suffit à autoriser les seeks suivants.
+    //
+    // Tenté DÈS que les métadonnées sont là, sans attendre un geste : une
+    // vidéo muette a le droit de démarrer seule sur les navigateurs modernes,
+    // et c'est ce démarrage qui peint la première frame. Sans lui, le hero
+    // reste un rectangle noir jusqu'au premier toucher — la page s'ouvre sur
+    // du vide.
+    //
+    // Le drapeau n'est posé QUE si le play() a réellement abouti : un refus
+    // (politique autoplay plus stricte) doit laisser le prochain geste
+    // réessayer, sinon on resterait bloqué sans seek possible.
     const unlock = () => {
       if (unlocked) return;
-      unlocked = true;
       const played = video.play();
       if (played && typeof played.then === 'function') {
-        played.then(() => video.pause()).catch(() => { /* sans geste : ignoré */ });
+        played.then(() => { unlocked = true; video.pause(); })
+              .catch(() => { /* refusé : le prochain geste retentera */ });
       } else {
+        unlocked = true;
         try { video.pause(); } catch { /* ignore */ }
       }
     };
@@ -170,6 +181,7 @@ export default function HeroScrub({ ctaTargetId = 'rf-entrees' }) {
     // Position de départ : rechargement au milieu de la page, retour arrière
     // du navigateur, ou métadonnées arrivées après le premier scroll.
     const onReady = () => {
+      unlock();
       target = progress();
       kick();
     };

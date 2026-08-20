@@ -85,15 +85,19 @@
    `clip` protège exactement pareil du débordement horizontal SANS créer de
    scrollport. Cette feuille n'étant chargée que sur /refonte, la règle ne
    déborde pas sur le site actuel ni sur l'admin.
+   Depuis que la refonte est montée par KaiKaiApp, le <style>{globalStyles}</style>
+   d'App.jsx pose la même règle en `hidden` sur la page : le sélecteur est donc
+   qualifié par :has(.rf-root) pour gagner en spécificité quel que soit l'ordre
+   des feuilles, et ne s'appliquer qu'à la peau refonte.
    Safari < 16 ne connaît pas `clip` : la déclaration est ignorée, le hero
    défile alors normalement au lieu d'être scrubbé — dégradation acceptable. */
-html, body { overflow-x: clip; }
+html:has(.rf-root), body:has(.rf-root) { overflow-x: clip; }
 
 /* Le track ne sert qu'à fabriquer de la distance de scroll : c'est lui qui
    donne au scrub sa longueur. La scène, elle, reste collée à l'écran. */
 .rf-scrub {
   position: relative;
-  height: 240vh;
+  height: 200vh;
 }
 /* prefers-reduced-motion : plus de track étendu, une hauteur d'écran suffit. */
 .rf-scrub--still { height: auto; }
@@ -637,3 +641,216 @@ html, body { overflow-x: clip; }
   .rf-card:hover { transform: none; }
   .rf-card:hover .rf-card__img { transform: none; }
 }
+
+
+/* ─── HEADER STICKY ───────────────────────────────────────────────────────── */
+
+.rf-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--rf-line);
+  background: rgba(6, 10, 7, 0.86);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.rf-header__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 10px var(--rf-gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rf-header__brand { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rf-header__name {
+  font-family: var(--rf-font-display);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--rf-ink);
+}
+.rf-header__actions { display: flex; align-items: center; gap: 8px; flex: none; }
+
+/* Statut d'ouverture — mêmes trois états que le site actuel. */
+.rf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rf-status__dot { width: 6px; height: 6px; border-radius: 999px; flex: none; }
+.rf-status--open           { color: var(--rf-accent); }
+.rf-status--open .rf-status__dot { background: var(--rf-accent); animation: rfPulse 2s ease-in-out infinite; }
+.rf-status--manual         { color: #E0685F; }
+.rf-status--manual .rf-status__dot { background: #E0685F; }
+.rf-status--auto           { color: #E0A85F; }
+.rf-status--auto .rf-status__dot { background: #E0A85F; }
+@keyframes rfPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.rf-iconbtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border: 1px solid var(--rf-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--rf-ink-2);
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+.rf-iconbtn:hover { color: var(--rf-accent); border-color: var(--rf-line-strong); }
+.rf-iconbtn__count {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--rf-accent);
+  color: #060a07;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── MODALE (matrice allergènes) ─────────────────────────────────────────── */
+
+.rf-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(3, 6, 4, 0.82);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+@media (min-width: 700px) { .rf-modal { align-items: center; padding: 24px; } }
+
+.rf-modal__sheet {
+  width: 100%;
+  max-width: 720px;
+  max-height: 92svh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--rf-line);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+  background: var(--rf-bg-elev);
+}
+@media (min-width: 700px) {
+  .rf-modal__sheet { border-bottom: 1px solid var(--rf-line); border-radius: 20px; max-height: 86svh; }
+}
+
+.rf-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--rf-line);
+}
+.rf-modal__title {
+  margin: 4px 0 0;
+  font-family: var(--rf-font-display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--rf-ink);
+}
+.rf-modal__body { overflow-y: auto; padding: 16px 18px 26px; -webkit-overflow-scrolling: touch; }
+
+/* ─── Contenu allergènes ──────────────────────────────────────────────────── */
+
+.rf-allerg__intro { margin: 0 0 14px; font-size: 13px; line-height: 1.5; color: var(--rf-ink-2); }
+
+.rf-allerg__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 26px;
+  padding: 0;
+  list-style: none;
+}
+.rf-allerg__chip {
+  padding: 4px 9px;
+  border: 1px solid var(--rf-line);
+  border-radius: 999px;
+  background: rgba(212, 255, 107, 0.05);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  color: var(--rf-ink-2);
+}
+.rf-allerg__chip--legend { border-color: var(--rf-line-strong); color: var(--rf-accent); }
+
+.rf-allerg__group { margin-bottom: 24px; }
+.rf-allerg__group-title {
+  margin: 0 0 10px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--rf-accent);
+}
+.rf-allerg__list { margin: 0; padding: 0; list-style: none; }
+.rf-allerg__row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px 0;
+  border-top: 1px solid var(--rf-line);
+}
+.rf-allerg__dish {
+  font-family: var(--rf-font-display);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--rf-ink);
+}
+.rf-allerg__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.rf-allerg__ok   { font-size: 12px; color: var(--rf-accent); }
+.rf-allerg__none { font-size: 12px; color: var(--rf-ink-3); font-style: italic; }
+.rf-allerg__note { font-size: 11px; line-height: 1.4; color: var(--rf-ink-3); }
+
+.rf-allerg__warning {
+  margin: 6px 0 0;
+  padding: 14px;
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-radius);
+  background: var(--rf-bg-elev-2);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--rf-ink-2);
+}
+.rf-allerg__warning a { color: var(--rf-accent); }
+
+/* ─── Bouton-lien du footer ───────────────────────────────────────────────── */
+
+.rf-footer__linkbtn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+}
+.rf-footer__linkbtn:hover { color: var(--rf-ink); border-bottom-color: var(--rf-line-strong); }

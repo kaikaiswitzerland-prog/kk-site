@@ -4,89 +4,82 @@
 //
 //   1. Hero            → <HeroSlot /> — hero vidéo scrubbé au scroll
 //   2. Carte en grille → <MenuSection /> × 6, grille produits 2 colonnes
-//   3. Composeur wok   → <WokComposer /> importé de App.jsx, à l'identique
+//   3. Composeur wok   → passé en prop, instancié par KaiKaiApp
 //   4. Footer          → <Footer />
 //
-// Composant PRÉSENTATIONNEL : aucun état panier, aucun appel réseau. Tout
-// arrive en props, ce qui permet de le monter aussi bien sur la page d'aperçu
-// (/refonte) que, plus tard, à l'intérieur de KaiKaiApp avec ses vrais
-// handlers add/remove et ses modaux d'options.
-
-import { menuCatalog, WokComposer } from '../App.jsx';
+// Composant PRÉSENTATIONNEL strict : aucun état panier, aucun appel réseau,
+// aucun import d'App.jsx. Le + d'une carte appelle onAdd(item), qui remonte
+// jusqu'au même dispatch de modaux d'options que le site actuel.
 
 import HeroSlot from './HeroSlot.jsx';
 import MenuSection from './MenuSection.jsx';
 import Footer from './Footer.jsx';
-import './refonte.css';
 
-// L'ordre d'affichage de la carte. Les bases du wok n'y figurent pas : elles
-// ne se vendent que via le composeur, comme aujourd'hui.
-const { sections, isUnavailable } = menuCatalog;
-
-const SECTIONS = [
-  { id: 'rf-entrees',  kicker: 'Pour commencer', title: 'Entrées',      items: sections.entrees },
-  { id: 'rf-chaud',    kicker: 'Au wok',         title: 'Plats chauds', items: sections.chaud },
-  { id: 'rf-froid',    kicker: 'Poisson cru',    title: 'Plats froids', items: sections.froid },
-  { id: 'rf-formules', kicker: 'À partager',     title: 'Formules',     items: sections.formules },
-  { id: 'rf-desserts', kicker: 'Pour finir',     title: 'Desserts',     items: sections.desserts },
-  { id: 'rf-boissons', kicker: 'À côté',         title: 'Boissons',     items: sections.boissons },
+// Libellés de section. L'ordre et le contenu des listes viennent de
+// `sections`, dérivé de MENU dans App.jsx — jamais recopié ici.
+const SECTION_META = [
+  { key: 'entrees',  id: 'rf-entrees',  kicker: 'Pour commencer', title: 'Entrées' },
+  { key: 'chaud',    id: 'rf-chaud',    kicker: 'Au wok',         title: 'Plats chauds' },
+  { key: 'froid',    id: 'rf-froid',    kicker: 'Poisson cru',    title: 'Plats froids' },
+  { key: 'formules', id: 'rf-formules', kicker: 'À partager',     title: 'Formules' },
+  { key: 'desserts', id: 'rf-desserts', kicker: 'Pour finir',     title: 'Desserts' },
+  { key: 'boissons', id: 'rf-boissons', kicker: 'À côté',         title: 'Boissons' },
 ];
 
 export default function RefontePage({
+  sections = {},
+  wokComposer = null,
   cart = {},
   onAdd,
   onRemove,
-  outOfStockItems = [],
+  isUnavailable = () => false,
   onShowZones,
+  onShowAllergens,
+  restaurant,
   hero = null,
 }) {
-  const isOut = (item) => isUnavailable(outOfStockItems, item);
-
   return (
-    <div className="rf-root">
+    <>
       {/* 1 — Hero vidéo scrubbé (voir HeroScrub.jsx). */}
       <HeroSlot>{hero}</HeroSlot>
 
       {/* 2 — La carte en grille. */}
       <main>
-        {SECTIONS.map((s) => (
+        {SECTION_META.map((s) => (
           <MenuSection
-            key={s.id}
+            key={s.key}
             id={s.id}
             kicker={s.kicker}
             title={s.title}
-            items={s.items}
+            items={sections[s.key] || []}
             cart={cart}
             onAdd={onAdd}
             onRemove={onRemove}
-            isOut={isOut}
+            isOut={isUnavailable}
           />
         ))}
 
-        {/* 3 — Le composeur de wok EXISTANT, sans modification. Il est encore
-            au vocabulaire visuel de l'ancien site (blanc translucide) : sa mise
-            au thème noir/or n'est pas dans cette passe. Le wrapper `rf-grid`
-            lui fournit le contexte grid dont dépend son `col-span-full`. */}
-        <MenuSection
-          id="rf-wok"
-          kicker="Sur mesure"
-          title="Compose ton wok"
-          note="Votre base, vos légumes, votre garniture — le prix s'ajuste à votre composition."
-        >
-          <div className="rf-grid rf-wok-slot">
-            <WokComposer
-              bases={sections.wok}
-              cart={cart}
-              add={(id, variant) => onAdd?.({ id }, variant)}
-              stockList={outOfStockItems}
-              outOfStockFor={isOut}
-            />
-          </div>
-        </MenuSection>
+        {/* 3 — Le composeur de wok EXISTANT, instancié par KaiKaiApp et passé
+            tel quel. Le wrapper `rf-grid` lui fournit le contexte grid dont
+            dépend son `col-span-full`. */}
+        {wokComposer && (
+          <MenuSection
+            id="rf-wok"
+            kicker="Sur mesure"
+            title="Compose ton wok"
+            note="Votre base, vos légumes, votre garniture — le prix s'ajuste à votre composition."
+          >
+            <div className="rf-grid rf-wok-slot">{wokComposer}</div>
+          </MenuSection>
+        )}
       </main>
 
       {/* 4 — Footer. */}
-      <Footer onShowZones={onShowZones} />
-    </div>
+      <Footer
+        onShowZones={onShowZones}
+        onShowAllergens={onShowAllergens}
+        restaurant={restaurant}
+      />
+    </>
   );
 }

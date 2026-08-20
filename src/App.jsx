@@ -4,11 +4,17 @@
 //   - Suppression de PalmLeaves (composant désactivé qui retourne null)
 // Tout le reste est identique à la version précédente.
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, Suspense, lazy } from "react";
 import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight } from "lucide-react";
 import IslandModeToggle from "./components/IslandModeToggle.jsx";
 import HeroSliderV2 from "./components/HeroSliderV2.jsx";
 import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
+
+// Peau « refonte » (route /refonte). Chargée en LAZY, et c'est structurant :
+//   - son CSS et ses polices ne partent pas dans le bundle du site actuel ;
+//   - l'import dynamique casse le cycle App.jsx ↔ src/refonte/, qui n'importe
+//     jamais App.jsx en retour (tout lui est passé en props).
+const RefonteShell = lazy(() => import("./refonte/RefonteShell.jsx"));
 import { supabase } from "./lib/supabase.js";
 import { useRestaurantOpen } from "./hooks/useRestaurantOpen.js";
 import { useOutOfStock } from "./hooks/useOutOfStock.js";
@@ -812,7 +818,12 @@ function useActiveCategory() {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function KaiKaiApp() {
+// `skin` ne change QUE la couche présentation. L'état du panier, les modaux
+// d'options, le checkout, les ruptures, les horaires et l'insertion de la
+// commande sont strictement les mêmes objets dans les deux peaux : il n'y a
+// qu'une seule implémentation de la commande, ici.
+export default function KaiKaiApp({ skin = 'legacy' }) {
+  const isRefonte = skin === 'refonte';
   const { isOpen: restaurantOpen, manualClosure, statusLabel: openStatusLabel, status: openStatus } = useRestaurantOpen();
   const { items: outOfStockItems } = useOutOfStock();
 
@@ -920,6 +931,15 @@ export default function KaiKaiApp() {
     return n; 
   });
   const clear = () => { setCart({}); setCartVariants({}); };
+
+  // Modaux d'options pour les grilles sans état propre (refonte). Le hook est
+  // appelé dans les deux peaux — règle des hooks — mais ne rend rien tant que
+  // requestAdd n'a pas été appelé.
+  const { requestAdd, optionModals } = useOptionModals({ stockList: outOfStockItems, add });
+  const cartCount = useMemo(
+    () => Object.values(cart).reduce((s, q) => s + q, 0),
+    [cart],
+  );
 
   // ─── Panier persistant (localStorage) ─────────────────────────────────
   // Au mount : restaurer si présent + non expiré + IDs encore au menu.
@@ -1132,7 +1152,8 @@ export default function KaiKaiApp() {
     <>
       <style>{globalStyles}</style>
       <div className="min-h-screen bg-black text-white">
-      {/* Header */}
+      {/* Header — peau historique */}
+      {!isRefonte && (
       <header className="sticky top-0 z-49 border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
@@ -1172,6 +1193,7 @@ export default function KaiKaiApp() {
           </div>
         </div>
       </header>
+      )}
 
       {showAbout && (
         <AboutModal
@@ -1184,8 +1206,38 @@ export default function KaiKaiApp() {
         />
       )}
 
-      {/* Menu principal */}
-      {step === "menu" && (
+      {/* Peau refonte — même logique de commande, présentation différente. */}
+      {isRefonte && (
+        <Suspense fallback={<div style={{ minHeight: '100vh', background: '#060a07' }} />}>
+          <RefonteShell
+            showContent={step === "menu"}
+            sections={menuCatalog.sections}
+            wokComposer={
+              <WokComposer
+                bases={SEC_WOK}
+                cart={cart}
+                add={add}
+                stockList={outOfStockItems}
+                outOfStockFor={(it) => isMenuItemUnavailable(outOfStockItems, it)}
+              />
+            }
+            cart={cart}
+            cartCount={cartCount}
+            onAdd={(it) => requestAdd(it, isMenuItemUnavailable(outOfStockItems, it))}
+            onRemove={(it) => remove(it.id)}
+            isUnavailable={(it) => isMenuItemUnavailable(outOfStockItems, it)}
+            onOpenCheckout={() => setStep("checkout")}
+            restaurantOpen={restaurantOpen}
+            manualClosure={manualClosure}
+            openStatusLabel={openStatusLabel}
+            onShowZones={() => setShowZonesModal(true)}
+            restaurant={RESTAURANT_INFO}
+          />
+        </Suspense>
+      )}
+
+      {/* Menu principal — peau historique */}
+      {step === "menu" && !isRefonte && (
         <>
           <CategoryNav activeCategory={activeCategory} />
           <HeroSliderV2 />
@@ -1287,6 +1339,9 @@ export default function KaiKaiApp() {
         />
       )}
 
+      {/* Modaux d'options de la grille refonte — mêmes composants que MenuItem. */}
+      {optionModals}
+
       {showZonesModal && <ZonesModal onClose={() => setShowZonesModal(false)} />}
 
       {step === "success" && (
@@ -1315,6 +1370,8 @@ export default function KaiKaiApp() {
         />
       )}
 
+      {!isRefonte && (
+      <>
       {/* Mode Île — pastille membres */}
       <div style={{ display: 'flex', justifyContent: 'center', margin: '40px auto' }}>
         <IslandModeToggle />
@@ -1354,6 +1411,8 @@ export default function KaiKaiApp() {
 
         </div>
       </footer>
+      </>
+      )}
     </div>
     </>
   );
@@ -1619,6 +1678,63 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
   );
 }
 
+// Quel modal d'options ouvrir pour ce plat, ou null s'il s'ajoute directement.
+//
+// L'ordre des tests est celui, historique, de MenuItem.handlePlusClick — il
+// compte : un plat peut porter plusieurs champs (une formule a aussi des
+// protéines via ses sous-choix). Cette fonction est la SEULE définition de ce
+// dispatch : MenuItem (site actuel) et useOptionModals (refonte) s'appuient
+// tous les deux dessus, pour qu'ajouter un type d'option demain ne demande
+// qu'une seule modification.
+function pickOptionModal(item) {
+  if (!item) return null;
+  if (item.hasVariants) return 'variants';
+  if (item.hasJusVariants) return 'jus';
+  if (item.hasFormule) return 'formule';
+  if (item.hasProteinVariants) return 'protein';
+  if (item.hasCoulisVariants) return 'coulis';
+  if (item.hasEauVariants) return 'eau';
+  return null;
+}
+
+// Hôte de modaux d'options au niveau page, pour les grilles qui ne portent pas
+// leur propre état (la grille de la refonte). Même dispatch, mêmes composants
+// de modal et même `add(id, variant)` que MenuItem : c'est le même chemin de
+// commande, seule la carte qui déclenche change.
+export function useOptionModals({ stockList = [], add }) {
+  const [pending, setPending] = useState(null); // { item, kind }
+
+  const requestAdd = (item, outOfStock = false) => {
+    if (!item || outOfStock) return;
+    const kind = pickOptionModal(item);
+    if (!kind) { add(item.id, null); return; }
+    setPending({ item, kind });
+  };
+
+  const close = () => setPending(null);
+  const select = (variant) => {
+    if (pending) add(pending.item.id, variant);
+    setPending(null);
+  };
+
+  const item = pending?.item ?? null;
+  const kind = pending?.kind ?? null;
+  const shared = { item, stockList, onClose: close };
+
+  const optionModals = !item ? null : (
+    <>
+      {kind === 'variants' && <VariantModal {...shared} onSelect={select} />}
+      {kind === 'jus'      && <JusModal     {...shared} onSelect={select} />}
+      {kind === 'protein'  && <ProteinModal {...shared} onSelect={select} />}
+      {kind === 'coulis'   && <CoulisModal  {...shared} onSelect={select} />}
+      {kind === 'eau'      && <EauModal     {...shared} onSelect={select} />}
+      {kind === 'formule'  && <FormuleModal {...shared} onConfirm={select} />}
+    </>
+  );
+
+  return { requestAdd, optionModals };
+}
+
 // Composant MenuItem avec support de TOUS les modals
 function MenuItem({ item, cart, add, remove, outOfStock = false, stockList = [], isFormula = false, photo = null, photoPos = "center", photoHeight = "h-48" }) {
   const [showVariants, setShowVariants] = useState(false);
@@ -1650,20 +1766,15 @@ function MenuItem({ item, cart, add, remove, outOfStock = false, stockList = [],
   
   const handlePlusClick = () => {
     if (outOfStock) return;
-    if (item.hasVariants) {
-      setShowVariants(true);
-    } else if (item.hasJusVariants) {
-      setShowJus(true);
-    } else if (item.hasFormule) {
-      setShowFormuleModal(true);
-    } else if (item.hasProteinVariants) {
-      setShowProteinModal(true);
-    } else if (item.hasCoulisVariants) {
-      setShowCoulisModal(true);
-    } else if (item.hasEauVariants) {
-      setShowEauModal(true);
-    } else {
-      handleAdd();
+    // Même dispatch que la grille de la refonte — cf. pickOptionModal.
+    switch (pickOptionModal(item)) {
+      case 'variants': setShowVariants(true); break;
+      case 'jus':      setShowJus(true); break;
+      case 'formule':  setShowFormuleModal(true); break;
+      case 'protein':  setShowProteinModal(true); break;
+      case 'coulis':   setShowCoulisModal(true); break;
+      case 'eau':      setShowEauModal(true); break;
+      default:         handleAdd();
     }
   };
 
