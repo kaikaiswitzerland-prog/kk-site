@@ -52,6 +52,7 @@ import {
   getDeliveryFee,
   getAllNpas,
 } from "./lib/deliveryZones.js";
+import { RESTAURANT_INFO } from "./data/restaurant.js";
 
 // Clé localStorage versionnée — bump le suffixe v* si la structure change.
 const CART_STORAGE_KEY = 'kaikai_cart_v1';
@@ -115,45 +116,8 @@ const globalStyles = `
 
 `;
 
-// Informations du restaurant
-const RESTAURANT_INFO = {
-  name: "KaïKaï",
-  address: "Bd de la Tour 1, 1205 Genève",
-  phone: "+41765197670",
-  phoneDisplay: "+41 76 519 76 70",
-  instagram: "https://www.instagram.com/kaikaifood.ch",
-  facebook: "#",
-  email: "contact@kaikai.ch",
-  // Fiche Google Business KaïKaï (avis, photos, horaires) — utilisée par
-  // les liens "Voir sur Google Maps". Distinct de l'iframe embed qui doit
-  // garder une URL embed-friendly (?output=embed).
-  google_page: "https://maps.app.goo.gl/P1rmU4VNfXNxLWQi9?g_st=ic",
-  
-  // Display uniquement (footer + AboutModal) — heures de SERVICE affichées
-  // aux clients. Source de vérité numérique des plages de pré-commande :
-  // src/lib/restaurantHours.js (LUNCH/DINNER, dinner.open=17:30 pour la
-  // pré-commande). Ici on affiche 18h-22h (service réel) et on mentionne
-  // "pré-commande dès 17h30" séparément dans le copy footer/AboutModal.
-  hours: {
-    lunch: { start: "12:00", end: "14:00" },
-    dinner: { start: "18:00", end: "22:00" }
-  },
-  
-  // Liste des NPA et frais : voir src/lib/deliveryZones.js (source de vérité).
-  // Le champ deliveryZones ci-dessus était hardcodé à plat ; il est désormais
-  // dérivé de la table NPA_TO_ZONE via getAllNpas().
-  //
-  // deliveryTime : ETA total livraison (préparation + course coursier).
-  // prepTime     : préparation seule, pour le mode "À emporter".
-  // À garder synchronisés avec api/_lib/emails/orderConfirmation.js (ETA).
-  deliveryTime: "30-45",
-  prepTime: "20-25",
-  
-  coordinates: {
-    lat: 46.1983,
-    lng: 6.1472
-  }
-};
+// RESTAURANT_INFO vit désormais dans src/data/restaurant.js (importé ci-dessus)
+// pour être partagé avec les composants de la refonte.
 
 // ─── Catalogues du composeur de woks ────────────────────────────────────────
 //
@@ -516,6 +480,27 @@ function isMenuItemUnavailable(stockList, item) {
   if (item.hasFormule) return isFormuleUnavailable(stockList, item);
   return isItemUnavailable(stockList, item);
 }
+
+// ─── Passerelle refonte ──────────────────────────────────────────────────────
+//
+// Ce que la refonte (src/refonte/) consomme d'App.jsx, regroupé en UN seul
+// export nommé : MENU, les listes de sections et le moteur de ruptures restent
+// module-privés, et le fichier n'expose pas dix constantes non-composants (ce
+// que react-refresh déconseille). Aucune donnée n'est dupliquée : la carte, les
+// prix et les règles de rupture n'ont toujours qu'une seule source, ici.
+export const menuCatalog = {
+  sections: {
+    entrees:  SEC_ENTREES,
+    wok:      SEC_WOK,
+    chaud:    SEC_CHAUD,
+    froid:    SEC_FROID,
+    formules: SEC_FORMULES,
+    desserts: SEC_DESSERT,
+    boissons: SEC_BOISSON,
+  },
+  isUnavailable: isMenuItemUnavailable,
+};
+
 
 // Purge du panier après une bascule de rupture. Fonction pure : rend
 // { cart, variants, changed }, et rend les objets d'origine si rien n'a bougé
@@ -1445,7 +1430,7 @@ function WokLegend({ step, title, note }) {
   );
 }
 
-function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
+export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
   const [baseId, setBaseId] = useState(bases[0]?.id ?? null);
   const [optionId, setOptionId] = useState(null);
   const [legumeIds, setLegumeIds] = useState([]);

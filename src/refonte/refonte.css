@@ -1,0 +1,464 @@
+/* ─── REFONTE GOIKO — feuille de style isolée ─────────────────────────────────
+ *
+ * Tout est préfixé `rf-` et rien n'est appliqué globalement : ce fichier n'est
+ * importé que par src/refonte/RefontePage.jsx (chargé en lazy sur /refonte).
+ * Le site live et l'admin ne le voient jamais.
+ *
+ * Palette : noir profond #060a07 + or #C9A96E.
+ * Typo    : Cormorant Garamond (titres, noms de plats) + DM Sans (interface).
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap');
+
+.rf-root {
+  /* Fonds */
+  --rf-bg: #060a07;
+  --rf-bg-elev: #0b110e;
+  --rf-bg-elev-2: #111a15;
+
+  /* Or */
+  --rf-gold: #C9A96E;
+  --rf-gold-soft: #E2CB9C;
+  --rf-gold-dim: rgba(201, 169, 110, 0.55);
+
+  /* Encres */
+  --rf-ink: #F4F1EA;
+  --rf-ink-2: rgba(244, 241, 234, 0.62);
+  --rf-ink-3: rgba(244, 241, 234, 0.36);
+
+  /* Lignes */
+  --rf-line: rgba(201, 169, 110, 0.16);
+  --rf-line-strong: rgba(201, 169, 110, 0.38);
+
+  /* États */
+  --rf-danger: #E0685F;
+
+  /* Typo */
+  --rf-font-display: "Cormorant Garamond", Georgia, serif;
+  --rf-font-body: "DM Sans", system-ui, -apple-system, sans-serif;
+
+  /* Rythme */
+  --rf-gutter: 12px;
+  --rf-radius: 16px;
+
+  background: var(--rf-bg);
+  color: var(--rf-ink);
+  font-family: var(--rf-font-body);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.rf-root *,
+.rf-root *::before,
+.rf-root *::after { box-sizing: border-box; }
+
+.rf-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: var(--rf-gutter);
+}
+@media (min-width: 768px) { .rf-root { --rf-gutter: 24px; } }
+
+/* ─── HERO (emplacement réservé) ──────────────────────────────────────────── */
+
+.rf-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 62svh;
+  border-bottom: 1px solid var(--rf-line);
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(201, 169, 110, 0.10) 0%, transparent 62%),
+    var(--rf-bg);
+}
+.rf-hero--empty::after {
+  content: "";
+  position: absolute;
+  inset: 16px;
+  border: 1px dashed var(--rf-line);
+  border-radius: var(--rf-radius);
+  pointer-events: none;
+}
+.rf-hero__note {
+  position: relative;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--rf-ink-3);
+}
+
+/* ─── EN-TÊTES DE SECTION ─────────────────────────────────────────────────── */
+
+.rf-section { padding-block: 34px 6px; }
+.rf-section:first-of-type { padding-top: 28px; }
+
+.rf-section__kicker {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--rf-gold);
+}
+.rf-section__title {
+  margin: 6px 0 0;
+  font-family: var(--rf-font-display);
+  font-size: clamp(26px, 7vw, 38px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--rf-ink);
+}
+.rf-section__note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--rf-ink-2);
+  max-width: 46ch;
+}
+.rf-section__rule {
+  margin-top: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--rf-line-strong), transparent 70%);
+}
+
+/* ─── GRILLE PRODUITS ─────────────────────────────────────────────────────── */
+
+.rf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 16px;
+}
+@media (min-width: 600px) { .rf-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } }
+@media (min-width: 960px) { .rf-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } }
+
+.rf-grid__full { grid-column: 1 / -1; }
+
+/* ─── CARTE PRODUIT ───────────────────────────────────────────────────────── */
+
+.rf-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-radius);
+  background: var(--rf-bg-elev);
+  overflow: hidden;
+  transition: border-color 0.22s ease, transform 0.22s ease;
+}
+@media (hover: hover) {
+  .rf-card:hover { border-color: var(--rf-line-strong); transform: translateY(-2px); }
+  .rf-card:hover .rf-card__img { transform: scale(1.045); }
+}
+
+/* Photo carrée dominante. Un PNG détouré s'affiche en `contain` sur le halo
+   doré ; tant qu'il n'existe pas, on retombe sur le JPG actuel en `cover`. */
+.rf-card__media {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background:
+    radial-gradient(78% 68% at 50% 46%, rgba(201, 169, 110, 0.15) 0%, rgba(201, 169, 110, 0.04) 46%, transparent 72%),
+    var(--rf-bg-elev-2);
+}
+.rf-card__img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* PNG détouré : le sujet flotte, ombre portée en CSS (pas cuite dans le PNG). */
+.rf-card__img--png {
+  object-fit: contain;
+  padding: 7%;
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.62));
+}
+/* Repli JPG plein cadre. */
+.rf-card__img--jpg { object-fit: cover; }
+
+.rf-card__media--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rf-card__media--empty::after {
+  content: "PNG à venir";
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rf-ink-3);
+}
+
+/* Badge en surimpression, coin haut-gauche */
+.rf-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  line-height: 1;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.rf-badge--halal {
+  border: 1px solid var(--rf-line-strong);
+  background: rgba(6, 10, 7, 0.72);
+  color: var(--rf-gold-soft);
+}
+.rf-badge--nouveau {
+  border: 1px solid var(--rf-gold);
+  background: var(--rf-gold);
+  color: #060a07;
+}
+.rf-badge--signature {
+  border: 1px solid var(--rf-line-strong);
+  background: rgba(6, 10, 7, 0.72);
+  color: var(--rf-gold);
+}
+
+/* Pastille rupture — même coin que le badge : les deux ne coexistent jamais. */
+.rf-flag-out {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(224, 104, 95, 0.42);
+  background: rgba(6, 10, 7, 0.78);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--rf-danger);
+}
+
+.rf-card--out .rf-card__media { filter: grayscale(1); opacity: 0.42; }
+.rf-card--out .rf-card__name,
+.rf-card--out .rf-card__price { color: var(--rf-ink-3); }
+
+/* Corps de carte */
+.rf-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 11px 12px;
+}
+@media (min-width: 600px) { .rf-card__body { padding: 12px 13px 14px; } }
+
+.rf-card__name {
+  margin: 0;
+  font-family: var(--rf-font-display);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.14;
+  letter-spacing: -0.005em;
+  color: var(--rf-ink);
+  /* 2 lignes max — garde les cartes d'une même rangée alignées. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(2 * 1.14em);
+}
+@media (min-width: 600px) { .rf-card__name { font-size: 19px; } }
+
+/* Avis */
+.rf-card__rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--rf-ink-2);
+}
+.rf-card__rating svg { color: var(--rf-gold); flex: none; }
+.rf-card__score { font-weight: 700; color: var(--rf-ink); font-variant-numeric: tabular-nums; }
+.rf-card__reviews { color: var(--rf-ink-3); }
+
+/* Prix + action */
+.rf-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+.rf-card__price {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  color: var(--rf-gold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rf-card__price-from {
+  display: block;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rf-ink-3);
+}
+
+.rf-add {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--rf-gold);
+  color: #060a07;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.12s ease;
+}
+.rf-add:hover { background: var(--rf-gold-soft); }
+.rf-add:active { transform: scale(0.93); }
+.rf-add:disabled {
+  background: transparent;
+  border: 1px solid var(--rf-line);
+  color: var(--rf-ink-3);
+  cursor: not-allowed;
+}
+
+/* Stepper affiché dès qu'il y a une quantité au panier */
+.rf-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 34px;
+  padding: 0 3px;
+  border: 1px solid var(--rf-line-strong);
+  border-radius: 999px;
+  background: rgba(201, 169, 110, 0.10);
+}
+.rf-step__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--rf-gold);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.rf-step__btn:hover { background: rgba(201, 169, 110, 0.18); }
+.rf-step__btn:disabled { color: var(--rf-ink-3); cursor: not-allowed; }
+.rf-step__qty {
+  min-width: 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rf-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── SECTION WOK (accueille le composeur existant, tel quel) ─────────────── */
+
+.rf-wok-slot { padding-top: 16px; }
+
+/* ─── FOOTER ──────────────────────────────────────────────────────────────── */
+
+.rf-footer {
+  margin-top: 56px;
+  border-top: 1px solid var(--rf-line);
+  background:
+    radial-gradient(90% 130% at 50% 100%, rgba(201, 169, 110, 0.07) 0%, transparent 60%),
+    var(--rf-bg);
+  padding-block: 40px 32px;
+}
+.rf-footer__brand {
+  font-family: var(--rf-font-display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--rf-ink);
+}
+.rf-footer__tag {
+  margin-top: 6px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--rf-ink-2);
+  max-width: 42ch;
+}
+.rf-footer__social { display: flex; gap: 10px; margin-top: 18px; }
+.rf-footer__social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--rf-line);
+  border-radius: 999px;
+  color: var(--rf-ink-2);
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+.rf-footer__social a:hover { color: var(--rf-gold); border-color: var(--rf-line-strong); }
+
+.rf-footer__cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid var(--rf-line);
+}
+@media (min-width: 700px) { .rf-footer__cols { grid-template-columns: repeat(3, 1fr); } }
+
+.rf-footer__label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--rf-gold);
+}
+.rf-footer__list { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.rf-footer__list li { font-size: 13px; line-height: 1.45; color: var(--rf-ink-2); }
+.rf-footer__list a { color: inherit; text-decoration: none; border-bottom: 1px solid transparent; }
+.rf-footer__list a:hover { color: var(--rf-ink); border-bottom-color: var(--rf-line-strong); }
+
+.rf-footer__legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rf-line);
+  font-size: 11px;
+  color: var(--rf-ink-3);
+}
+.rf-footer__legal a { color: inherit; text-decoration: none; }
+.rf-footer__legal a:hover { color: var(--rf-ink-2); }
+
+/* ─── Divers ──────────────────────────────────────────────────────────────── */
+
+.rf-root :focus-visible {
+  outline: 2px solid var(--rf-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rf-root * { transition: none !important; animation: none !important; }
+  .rf-card:hover { transform: none; }
+  .rf-card:hover .rf-card__img { transform: none; }
+}
