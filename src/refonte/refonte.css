@@ -85,7 +85,7 @@ html, body { overflow-x: clip; }
    donne au scrub sa longueur. La scène, elle, reste collée à l'écran. */
 .rf-scrub {
   position: relative;
-  height: 380vh;
+  height: 240vh;
 }
 /* prefers-reduced-motion : plus de track étendu, une hauteur d'écran suffit. */
 .rf-scrub--still { height: auto; }

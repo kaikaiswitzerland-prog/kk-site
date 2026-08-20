@@ -1,7 +1,7 @@
 // src/refonte/HeroScrub.jsx
 //
 // Hero vidéo « scrubbé » : le scroll ne fait pas défiler la vidéo, il la
-// PILOTE. Un track de 380vh laisse la scène collée en haut de l'écran pendant
+// PILOTE. Un track de 240vh laisse la scène collée en haut de l'écran pendant
 // que la position de scroll est convertie en `video.currentTime`.
 //
 // Trois précautions qui font toute la différence :
