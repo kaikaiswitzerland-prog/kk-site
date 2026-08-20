@@ -2,7 +2,7 @@
 //
 // STRUCTURE DE PAGE de la refonte :
 //
-//   1. Hero            → <HeroSlot /> — emplacement réservé, vide (hors périmètre)
+//   1. Hero            → <HeroSlot /> — hero vidéo scrubbé au scroll
 //   2. Carte en grille → <MenuSection /> × 6, grille produits 2 colonnes
 //   3. Composeur wok   → <WokComposer /> importé de App.jsx, à l'identique
 //   4. Footer          → <Footer />
@@ -44,7 +44,7 @@ export default function RefontePage({
 
   return (
     <div className="rf-root">
-      {/* 1 — Hero : volontairement vide pour l'instant. */}
+      {/* 1 — Hero vidéo scrubbé (voir HeroScrub.jsx). */}
       <HeroSlot>{hero}</HeroSlot>
 
       {/* 2 — La carte en grille. */}
