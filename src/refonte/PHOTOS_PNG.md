@@ -104,9 +104,16 @@ doit passer en vignettes.
 - 5 plats portent un badge *Signature* (4, 8, 9, 17) ou *Nouveau* (21–24) : ce sont
   les vignettes les plus regardées, à shooter en premier dans chaque section.
 
-## Point ouvert — badge *Halal*
+## Badge *Halal* — tranché au niveau de la garniture
 
-Le badge existe dans le système (`BADGE_LABELS.halal`) mais n'est posé sur
-**aucun plat** : la carte contient du porc et les plats partagent les mêmes woks.
-Seul le restaurant peut dire quels plats sont réellement annonçables comme halal.
-À trancher côté KaïKaï, puis à renseigner dans `src/refonte/productMeta.js`.
+Le badge existe dans le système (`BADGE_LABELS.halal`) mais reste posé sur
+**aucun plat**, volontairement : le halal se joue au niveau de la **garniture**
+du composeur de wok, pas du plat. Une même base part en poulet comme en porc —
+l'annoncer sur la fiche produit serait faux une fois sur deux.
+
+La mention vit donc sur `WOK_GARNITURES` (`src/App.jsx`), sur **Poulet** et
+**Bœuf** uniquement, et s'affiche en pastille discrète dans le composeur.
+
+Reste ouvert : les plats hors composeur (Chao Men, Kai Fan, Omelette Fu Young,
+Wok de Bœuf, plats froids). À trancher côté KaïKaï si un affichage par plat est
+souhaité, puis à renseigner dans `src/refonte/productMeta.js`.

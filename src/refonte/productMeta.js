@@ -30,10 +30,12 @@ export const RATINGS_SOURCE = 'placeholder'; // 'placeholder' | 'none'
 // Trois types seulement : 'halal' | 'nouveau' | 'signature'. Un plat n'en porte
 // qu'un — deux pastilles sur une vignette de 170 px, c'est illisible.
 //
-// ⚠ 'halal' n'est volontairement posé sur AUCUN plat ici. La carte contient du
-// porc (Chao Men, Kai Fan, garniture Porc du composeur) et les plats partagent
-// les mêmes woks : seul le restaurant peut dire quels plats sont réellement
-// certifiés/annonçables halal. À remplir par KaïKaï, pas à deviner.
+// ⚠ 'halal' reste disponible dans le système mais n'est posé sur AUCUN plat, et
+// c'est délibéré : le halal se joue au niveau de la GARNITURE, pas du plat.
+// Une même base part en poulet comme en porc — l'annoncer sur la fiche produit
+// serait faux la moitié du temps. La mention vit donc sur les garnitures du
+// composeur (WOK_GARNITURES dans src/App.jsx : Poulet et Bœuf). Ne rien poser
+// ici tant que le restaurant n'a pas tranché pour les plats hors composeur.
 export const BADGE_LABELS = {
   halal: 'Halal',
   nouveau: 'Nouveau',

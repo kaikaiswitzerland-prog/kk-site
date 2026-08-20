@@ -71,12 +71,17 @@ export const PROTEIN_OPTS_OMELETTE = [
 // ⚠ Doit rester synchronisé avec WOK_GARNITURES dans src/App.jsx, qui est ce
 // que voit le client. Ici c'est la copie que lisent le moteur de ruptures et
 // le garde-fou serveur.
+//
+// `halal` n'est lu que par l'affichage du composeur, côté App.jsx. Il est
+// recopié ici uniquement pour que les deux listes restent caractère pour
+// caractère identiques : ni le moteur de ruptures ni le garde-fou serveur ne
+// le regardent, ils travaillent sur les ids.
 export const WOK_GARNITURES = [
-  { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
+  { id: "poulet", name: "Poulet", desc: "Wok de poulet", halal: true },
   { id: "porc", name: "Porc", desc: "Viande de porc mijotée façon KaïKaï" },
   { id: "porc-poulet", name: "Mix poulet-porc", desc: "Mix des deux viandes" },
   { id: "veggie", name: "Veggie (omelette)", desc: "100% végétarien" },
-  { id: "boeuf", name: "Bœuf", desc: "Bœuf sauté au wok, sauce sésame" }
+  { id: "boeuf", name: "Bœuf", desc: "Bœuf sauté au wok, sauce sésame", halal: true }
 ];
 
 // Plats 16 (Crème Tropicale) et 18 (Cheesecake) — vérifiés identiques.

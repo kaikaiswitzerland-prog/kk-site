@@ -40,7 +40,10 @@ const LERP = 0.12;
 // atteinte et on coupe la boucle rAF.
 const SETTLE = 0.004;
 
-const BADGES = ['halal', 'fait maison', 'livraison genève'];
+// Le halal ne se joue pas au niveau du restaurant mais de la GARNITURE
+// choisie (cf. WOK_GARNITURES dans App.jsx) : il n'a donc rien à faire en
+// promesse globale de hero.
+const BADGES = ['fait maison', 'livraison genève'];
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(

@@ -128,12 +128,18 @@ const globalStyles = `
 // Les ids reprennent ceux des protéines déjà en base (porc, poulet,
 // porc-poulet, veggie, boeuf) : une clé de rupture « 21:poulet » suit donc la
 // même convention que partout ailleurs.
+//
+// `halal` est un champ d'AFFICHAGE, porté par la garniture et pas par le plat :
+// c'est le seul niveau où la question a un sens ici, puisque la même base peut
+// partir en poulet halal comme en porc. Poulet et Bœuf uniquement — ni Porc ni
+// le Mix qui en contient. Aucun prix, aucune clé de rupture ne dépend de ce
+// champ : les ids sont inchangés, la grille OPTION_PRICES aussi.
 const WOK_GARNITURES = [
-  { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
+  { id: "poulet", name: "Poulet", desc: "Wok de poulet", halal: true },
   { id: "porc", name: "Porc", desc: "Viande de porc mijotée façon KaïKaï" },
   { id: "porc-poulet", name: "Mix poulet-porc", desc: "Mix des deux viandes" },
   { id: "veggie", name: "Veggie (omelette)", desc: "100% végétarien" },
-  { id: "boeuf", name: "Bœuf", desc: "Bœuf sauté au wok, sauce sésame" },
+  { id: "boeuf", name: "Bœuf", desc: "Bœuf sauté au wok, sauce sésame", halal: true },
 ];
 
 // LÉGUMES. Le premier est offert, chacun des suivants est facturé 1.50.
@@ -1373,7 +1379,7 @@ export default function KaiKaiApp() {
 // (fond 0.03, bordure 0.08, sélection 0.11/0.28 + pastille blanche à coche
 // noire) en plus compact : trois colonnes côte à côte ne laissent pas la place
 // aux tuiles emoji de 46 px des bottom sheets.
-function WokOption({ emoji, label, note, out, active, onClick }) {
+function WokOption({ emoji, label, note, halal, out, active, onClick }) {
   return (
     <button
       type="button"
@@ -1399,6 +1405,19 @@ function WokOption({ emoji, label, note, out, active, onClick }) {
         {label}
         {note && <span style={{ display: 'block', fontSize: 11, color: 'rgba(255,255,255,0.40)', marginTop: 1 }}>{note}</span>}
       </span>
+      {/* Mention halal — même géométrie que la pastille Rupture (font-mono 9px,
+          uppercase, tracking) pour ne pas introduire un second vocabulaire.
+          Affichée MÊME en rupture, contrairement aux badges de la grille : ce
+          n'est pas une accroche marketing mais une information diététique, et
+          c'est ici que le client arbitre. La masquer sur une garniture
+          temporairement épuisée la rendrait ambiguë le jour où elle revient.
+          Les deux pastilles cohabitent sans se gêner : la ligne fait ~330 px
+          au plus étroit et les libellés concernés sont courts. */}
+      {halal && (
+        <span className="rounded-md border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-emerald-300/75" style={{ flexShrink: 0 }}>
+          Halal
+        </span>
+      )}
       {out && (
         <span className="rounded-md border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-red-300" style={{ flexShrink: 0 }}>
           Rupture
@@ -1534,6 +1553,7 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
               <WokOption
                 key={o.id}
                 label={o.name}
+                halal={o.halal}
                 out={isOptionOut(stockList, base.id, o.id)}
                 active={option?.id === o.id}
                 onClick={() => setOptionId(o.id)}
