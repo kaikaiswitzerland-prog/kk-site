@@ -4,7 +4,7 @@
  * importé que par src/refonte/RefontePage.jsx (chargé en lazy sur /refonte).
  * Le site live et l'admin ne le voient jamais.
  *
- * Palette : noir profond #060a07 + or #C9A96E.
+ * Palette : noir profond #060a07 + vert lime #d4ff6b.
  * Typo    : Cormorant Garamond (titres, noms de plats) + DM Sans (interface).
  */
 
@@ -16,19 +16,27 @@
   --rf-bg-elev: #0b110e;
   --rf-bg-elev-2: #111a15;
 
-  /* Or */
-  --rf-gold: #C9A96E;
-  --rf-gold-soft: #E2CB9C;
-  --rf-gold-dim: rgba(201, 169, 110, 0.55);
+  /* Accent — vert lime KaïKaï, le même que --color-accent de l'admin.
+     Le texte posé DESSUS doit toujours être #060a07 : sur ce lime, du blanc
+     tombe à 1.15:1 (illisible) là où le noir profond donne 17.4:1. */
+  --rf-accent: #d4ff6b;
+  --rf-accent-soft: #e2ff8f;   /* hover : plus clair, jamais plus saturé */
+  --rf-accent-dim: rgba(212, 255, 107, 0.55);
 
   /* Encres */
   --rf-ink: #F4F1EA;
   --rf-ink-2: rgba(244, 241, 234, 0.62);
   --rf-ink-3: rgba(244, 241, 234, 0.36);
 
-  /* Lignes */
-  --rf-line: rgba(201, 169, 110, 0.16);
-  --rf-line-strong: rgba(201, 169, 110, 0.38);
+  /* Lignes — teintées lime.
+     Les alphas ne sont PAS ceux de l'or : le lime est 2,07× plus lumineux
+     (0.866 contre 0.419), donc à opacité égale un filet doré discret devient
+     un filet vert criard. Ces valeurs (~0,72× les anciennes) rendent la même
+     luminance composite sur le fond #060a07 — le dessin ne change pas, seule
+     la teinte change. Même logique pour tous les aplats translucides d'accent
+     plus bas (halo produit, stepper, halo footer). */
+  --rf-line: rgba(212, 255, 107, 0.12);
+  --rf-line-strong: rgba(212, 255, 107, 0.27);
 
   /* États */
   --rf-danger: #E0685F;
@@ -144,7 +152,7 @@ html, body { overflow-x: clip; }
   font-weight: 500;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--rf-gold);
+  color: var(--rf-accent);
   /* La vidéo passe par des frames très claires : sans halo sombre, l'or à
      10 px se dissout dedans. */
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.85);
@@ -164,7 +172,7 @@ html, body { overflow-x: clip; }
 .rf-scrub__title em {
   display: block;
   font-style: italic;
-  color: var(--rf-gold);
+  color: var(--rf-accent);
 }
 
 /* Badges + CTA : masqués tant que le scrub n'a pas atteint REVEAL_AT. */
@@ -212,7 +220,7 @@ html, body { overflow-x: clip; }
   border: 0;
   border-radius: 999px;
   padding: 15px 32px;
-  background: var(--rf-gold);
+  background: var(--rf-accent);
   color: #060a07;
   font-family: var(--rf-font-body);
   font-size: 13px;
@@ -222,7 +230,7 @@ html, body { overflow-x: clip; }
   cursor: pointer;
   transition: background 0.18s ease, transform 0.12s ease;
 }
-.rf-scrub__cta:hover { background: var(--rf-gold-soft); }
+.rf-scrub__cta:hover { background: var(--rf-accent-soft); }
 .rf-scrub__cta:active { transform: scale(0.97); }
 
 /* Indice de scroll, calé au bas de la scène pour ne pas déplacer le titre
@@ -267,7 +275,7 @@ html, body { overflow-x: clip; }
   font-weight: 500;
   letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: var(--rf-gold);
+  color: var(--rf-accent);
 }
 .rf-section__title {
   margin: 6px 0 0;
@@ -328,7 +336,7 @@ html, body { overflow-x: clip; }
   aspect-ratio: 1 / 1;
   overflow: hidden;
   background:
-    radial-gradient(78% 68% at 50% 46%, rgba(201, 169, 110, 0.15) 0%, rgba(201, 169, 110, 0.04) 46%, transparent 72%),
+    radial-gradient(78% 68% at 50% 46%, rgba(212, 255, 107, 0.11) 0%, rgba(212, 255, 107, 0.03) 46%, transparent 72%),
     var(--rf-bg-elev-2);
 }
 .rf-card__img {
@@ -381,17 +389,17 @@ html, body { overflow-x: clip; }
 .rf-badge--halal {
   border: 1px solid var(--rf-line-strong);
   background: rgba(6, 10, 7, 0.72);
-  color: var(--rf-gold-soft);
+  color: var(--rf-accent-soft);
 }
 .rf-badge--nouveau {
-  border: 1px solid var(--rf-gold);
-  background: var(--rf-gold);
+  border: 1px solid var(--rf-accent);
+  background: var(--rf-accent);
   color: #060a07;
 }
 .rf-badge--signature {
   border: 1px solid var(--rf-line-strong);
   background: rgba(6, 10, 7, 0.72);
-  color: var(--rf-gold);
+  color: var(--rf-accent);
 }
 
 /* Pastille rupture — même coin que le badge : les deux ne coexistent jamais. */
@@ -451,7 +459,7 @@ html, body { overflow-x: clip; }
   line-height: 1;
   color: var(--rf-ink-2);
 }
-.rf-card__rating svg { color: var(--rf-gold); flex: none; }
+.rf-card__rating svg { color: var(--rf-accent); flex: none; }
 .rf-card__score { font-weight: 700; color: var(--rf-ink); font-variant-numeric: tabular-nums; }
 .rf-card__reviews { color: var(--rf-ink-3); }
 
@@ -467,7 +475,7 @@ html, body { overflow-x: clip; }
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.005em;
-  color: var(--rf-gold);
+  color: var(--rf-accent);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -489,12 +497,12 @@ html, body { overflow-x: clip; }
   height: 34px;
   border: 0;
   border-radius: 999px;
-  background: var(--rf-gold);
+  background: var(--rf-accent);
   color: #060a07;
   cursor: pointer;
   transition: background 0.18s ease, transform 0.12s ease;
 }
-.rf-add:hover { background: var(--rf-gold-soft); }
+.rf-add:hover { background: var(--rf-accent-soft); }
 .rf-add:active { transform: scale(0.93); }
 .rf-add:disabled {
   background: transparent;
@@ -512,7 +520,7 @@ html, body { overflow-x: clip; }
   padding: 0 3px;
   border: 1px solid var(--rf-line-strong);
   border-radius: 999px;
-  background: rgba(201, 169, 110, 0.10);
+  background: rgba(212, 255, 107, 0.07);
 }
 .rf-step__btn {
   display: inline-flex;
@@ -523,11 +531,11 @@ html, body { overflow-x: clip; }
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: var(--rf-gold);
+  color: var(--rf-accent);
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.rf-step__btn:hover { background: rgba(201, 169, 110, 0.18); }
+.rf-step__btn:hover { background: rgba(212, 255, 107, 0.13); }
 .rf-step__btn:disabled { color: var(--rf-ink-3); cursor: not-allowed; }
 .rf-step__qty {
   min-width: 16px;
@@ -548,7 +556,7 @@ html, body { overflow-x: clip; }
   margin-top: 56px;
   border-top: 1px solid var(--rf-line);
   background:
-    radial-gradient(90% 130% at 50% 100%, rgba(201, 169, 110, 0.07) 0%, transparent 60%),
+    radial-gradient(90% 130% at 50% 100%, rgba(212, 255, 107, 0.05) 0%, transparent 60%),
     var(--rf-bg);
   padding-block: 40px 32px;
 }
@@ -578,7 +586,7 @@ html, body { overflow-x: clip; }
   color: var(--rf-ink-2);
   transition: color 0.18s ease, border-color 0.18s ease;
 }
-.rf-footer__social a:hover { color: var(--rf-gold); border-color: var(--rf-line-strong); }
+.rf-footer__social a:hover { color: var(--rf-accent); border-color: var(--rf-line-strong); }
 
 .rf-footer__cols {
   display: grid;
@@ -595,7 +603,7 @@ html, body { overflow-x: clip; }
   font-weight: 500;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--rf-gold);
+  color: var(--rf-accent);
 }
 .rf-footer__list { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
 .rf-footer__list li { font-size: 13px; line-height: 1.45; color: var(--rf-ink-2); }
@@ -619,7 +627,7 @@ html, body { overflow-x: clip; }
 /* ─── Divers ──────────────────────────────────────────────────────────────── */
 
 .rf-root :focus-visible {
-  outline: 2px solid var(--rf-gold);
+  outline: 2px solid var(--rf-accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
