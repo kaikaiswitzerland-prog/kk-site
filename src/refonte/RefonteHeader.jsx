@@ -5,7 +5,7 @@
 // mais au thème noir/lime. Aucune logique ici : le statut et le compteur
 // arrivent en props depuis KaiKaiApp, qui reste la seule source.
 
-import { Phone, ShoppingCart, ShieldAlert } from 'lucide-react';
+import { Phone, ShoppingCart, ShieldAlert, Info } from 'lucide-react';
 
 // Trois états, exactement ceux d'OpenStatus sur le site actuel :
 //   ouvert · fermeture manuelle (stop commandes admin) · fermeture horaire.
@@ -21,6 +21,7 @@ export default function RefonteHeader({
   cartCount = 0,
   onOpenCheckout,
   onShowAllergens,
+  onShowAbout,
   phone,
 }) {
   return (
@@ -35,6 +36,17 @@ export default function RefonteHeader({
         </div>
 
         <div className="rf-header__actions">
+          {onShowAbout && (
+            <button
+              type="button"
+              className="rf-iconbtn"
+              onClick={onShowAbout}
+              aria-label="À propos"
+              title="À propos"
+            >
+              <Info size={18} />
+            </button>
+          )}
           <button
             type="button"
             className="rf-iconbtn"

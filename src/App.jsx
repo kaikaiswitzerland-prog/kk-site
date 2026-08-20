@@ -1231,6 +1231,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
             manualClosure={manualClosure}
             openStatusLabel={openStatusLabel}
             onShowZones={() => setShowZonesModal(true)}
+            onShowAbout={() => setShowAbout(true)}
             restaurant={RESTAURANT_INFO}
           />
         </Suspense>

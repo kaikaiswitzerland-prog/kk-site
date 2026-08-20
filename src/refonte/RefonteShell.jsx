@@ -35,6 +35,7 @@ export default function RefonteShell({
   openStatusLabel,
   // Divers
   onShowZones,
+  onShowAbout,
   restaurant,
 }) {
   const [showAllergens, setShowAllergens] = useState(false);
@@ -49,6 +50,7 @@ export default function RefonteShell({
         cartCount={cartCount}
         onOpenCheckout={onOpenCheckout}
         onShowAllergens={openAllergens}
+        onShowAbout={onShowAbout}
         phone={restaurant?.phone}
       />
 
