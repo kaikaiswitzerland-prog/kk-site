@@ -6,12 +6,24 @@ import AdminApp from './pages/AdminApp.jsx'
 import LegalRouter, { isLegalRoute } from './pages/LegalPages.jsx'
 import { IslandModeProvider } from './context/IslandModeContext.jsx'
 
-// Détection de route : /admin → PWA admin, pages légales → LegalRouter,
-// /refonte → même app, peau refonte ; tout autre chemin → site principal.
+// Détection de route :
+//   /admin…      → PWA admin
+//   pages légales → LegalRouter
+//   /classique…  → ANCIEN site (peau historique), conservé accessible
+//   tout le reste → NOUVEAU site (peau refonte), y compris / et /refonte
+//
+// C'est ici que se joue la bascule : la peau refonte est désormais la peau
+// PAR DÉFAUT. L'ancien site n'a pas disparu, il a changé d'adresse — utile
+// pour comparer les deux en ligne, et pour ne rien perdre si un détail de la
+// refonte devait être revu.
+//
+// /refonte reste volontairement valide : c'est l'URL utilisée pendant toute
+// la mise au point, elle tombe dans le cas par défaut et sert donc le nouveau
+// site, comme /.
 const pathname = window.location.pathname;
 const isAdminRoute = pathname.startsWith('/admin');
 const isLegal = isLegalRoute(pathname);
-const isRefonteRoute = pathname.startsWith('/refonte');
+const isClassicRoute = pathname.startsWith('/classique');
 
 // Enregistrement du service worker (PWA)
 if ('serviceWorker' in navigator) {
@@ -28,13 +40,13 @@ createRoot(document.getElementById('root')).render(
       <AdminApp />
     ) : isLegal ? (
       <LegalRouter />
-    ) : isRefonteRoute ? (
+    ) : isClassicRoute ? (
       <IslandModeProvider>
-        <App skin="refonte" />
+        <App />
       </IslandModeProvider>
     ) : (
       <IslandModeProvider>
-        <App />
+        <App skin="refonte" />
       </IslandModeProvider>
     )}
   </StrictMode>,
