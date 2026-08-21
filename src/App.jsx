@@ -2008,7 +2008,7 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
   );
 }
 
-function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge, disabled }) {
+function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge, halal, disabled }) {
   return (
     <button
       className={`modal-tile tile-${Math.min(index, 6)}`}
@@ -2033,6 +2033,11 @@ function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge, disa
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: 6 }}>
           {name}
+          {/* Mention halal — même géométrie que la pastille `badge` ci-dessous,
+              en vert pour ne pas se confondre avec l'ambre des ruptures. Elle
+              reste affichée sur une option en rupture : c'est une information
+              diététique, pas une accroche, et la ligne est déjà grisée. */}
+          {halal && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'rgba(80,220,140,0.13)', color: 'rgba(110,235,170,0.90)', border: '1px solid rgba(80,220,140,0.22)' }}>HALAL</span>}
           {badge && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'rgba(255,180,0,0.15)', color: 'rgba(255,180,0,0.85)', border: '1px solid rgba(255,180,0,0.2)' }}>{badge}</span>}
         </div>
         {desc && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</div>}
@@ -2205,6 +2210,18 @@ function JusModal({ item, stockList = [], onSelect, onClose }) {
   );
 }
 
+// Protéines annonçables halal, pour les modales de choix des plats chauds
+// (Chao Men, Kai Fan, Omelette Fu Young). Ni le porc, ni le mix qui en
+// contient. Le bœuf y figure alors qu'aucun de ces trois plats ne le propose
+// aujourd'hui : c'est la règle qui est écrite ici, pas la carte du moment.
+//
+// ⚠ Volontairement au RENDU et pas dans PROTEIN_OPTS_* : ces tableaux sont
+// spreadés dans FORMULE_PROTEIN_OPTS_OMELETTE et partent dans l'objet variant
+// enregistré avec la commande. Un champ posé dans les données contaminerait
+// les modales de formules et la charge utile des commandes ; ici, la mention
+// ne vit que dans la modale visée.
+const HALAL_PROTEIN_IDS = new Set(['poulet', 'boeuf']);
+
 function ProteinModal({ item, stockList = [], onSelect, onClose }) {
   const protEmojis = { porc: '🍖', poulet: '🍗', 'porc-poulet': '🍽️', veggie: '🥦' };
   return (
@@ -2212,7 +2229,7 @@ function ProteinModal({ item, stockList = [], onSelect, onClose }) {
       {item.proteinVariants.map((v, i) => {
         const out = isOptionOut(stockList, item.id, v.id);
         return (
-          <OptionTile key={v.id} emoji={protEmojis[v.id] || '🍽️'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} disabled={out} badge={out ? OUT_BADGE : null} />
+          <OptionTile key={v.id} emoji={protEmojis[v.id] || '🍽️'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} disabled={out} halal={HALAL_PROTEIN_IDS.has(v.id)} badge={out ? OUT_BADGE : null} />
         );
       })}
     </BottomSheet>

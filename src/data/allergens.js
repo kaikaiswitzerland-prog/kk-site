@@ -85,7 +85,7 @@ export const ITEM_ALLERGENS = {
   "15": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS'] },                                          // Coulant au chocolat
   "16": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS'] },                                          // Crème Tropicale
   "17": { contains: [], traces: ['NUTS'] },                                                                  // Po'e Banane
-  "18": { contains: ['GLUTEN', 'EGGS', 'SOY', 'MILK'], traces: ['NUTS', 'MUSTARD', 'SULPHITES'] },           // Cheesecake
+  "18": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS', 'MUSTARD', 'SULPHITES'] },                    // Cheesecake — soja retiré (validation restaurateur)
 
   // ─── BOISSONS ───
   "19": { contains: [], traces: [] },  // Jus exotiques
