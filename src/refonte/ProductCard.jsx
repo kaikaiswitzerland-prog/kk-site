@@ -1,13 +1,13 @@
 // src/refonte/ProductCard.jsx
 //
 // Carte produit de la grille refonte — photo carrée dominante, badge, nom,
-// prix, avis. Composant PUREMENT présentationnel : il ne connaît ni le panier,
-// ni les ruptures, ni les modaux d'options. Tout arrive en props, ce qui permet
+// description, prix. Composant PUREMENT présentationnel : il ne connaît ni le
+// panier, ni les ruptures, ni les modaux d'options. Tout arrive en props, ce qui permet
 // de le brancher tel quel sur la logique existante de KaiKaiApp (add/remove +
 // isMenuItemUnavailable) le jour de l'intégration.
 
 import { useEffect, useState } from 'react';
-import { Plus, Minus, Star } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import { BADGE_LABELS, getProductMeta } from './productMeta.js';
 
 const chf = (price) =>
@@ -43,7 +43,12 @@ export default function ProductCard({
 }) {
   const meta = metaOverride || getProductMeta(item.id);
   const { current, onError } = useImageFallback(meta);
-  const hasRating = meta.rating != null;
+
+  // La carte n'a de place que pour UNE ligne : `short` est la version taillée
+  // pour cette largeur (productMeta.js). Sans elle, on retombe sur la
+  // description officielle du plat (MENU dans App.jsx), tronquée par le CSS —
+  // jamais sur du vide.
+  const desc = meta.short || item.desc || '';
 
   return (
     <article className={`rf-card${outOfStock ? ' rf-card--out' : ''}`}>
@@ -75,18 +80,7 @@ export default function ProductCard({
       <div className="rf-card__body">
         <h3 className="rf-card__name">{item.name}</h3>
 
-        {hasRating && (
-          <div
-            className="rf-card__rating"
-            aria-label={`Note ${meta.rating} sur 5${meta.reviews ? `, ${meta.reviews} avis` : ''}`}
-          >
-            <Star size={12} strokeWidth={0} fill="currentColor" aria-hidden="true" />
-            <span className="rf-card__score">{meta.rating.toFixed(1)}</span>
-            {meta.reviews != null && (
-              <span className="rf-card__reviews">({meta.reviews})</span>
-            )}
-          </div>
-        )}
+        {desc && <p className="rf-card__desc" title={desc}>{desc}</p>}
 
         <div className="rf-card__foot">
           <div className="rf-card__price">

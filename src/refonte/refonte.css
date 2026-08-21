@@ -220,9 +220,24 @@ html:has(.rf-root), body:has(.rf-root) { overflow-x: clip; }
   line-height: 1;
   color: var(--rf-ink-2);
 }
-/* Les badges du hero sont devenus des accès cliquables. */
-.rf-scrub__badge--link { cursor: pointer; transition: color 0.18s ease, border-color 0.18s ease; }
-.rf-scrub__badge--link:hover { color: var(--rf-accent); border-color: var(--rf-accent); }
+/* Les badges du hero sont devenus des accès cliquables : ils portent donc la
+   couleur du CTA « je commande » (fond lime, encre sombre) — trois boutons
+   côte à côte, une seule identité visuelle. SEULE la couleur est reprise :
+   padding, rayon, graisse et interlettrage restent ceux du badge, donc aucune
+   des trois pastilles ne change de taille.
+   La bordure passe au lime plutôt que de disparaître : la retirer ferait
+   maigrir le bouton de 2 px. */
+.rf-scrub__badge--link {
+  cursor: pointer;
+  background: var(--rf-accent);
+  border-color: var(--rf-accent);
+  color: #060a07;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+}
+.rf-scrub__badge--link:hover {
+  background: var(--rf-accent-soft);
+  border-color: var(--rf-accent-soft);
+}
 .rf-scrub__badge--link:active { transform: scale(0.97); }
 
 .rf-scrub__cta {
@@ -463,18 +478,23 @@ html:has(.rf-root), body:has(.rf-root) { overflow-x: clip; }
 }
 @media (min-width: 600px) { .rf-card__name { font-size: 19px; } }
 
-/* Avis */
-.rf-card__rating {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+/* Description — une seule ligne, tronquée à l'ellipse.
+   Elle occupe la place laissée par l'ancienne ligne d'avis, avec exactement la
+   même hauteur de 12 px (la pastille étoile mesurait 12 px de haut), pour que
+   la carte garde ses dimensions au pixel près.
+   Le padding-bottom de 2 px, annulé par une marge négative de -2 px, éloigne
+   la zone de découpe des jambages (« g », « p ») sans rien ajouter à la
+   hauteur occupée dans la colonne. */
+.rf-card__desc {
+  margin: 0 0 -2px;
+  padding-bottom: 2px;
   font-size: 11px;
-  line-height: 1;
+  line-height: 12px;
   color: var(--rf-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.rf-card__rating svg { color: var(--rf-accent); flex: none; }
-.rf-card__score { font-weight: 700; color: var(--rf-ink); font-variant-numeric: tabular-nums; }
-.rf-card__reviews { color: var(--rf-ink-3); }
 
 /* Prix + action */
 .rf-card__foot {

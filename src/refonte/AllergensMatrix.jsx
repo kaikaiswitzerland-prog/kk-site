@@ -5,8 +5,8 @@
 //
 // C'est le pendant global de ce que le site actuel affiche plat par plat sous
 // chaque prix. Dans la refonte, la grille produits reste volontairement nue
-// (photo, nom, prix, avis) : l'information allergènes est regroupée ici, et
-// atteignable depuis le header comme depuis le footer.
+// (photo, nom, description courte, prix) : l'information allergènes est
+// regroupée ici, atteignable depuis le header comme depuis le footer.
 //
 // Mise en page : à 390 px, un vrai tableau de 14 colonnes est illisible. On
 // garde donc l'intégralité de l'information mais en liste par plat, avec la
