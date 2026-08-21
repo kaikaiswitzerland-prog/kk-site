@@ -7,16 +7,21 @@ import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 const GOLD = "#C9A96E";
 const DURATION = 5500;
 
+// Le hero garde les noms d'île courts. Sur la carte, ces plats s'appellent
+// « Tartare de thon rouge coco — Tahiti » etc. ; ici c'est un visuel
+// d'ambiance, pas une fiche produit : la ligne `category` (POISSON CRU) et la
+// description portent déjà la nature du plat, et un titre de trois lignes en
+// très grande police tuerait l'accroche. L'écart est voulu.
 const SLIDES = [
   {
-    name: "Tartare de thon rouge coco — « Tahiti »",
+    name: "Tahiti",
     category: "POISSON CRU",
     price: "22.90 CHF",
     description: "Thon rouge mariné au citron vert, gingembre frais, sauce coco légère et herbes fraîches",
     image: "/hero-tartare-coco.jpg",
   },
   {
-    name: "Tartare de thon rouge mangue-ananas — « Hawaï »",
+    name: "Hawaï",
     category: "POISSON CRU",
     price: "22.90 CHF",
     description: "Thon rouge, mangue fraîche, ananas grillé, sauce sésame toastée maison",
