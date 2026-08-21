@@ -40,10 +40,31 @@ const LERP = 0.12;
 // atteinte et on coupe la boucle rAF.
 const SETTLE = 0.004;
 
-// Le halal ne se joue pas au niveau du restaurant mais de la GARNITURE
-// choisie (cf. WOK_GARNITURES dans App.jsx) : il n'a donc rien à faire en
-// promesse globale de hero.
-const BADGES = ['fait maison', 'livraison genève'];
+// Deux accès directs dans la carte, vers les sections qui font venir les
+// clients. Ils remplacent les anciens badges informatifs : à cet endroit du
+// parcours, une porte d'entrée vaut mieux qu'une promesse.
+//
+// (Le halal n'y figure pas : il se joue au niveau de la GARNITURE choisie,
+// cf. WOK_GARNITURES dans App.jsx, pas en promesse globale de hero.)
+const HERO_LINKS = [
+  { id: 'rf-wok',   label: 'Compose ton wok' },
+  { id: 'rf-froid', label: 'Nos tartares de thon rouge' },
+];
+
+// Hauteur de repli du header si la mesure échoue.
+const HEADER_FALLBACK = 60;
+
+// Le header de la refonte est en `position: sticky` : un scrollIntoView nu
+// amène le titre visé pile dessous, donc masqué. On retranche sa hauteur
+// réelle, mesurée dans le DOM — elle bouge avec la taille de police système.
+function scrollToSection(id, smooth = true) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const header = document.querySelector('.rf-header');
+  const offset = (header?.offsetHeight || HEADER_FALLBACK) + 8;
+  const top = el.getBoundingClientRect().top + window.scrollY - offset;
+  window.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
+}
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(
@@ -203,9 +224,7 @@ export default function HeroScrub({ ctaTargetId = 'rf-entrees' }) {
   }, [reduced]);
 
   const goToMenu = useCallback(() => {
-    const el = document.getElementById(ctaTargetId);
-    if (!el) return;
-    el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    scrollToSection(ctaTargetId, !reduced);
   }, [ctaTargetId, reduced]);
 
   return (
@@ -236,11 +255,19 @@ export default function HeroScrub({ ctaTargetId = 'rf-entrees' }) {
             className={`rf-scrub__actions${revealed ? ' rf-scrub__actions--on' : ''}`}
             aria-hidden={!revealed}
           >
-            <ul className="rf-scrub__badges">
-              {BADGES.map((badge) => (
-                <li key={badge} className="rf-scrub__badge">{badge}</li>
+            <div className="rf-scrub__badges">
+              {HERO_LINKS.map((lien) => (
+                <button
+                  key={lien.id}
+                  type="button"
+                  className="rf-scrub__badge rf-scrub__badge--link"
+                  onClick={() => scrollToSection(lien.id, !reduced)}
+                  tabIndex={revealed ? 0 : -1}
+                >
+                  {lien.label}
+                </button>
               ))}
-            </ul>
+            </div>
             <button
               type="button"
               className="rf-scrub__cta"

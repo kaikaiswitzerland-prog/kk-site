@@ -206,6 +206,7 @@ html:has(.rf-root), body:has(.rf-root) { overflow-x: clip; }
   list-style: none;
 }
 .rf-scrub__badge {
+  font-family: inherit;
   padding: 6px 12px;
   border: 1px solid var(--rf-line-strong);
   border-radius: 999px;
@@ -219,6 +220,10 @@ html:has(.rf-root), body:has(.rf-root) { overflow-x: clip; }
   line-height: 1;
   color: var(--rf-ink-2);
 }
+/* Les badges du hero sont devenus des accès cliquables. */
+.rf-scrub__badge--link { cursor: pointer; transition: color 0.18s ease, border-color 0.18s ease; }
+.rf-scrub__badge--link:hover { color: var(--rf-accent); border-color: var(--rf-accent); }
+.rf-scrub__badge--link:active { transform: scale(0.97); }
 
 .rf-scrub__cta {
   border: 0;
