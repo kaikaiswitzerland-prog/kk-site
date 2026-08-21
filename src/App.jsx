@@ -204,8 +204,8 @@ const MENU = [
   { id: "3",  name: "Salade de poulet", desc: "Salade, tomate, patate, concombre, poulet", price: 9.90, category: "entrees" },
   { 
     id: "4",  
-    name: "Tartare de thon rouge", 
-    desc: "Mariné au citron vert et gingembre (3 variantes: Tahiti, Hawaï, Samoa)", 
+    name: "Salade de thon rouge", 
+    desc: "Mariné au citron vert et gingembre (3 déclinaisons : coco, mangue-ananas, pimenté)", 
     price: 12.90, 
     category: "entrees",
     hasVariants: true,
@@ -243,10 +243,10 @@ const MENU = [
   { id: "8",  name: "Wok de Bœuf", desc: "Wok de bœuf, légumes de saison, sauce sésame, servi avec du riz et une salade", price: 26.90, category: "chaud" },
 
   // PLATS FROIDS
-  { id: "9",  name: "Tahiti", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce coco", price: 22.90, category: "froid" },
-  { id: "10", name: "Hawaï", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce sésame, mangue et ananas", price: 22.90, category: "froid" },
-  { id: "11", name: "Samoa", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce piment maison", price: 22.90, category: "froid" },
-  { id: "12", name: "Manoa", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce arachide et guacamole maison", price: 24.90, category: "froid" },
+  { id: "9",  name: "Tartare de thon rouge coco — « Tahiti »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce coco", price: 22.90, category: "froid" },
+  { id: "10", name: "Tartare de thon rouge mangue-ananas — « Hawaï »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce sésame, mangue et ananas", price: 22.90, category: "froid" },
+  { id: "11", name: "Tartare de thon rouge pimenté — « Samoa »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce piment maison", price: 22.90, category: "froid" },
+  { id: "12", name: "Tartare de thon rouge avocat-cacahuète — « Manoa »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce arachide et guacamole maison", price: 24.90, category: "froid" },
 
   // FORMULES
   { 
@@ -447,8 +447,8 @@ const MENU_BY_ID = Object.fromEntries(MENU.map(m => [m.id, m]));
 // Listes de composition des formules, remontées au niveau module : la carte a
 // besoin de savoir si une formule est encore composable AVANT d'ouvrir la
 // modale. Contenu strictement identique à ce qui vivait dans FormuleModal.
-const FORMULE_PLATS_DECOUVERTE = ['Chao Men','Kai Fan','Omelette Fu Young','Tartare Tahiti','Tartare Hawaï','Tartare Samoa'];
-const FORMULE_PLATS_VOYAGE = ['Chao Men','Kai Fan','Omelette Fu Young','Wok de Bœuf','Tartare Tahiti','Tartare Hawaï','Tartare Samoa'];
+const FORMULE_PLATS_DECOUVERTE = ['Chao Men','Kai Fan','Omelette Fu Young','Tartare de thon rouge coco — « Tahiti »','Tartare de thon rouge mangue-ananas — « Hawaï »','Tartare de thon rouge pimenté — « Samoa »'];
+const FORMULE_PLATS_VOYAGE = ['Chao Men','Kai Fan','Omelette Fu Young','Wok de Bœuf','Tartare de thon rouge coco — « Tahiti »','Tartare de thon rouge mangue-ananas — « Hawaï »','Tartare de thon rouge pimenté — « Samoa »'];
 const FORMULE_DESSERTS = ['Coulant au chocolat','Crème Tropicale',"Po'e Banane",'Cheesecake'];
 
 // Un libellé de formule est commandable si le plat de carte qu'il désigne
@@ -2424,8 +2424,8 @@ function FormuleModal({ item, stockList = [], onConfirm, onClose }) {
   // contrairement aux options qui restent visibles mais grisées.
   const platsDec = formuleNamesAvailable(stockList, FORMULE_PLATS_DECOUVERTE);
   const platsVoy = formuleNamesAvailable(stockList, FORMULE_PLATS_VOYAGE);
-  const platEmojis = { 'Chao Men':'🍜','Kai Fan':'🍚','Omelette Fu Young':'🍳','Wok de Bœuf':'🥩','Tartare Tahiti':'🐟','Tartare Hawaï':'🥭','Tartare Samoa':'🌶️' };
-  const platDescs = { 'Chao Men':'Nouilles sautées','Kai Fan':'Riz sauté','Omelette Fu Young':'Omelette aux légumes','Wok de Bœuf':'Wok de bœuf, sauce sésame','Tartare Tahiti':'Thon rouge, sauce coco','Tartare Hawaï':'Thon rouge, sauce sésame','Tartare Samoa':'Thon rouge, sauce piment' };
+  const platEmojis = { 'Chao Men':'🍜','Kai Fan':'🍚','Omelette Fu Young':'🍳','Wok de Bœuf':'🥩','Tartare de thon rouge coco — « Tahiti »':'🐟','Tartare de thon rouge mangue-ananas — « Hawaï »':'🥭','Tartare de thon rouge pimenté — « Samoa »':'🌶️' };
+  const platDescs = { 'Chao Men':'Nouilles sautées','Kai Fan':'Riz sauté','Omelette Fu Young':'Omelette aux légumes','Wok de Bœuf':'Wok de bœuf, sauce sésame','Tartare de thon rouge coco — « Tahiti »':'Servi avec riz et salade','Tartare de thon rouge mangue-ananas — « Hawaï »':'Servi avec riz et salade','Tartare de thon rouge pimenté — « Samoa »':'Servi avec riz et salade' };
   const needsProtein = (p) => ['Chao Men','Kai Fan','Omelette Fu Young'].includes(p);
   const needsCoulis = (d) => ['Crème Tropicale','Cheesecake'].includes(d);
   const desserts = formuleNamesAvailable(stockList, FORMULE_DESSERTS);

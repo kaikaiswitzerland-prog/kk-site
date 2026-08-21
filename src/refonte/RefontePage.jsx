@@ -3,14 +3,15 @@
 // STRUCTURE DE PAGE de la refonte :
 //
 //   1. Hero            → <HeroSlot /> — hero vidéo scrubbé au scroll
-//   2. Carte en grille → <MenuSection /> × 6, grille produits 2 colonnes
-//   3. Composeur wok   → passé en prop, instancié par KaiKaiApp
-//   4. Footer          → <Footer />
+//   2. Carte en grille → <MenuSection /> × 6, grille produits 2 colonnes,
+//                        le composeur de wok intercalé après les entrées
+//   3. Footer          → <Footer />
 //
 // Composant PRÉSENTATIONNEL strict : aucun état panier, aucun appel réseau,
 // aucun import d'App.jsx. Le + d'une carte appelle onAdd(item), qui remonte
 // jusqu'au même dispatch de modaux d'options que le site actuel.
 
+import { Fragment } from 'react';
 import HeroSlot from './HeroSlot.jsx';
 import MenuSection from './MenuSection.jsx';
 import Footer from './Footer.jsx';
@@ -46,32 +47,36 @@ export default function RefontePage({
       {/* 2 — La carte en grille. */}
       <main>
         {SECTION_META.map((s) => (
-          <MenuSection
-            key={s.key}
-            id={s.id}
-            kicker={s.kicker}
-            title={s.title}
-            items={sections[s.key] || []}
-            cart={cart}
-            onAdd={onAdd}
-            onRemove={onRemove}
-            isOut={isUnavailable}
-          />
+          <Fragment key={s.key}>
+            <MenuSection
+              id={s.id}
+              kicker={s.kicker}
+              title={s.title}
+              items={sections[s.key] || []}
+              cart={cart}
+              onAdd={onAdd}
+              onRemove={onRemove}
+              isOut={isUnavailable}
+            />
+
+            {/* Le composeur de wok s'intercale juste après les entrées, avant
+                les plats chauds : c'est une porte d'entrée dans la carte, elle
+                n'a rien à faire en fin de page. Le composeur lui-même est
+                instancié par KaiKaiApp et passé tel quel ; le wrapper `rf-grid`
+                lui fournit le contexte grid dont dépend son `col-span-full`. */}
+            {s.key === 'entrees' && wokComposer && (
+              <MenuSection
+                id="rf-wok"
+                kicker="Sur mesure"
+                title="Compose ton wok"
+                note="Votre base, vos légumes, votre garniture — le prix s'ajuste à votre composition."
+              >
+                <div className="rf-grid rf-wok-slot">{wokComposer}</div>
+              </MenuSection>
+            )}
+          </Fragment>
         ))}
 
-        {/* 3 — Le composeur de wok EXISTANT, instancié par KaiKaiApp et passé
-            tel quel. Le wrapper `rf-grid` lui fournit le contexte grid dont
-            dépend son `col-span-full`. */}
-        {wokComposer && (
-          <MenuSection
-            id="rf-wok"
-            kicker="Sur mesure"
-            title="Compose ton wok"
-            note="Votre base, vos légumes, votre garniture — le prix s'ajuste à votre composition."
-          >
-            <div className="rf-grid rf-wok-slot">{wokComposer}</div>
-          </MenuSection>
-        )}
       </main>
 
       {/* 4 — Footer. */}

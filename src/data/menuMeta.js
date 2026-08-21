@@ -44,9 +44,9 @@ export const VARIANTS_VELOUTE = [
 
 // Plat 4 — Tartare de thon rouge
 export const VARIANTS_TARTARE = [
-  { id: "tahiti", name: "Tartare Tahiti", desc: "Sauce coco" },
-  { id: "hawaii", name: "Tartare Hawaï", desc: "Sauce sésame, mangue et ananas" },
-  { id: "samoa", name: "Tartare Samoa", desc: "Sauce piment maison" }
+  { id: "tahiti", name: "Coco", desc: "Sauce coco" },
+  { id: "hawaii", name: "Mangue-ananas", desc: "Sauce sésame, mangue et ananas" },
+  { id: "samoa", name: "Pimenté", desc: "Sauce piment maison" }
 ];
 
 // Plats 5 (Chao Men) et 6 (Kai Fan) — tableaux vérifiés strictement
@@ -116,17 +116,17 @@ export const MENU_ITEMS = [
   { id: '1',  name: 'Velouté koko',         category: 'entrees', variants: VARIANTS_VELOUTE },
   { id: '2',  name: 'Salade Tropicale',     category: 'entrees' },
   { id: '3',  name: 'Salade de poulet',     category: 'entrees' },
-  { id: '4',  name: 'Tartare de thon rouge', category: 'entrees', variants: VARIANTS_TARTARE },
+  { id: '4',  name: 'Salade de thon rouge', category: 'entrees', variants: VARIANTS_TARTARE },
 
   { id: '5',  name: 'Chao Men',             category: 'chaud', proteinVariants: PROTEIN_OPTS_STANDARD },
   { id: '6',  name: 'Kai Fan',              category: 'chaud', proteinVariants: PROTEIN_OPTS_STANDARD },
   { id: '7',  name: 'Omelette Fu Young',    category: 'chaud', proteinVariants: PROTEIN_OPTS_OMELETTE },
   { id: '8',  name: 'Wok de Bœuf',          category: 'chaud' },
 
-  { id: '9',  name: 'Tahiti',               category: 'froid' },
-  { id: '10', name: 'Hawaï',                category: 'froid' },
-  { id: '11', name: 'Samoa',                category: 'froid' },
-  { id: '12', name: 'Manoa',                category: 'froid' },
+  { id: '9',  name: 'Tartare de thon rouge coco — « Tahiti »',            category: 'froid' },
+  { id: '10', name: 'Tartare de thon rouge mangue-ananas — « Hawaï »',    category: 'froid' },
+  { id: '11', name: 'Tartare de thon rouge pimenté — « Samoa »',          category: 'froid' },
+  { id: '12', name: 'Tartare de thon rouge avocat-cacahuète — « Manoa »', category: 'froid' },
 
   { id: '13', name: 'Formule Découverte',   category: 'formules', hasFormule: true, formuleType: 'decouverte' },
   { id: '14', name: 'Formule Voyage',       category: 'formules', hasFormule: true, formuleType: 'voyage' },
@@ -229,19 +229,23 @@ export const FORMULE_EAU_OPTS = withEmoji([
 //
 // ⚠ Deux pièges vérifiés :
 //
-//  1. Les 3 libellés « Tartare … » ne correspondent à AUCUN name de MENU_ITEMS
-//     (le menu dit "Tahiti" / "Hawaï" / "Samoa"). Le rattachement aux plats
-//     froids 9/10/11 est confirmé : ce sont bien les plats froids, pas les
-//     variantes de l'entrée 4 (corroboré par src/data/allergens.js:71-73).
+//  1. Les libellés de formule sont désormais IDENTIQUES aux `name` des plats
+//     froids 9/10/11 dans MENU_ITEMS. Ils doivent le rester : renommer un plat
+//     froid sans reporter le libellé ici casserait la résolution de rupture
+//     des formules en silence.
 //
-//  2. Ces mêmes chaînes sont AUSSI, à l'octet près, les `name` des variantes
-//     du plat 4 (VARIANTS_TARTARE), dont les clés de rupture sont "4:tahiti",
-//     "4:hawaii", "4:samoa" — distinctes de "9" / "10" / "11". Entrée tartare
-//     et plat froid sont deux produits différents : ne jamais résoudre un
-//     libellé de formule autrement que via cette table.
+//  2. L'entrée 4 (« Salade de thon rouge ») et les plats froids restent DEUX
+//     produits distincts, avec des clés de rupture distinctes : "4:tahiti",
+//     "4:hawaii", "4:samoa" d'un côté, "9" / "10" / "11" de l'autre. Ses
+//     déclinaisons s'appellent maintenant Coco / Mangue-ananas / Pimenté, ce
+//     qui lève la collision de chaînes qui existait avec les libellés de
+//     formule. Ne jamais résoudre un libellé de formule autrement que par
+//     cette table.
 export const FORMULE_NAME_TO_ID = {
   'Chao Men': '5', 'Kai Fan': '6', 'Omelette Fu Young': '7', 'Wok de Bœuf': '8',
-  'Tartare Tahiti': '9', 'Tartare Hawaï': '10', 'Tartare Samoa': '11',
+  'Tartare de thon rouge coco — « Tahiti »': '9',
+  'Tartare de thon rouge mangue-ananas — « Hawaï »': '10',
+  'Tartare de thon rouge pimenté — « Samoa »': '11',
   'Coulant au chocolat': '15', 'Crème Tropicale': '16', "Po'e Banane": '17',
   'Cheesecake': '18',
 };

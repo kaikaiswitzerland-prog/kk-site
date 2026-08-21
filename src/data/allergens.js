@@ -68,14 +68,14 @@ export const ITEM_ALLERGENS = {
   },
 
   // ─── PLATS FROIDS (TOUS AVEC SALADE) ───
-  "9":  { contains: ['FISH'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },            // Tartare Tahiti
-  "10": { contains: ['FISH', 'SESAME'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },  // Tartare Hawaï
-  "11": {  // Tartare Samoa froid — sauce piquante avec soja + gluten + moutarde dans le plat
+  "9":  { contains: ['FISH'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },            // Tartare de thon rouge coco — « Tahiti »
+  "10": { contains: ['FISH', 'SESAME'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },  // Tartare de thon rouge mangue-ananas — « Hawaï »
+  "11": {  // Tartare de thon rouge pimenté — « Samoa » — sauce piquante avec soja + gluten + moutarde dans le plat
     contains: ['GLUTEN', 'FISH', 'SOY', 'MUSTARD'],
     fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
     traces: []
   },
-  "12": { contains: ['FISH', 'PEANUTS'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] }, // Tartare Manoa
+  "12": { contains: ['FISH', 'PEANUTS'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] }, // Tartare de thon rouge avocat-cacahuète — « Manoa »
 
   // ─── FORMULES (composition variable, message dédié dans UI) ───
   "13": { contains: [], traces: [] },  // Formule Découverte

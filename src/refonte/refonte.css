@@ -450,9 +450,13 @@ html:has(.rf-root), body:has(.rf-root) { overflow-x: clip; }
   line-height: 1.14;
   letter-spacing: -0.005em;
   color: var(--rf-ink);
-  /* 2 lignes max — garde les cartes d'une même rangée alignées. */
+  /* 3 lignes max, mais 2 lignes réservées.
+     Les noms de plats froids portent leur déclinaison en fin de chaîne
+     (« … mangue-ananas — Hawaï ») : couper à 2 lignes escamotait justement ce
+     qui distingue les quatre tartares. La réserve reste à 2 lignes pour que
+     les noms courts n'enflent pas la grille. */
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: calc(2 * 1.14em);

@@ -9,14 +9,14 @@ const DURATION = 5500;
 
 const SLIDES = [
   {
-    name: "Tahiti",
+    name: "Tartare de thon rouge coco — « Tahiti »",
     category: "POISSON CRU",
     price: "22.90 CHF",
     description: "Thon rouge mariné au citron vert, gingembre frais, sauce coco légère et herbes fraîches",
     image: "/hero-tartare-coco.jpg",
   },
   {
-    name: "Hawaï",
+    name: "Tartare de thon rouge mangue-ananas — « Hawaï »",
     category: "POISSON CRU",
     price: "22.90 CHF",
     description: "Thon rouge, mangue fraîche, ananas grillé, sauce sésame toastée maison",
