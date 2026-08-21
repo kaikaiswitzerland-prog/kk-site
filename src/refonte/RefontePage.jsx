@@ -18,10 +18,15 @@ import Footer from './Footer.jsx';
 
 // Libellés de section. L'ordre et le contenu des listes viennent de
 // `sections`, dérivé de MENU dans App.jsx — jamais recopié ici.
+//
+// `note` porte ce qui vaut pour TOUTE la section : l'accompagnement des plats
+// froids est le même pour les quatre tartares, il se dit une fois sous le
+// titre plutôt que d'encombrer les quatre vignettes.
 const SECTION_META = [
   { key: 'entrees',  id: 'rf-entrees',  kicker: 'Pour commencer', title: 'Entrées' },
   { key: 'chaud',    id: 'rf-chaud',    kicker: 'Au wok',         title: 'Plats chauds' },
-  { key: 'froid',    id: 'rf-froid',    kicker: 'Poisson cru',    title: 'Plats froids' },
+  { key: 'froid',    id: 'rf-froid',    kicker: 'Poisson cru',    title: 'Plats froids',
+    note: 'Servis avec riz et salade.' },
   { key: 'formules', id: 'rf-formules', kicker: 'À partager',     title: 'Formules' },
   { key: 'desserts', id: 'rf-desserts', kicker: 'Pour finir',     title: 'Desserts' },
   { key: 'boissons', id: 'rf-boissons', kicker: 'À côté',         title: 'Boissons' },
@@ -52,6 +57,7 @@ export default function RefontePage({
               id={s.id}
               kicker={s.kicker}
               title={s.title}
+              note={s.note}
               items={sections[s.key] || []}
               cart={cart}
               onAdd={onAdd}
