@@ -10,7 +10,14 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap');
 
-.rf-root {
+/* Les JETONS sont déclarés sur `.rf-root` ET sur `.rf-minicart` : le
+   mini-panier flottant est rendu par KaiKaiApp, en `position: fixed` au-dessus
+   de tout, donc HORS de `.rf-root` — sans ce second sélecteur il n'hériterait
+   d'aucune variable et retomberait sur ses couleurs du site historique.
+   Déclarer des variables n'applique aucun style : les propriétés réellement
+   appliquées restent dans la règle `.rf-root` juste en dessous. */
+.rf-root,
+.rf-minicart {
   /* Fonds */
   --rf-bg: #060a07;
   --rf-bg-elev: #0b110e;
@@ -48,11 +55,21 @@
   /* Rythme */
   --rf-gutter: 12px;
   --rf-radius: 16px;
+}
 
+.rf-root {
   background: var(--rf-bg);
   color: var(--rf-ink);
   font-family: var(--rf-font-body);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mini-panier flottant, habillage refonte. Seules les COULEURS changent :
+   la géométrie (position, rayon, espacements, ombre) reste celle du site
+   historique, elle est posée en style inline par le composant. */
+.rf-minicart {
+  font-family: var(--rf-font-body);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -414,6 +431,13 @@ html:has(.rf-root), body:has(.rf-root) { overflow-x: clip; }
   border: 1px solid var(--rf-line-strong);
   background: rgba(6, 10, 7, 0.72);
   color: var(--rf-accent-soft);
+}
+/* « Maison » — même pastille sombre discrète que halal, mais en encre neutre :
+   les deux ne disent pas la même chose, ils ne doivent pas se confondre. */
+.rf-badge--maison {
+  border: 1px solid var(--rf-line-strong);
+  background: rgba(6, 10, 7, 0.72);
+  color: var(--rf-ink);
 }
 .rf-badge--nouveau {
   border: 1px solid var(--rf-accent);

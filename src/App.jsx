@@ -246,7 +246,7 @@ const MENU = [
   { id: "9",  name: "Tartare de thon rouge coco — « Tahiti »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce coco", price: 22.90, category: "froid" },
   { id: "10", name: "Tartare de thon rouge mangue-ananas — « Hawaï »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce sésame, mangue et ananas", price: 22.90, category: "froid" },
   { id: "11", name: "Tartare de thon rouge pimenté — « Samoa »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce piment maison", price: 22.90, category: "froid" },
-  { id: "12", name: "Tartare de thon rouge avocat-cacahuète — « Manoa »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce arachide et guacamole maison", price: 24.90, category: "froid" },
+  { id: "12", name: "Tartare de thon rouge guacamole — « Manoa »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce arachide et guacamole maison", price: 24.90, category: "froid" },
 
   // FORMULES
   { 
@@ -272,7 +272,7 @@ const MENU = [
   { id: "15", name: "Coulant au chocolat", desc: "Gâteau au chocolat à la texture fondante", price: 9.90, category: "desserts" },
   { 
     id: "16", 
-    name: "Crème Tropicale", 
+    name: "Panna cotta", 
     desc: "Coulis au choix", 
     price: 9.90, 
     category: "desserts",
@@ -449,7 +449,7 @@ const MENU_BY_ID = Object.fromEntries(MENU.map(m => [m.id, m]));
 // modale. Contenu strictement identique à ce qui vivait dans FormuleModal.
 const FORMULE_PLATS_DECOUVERTE = ['Chao Men','Kai Fan','Omelette Fu Young','Tartare de thon rouge coco — « Tahiti »','Tartare de thon rouge mangue-ananas — « Hawaï »','Tartare de thon rouge pimenté — « Samoa »'];
 const FORMULE_PLATS_VOYAGE = ['Chao Men','Kai Fan','Omelette Fu Young','Wok de Bœuf','Tartare de thon rouge coco — « Tahiti »','Tartare de thon rouge mangue-ananas — « Hawaï »','Tartare de thon rouge pimenté — « Samoa »'];
-const FORMULE_DESSERTS = ['Coulant au chocolat','Crème Tropicale',"Po'e Banane",'Cheesecake'];
+const FORMULE_DESSERTS = ['Coulant au chocolat','Panna cotta',"Po'e Banane",'Cheesecake'];
 
 // Un libellé de formule est commandable si le plat de carte qu'il désigne
 // l'est (cascade comprise : un Chao Men dont les 4 protéines sont coupées
@@ -1368,6 +1368,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
           restaurantOpen={restaurantOpen}
           manualClosure={manualClosure}
           openStatusLabel={openStatusLabel}
+          skin={skin}
         />
       )}
 
@@ -2427,9 +2428,9 @@ function FormuleModal({ item, stockList = [], onConfirm, onClose }) {
   const platEmojis = { 'Chao Men':'🍜','Kai Fan':'🍚','Omelette Fu Young':'🍳','Wok de Bœuf':'🥩','Tartare de thon rouge coco — « Tahiti »':'🐟','Tartare de thon rouge mangue-ananas — « Hawaï »':'🥭','Tartare de thon rouge pimenté — « Samoa »':'🌶️' };
   const platDescs = { 'Chao Men':'Nouilles sautées','Kai Fan':'Riz sauté','Omelette Fu Young':'Omelette aux légumes','Wok de Bœuf':'Wok de bœuf, sauce sésame','Tartare de thon rouge coco — « Tahiti »':'Servi avec riz et salade','Tartare de thon rouge mangue-ananas — « Hawaï »':'Servi avec riz et salade','Tartare de thon rouge pimenté — « Samoa »':'Servi avec riz et salade' };
   const needsProtein = (p) => ['Chao Men','Kai Fan','Omelette Fu Young'].includes(p);
-  const needsCoulis = (d) => ['Crème Tropicale','Cheesecake'].includes(d);
+  const needsCoulis = (d) => ['Panna cotta','Cheesecake'].includes(d);
   const desserts = formuleNamesAvailable(stockList, FORMULE_DESSERTS);
-  const dessertEmojis = { 'Coulant au chocolat':'🍫','Crème Tropicale':'🥥',"Po'e Banane":'🍌','Cheesecake':'🍰' };
+  const dessertEmojis = { 'Coulant au chocolat':'🍫','Panna cotta':'🥥',"Po'e Banane":'🍌','Cheesecake':'🍰' };
 
   const proteinOpts = (plat) => plat === 'Omelette Fu Young'
     ? FORMULE_PROTEIN_OPTS_OMELETTE
@@ -2771,8 +2772,42 @@ function FormuleModal({ item, stockList = [], onConfirm, onClose }) {
 }
 
 // ─── MINI PANIER FLOTTANT ────────────────────────────────────────────────────
-function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, restaurantOpen = true, manualClosure = false, openStatusLabel = '' }) {
+function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, restaurantOpen = true, manualClosure = false, openStatusLabel = '', skin = 'legacy' }) {
   const totalQty = Object.values(cart).reduce((s, q) => s + q, 0);
+
+  // Habillage refonte : le carré blanc du site historique jure sur le fond
+  // vert-noir. On ne touche QUE les couleurs — position, rayon, espacements et
+  // ombre restent identiques dans les deux peaux, donc rien ne bouge.
+  //
+  // Les valeurs sont lues dans les jetons de src/refonte/refonte.css via
+  // var(--rf-*) plutôt que recopiées ici : la classe `rf-minicart` les déclare
+  // (ce composant est rendu hors de `.rf-root`, il n'en hérite pas).
+  const rf = skin === 'refonte';
+  const c = rf ? {
+    fond:       'var(--rf-bg-elev)',
+    bordure:    '1px solid var(--rf-line)',
+    pastille:   'var(--rf-accent)',
+    icone:      '#060a07',
+    compteur:   'var(--rf-bg)',
+    anneau:     '2px solid var(--rf-bg-elev)',
+    compteurTexte: 'var(--rf-ink)',
+    principal:  'var(--rf-ink)',
+    secondaire: 'var(--rf-ink-3)',
+    chevron:    'var(--rf-ink-3)',
+    eta:        'var(--rf-accent)',
+  } : {
+    fond:       'white',
+    bordure:    'none',
+    pastille:   'black',
+    icone:      'white',
+    compteur:   '#111',
+    anneau:     '2px solid white',
+    compteurTexte: 'white',
+    principal:  'black',
+    secondaire: 'rgba(0,0,0,0.45)',
+    chevron:    'rgba(0,0,0,0.4)',   // 0.4 et non 0.45 : valeur d'origine, conservée telle quelle
+    eta:        '#C9A96E',
+  };
   const cartItems = items.filter(i => i.qty > 0).slice(0, 3);
   // ETA visible directement dans le mini-cart pour rassurer avant clic
   // (mode='delivery' par défaut tant que le client n'a pas ouvert le
@@ -2792,6 +2827,7 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
   return (
     <div
       onClick={onOpen}
+      className={rf ? 'rf-minicart' : undefined}
       style={{
         position: 'fixed',
         bottom: 24,
@@ -2801,7 +2837,8 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
         alignItems: 'center',
         gap: 12,
         padding: '12px 16px',
-        background: 'white',
+        background: c.fond,
+        border: c.bordure,
         borderRadius: 20,
         boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
         cursor: 'pointer',
@@ -2815,14 +2852,14 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
       onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.45)'; }}
     >
       <div style={{ position: 'relative', flexShrink: 0 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <ShoppingCart size={18} color="white" />
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: c.pastille, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ShoppingCart size={18} color={c.icone} />
         </div>
         <span style={{
           position: 'absolute', top: -6, right: -6,
           width: 20, height: 20, borderRadius: '50%',
-          background: '#111', border: '2px solid white',
-          color: 'white', fontSize: 10, fontWeight: 700,
+          background: c.compteur, border: c.anneau,
+          color: c.compteurTexte, fontSize: 10, fontWeight: 700,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {totalQty}
@@ -2830,21 +2867,21 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.45)', marginBottom: 1 }}>
+        <div style={{ fontSize: 11, color: c.secondaire, marginBottom: 1 }}>
           {cartItems.map(i => i.name).join(', ')}{cartItems.length < Object.keys(cart).length ? '…' : ''}
         </div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'black' }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: c.principal }}>
           {format(total)}
-          {discount > 0 && <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(0,0,0,0.45)', marginLeft: 4 }}>(-10%)</span>}
+          {discount > 0 && <span style={{ fontSize: 11, fontWeight: 400, color: c.secondaire, marginLeft: 4 }}>(-10%)</span>}
         </div>
         {restaurantOpen && (
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#C9A96E', marginTop: 1 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: c.eta, marginTop: 1 }}>
             {etaLabel}
           </div>
         )}
       </div>
 
-      <ChevronRight size={16} color="rgba(0,0,0,0.4)" style={{ flexShrink: 0 }} />
+      <ChevronRight size={16} color={c.chevron} style={{ flexShrink: 0 }} />
     </div>
   );
 }

@@ -84,7 +84,7 @@ export const WOK_GARNITURES = [
   { id: "boeuf", name: "Bœuf", desc: "Bœuf sauté au wok, sauce sésame", halal: true }
 ];
 
-// Plats 16 (Crème Tropicale) et 18 (Cheesecake) — vérifiés identiques.
+// Plats 16 (Panna cotta) et 18 (Cheesecake) — vérifiés identiques.
 export const COULIS_OPTS = [
   { id: "mangue", name: "Coulis Mangue", desc: "Doux et tropical" },
   { id: "fruits-rouges", name: "Coulis Fruits Rouges", desc: "Frais et acidulé" }
@@ -126,13 +126,13 @@ export const MENU_ITEMS = [
   { id: '9',  name: 'Tartare de thon rouge coco — « Tahiti »',            category: 'froid' },
   { id: '10', name: 'Tartare de thon rouge mangue-ananas — « Hawaï »',    category: 'froid' },
   { id: '11', name: 'Tartare de thon rouge pimenté — « Samoa »',          category: 'froid' },
-  { id: '12', name: 'Tartare de thon rouge avocat-cacahuète — « Manoa »', category: 'froid' },
+  { id: '12', name: 'Tartare de thon rouge guacamole — « Manoa »', category: 'froid' },
 
   { id: '13', name: 'Formule Découverte',   category: 'formules', hasFormule: true, formuleType: 'decouverte' },
   { id: '14', name: 'Formule Voyage',       category: 'formules', hasFormule: true, formuleType: 'voyage' },
 
   { id: '15', name: 'Coulant au chocolat',  category: 'desserts' },
-  { id: '16', name: 'Crème Tropicale',      category: 'desserts', coulisVariants: COULIS_OPTS },
+  { id: '16', name: 'Panna cotta',          category: 'desserts', coulisVariants: COULIS_OPTS },
   { id: '17', name: "Po'e Banane",          category: 'desserts' },
   { id: '18', name: 'Cheesecake',           category: 'desserts', coulisVariants: COULIS_OPTS },
 
@@ -246,7 +246,7 @@ export const FORMULE_NAME_TO_ID = {
   'Tartare de thon rouge coco — « Tahiti »': '9',
   'Tartare de thon rouge mangue-ananas — « Hawaï »': '10',
   'Tartare de thon rouge pimenté — « Samoa »': '11',
-  'Coulant au chocolat': '15', 'Crème Tropicale': '16', "Po'e Banane": '17',
+  'Coulant au chocolat': '15', 'Panna cotta': '16', "Po'e Banane": '17',
   'Cheesecake': '18',
 };
 

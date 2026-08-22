@@ -75,7 +75,7 @@ export const ITEM_ALLERGENS = {
     fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
     traces: []
   },
-  "12": { contains: ['FISH', 'PEANUTS'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] }, // Tartare de thon rouge avocat-cacahuète — « Manoa »
+  "12": { contains: ['FISH', 'PEANUTS'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] }, // Tartare de thon rouge guacamole — « Manoa »
 
   // ─── FORMULES (composition variable, message dédié dans UI) ───
   "13": { contains: [], traces: [] },  // Formule Découverte
@@ -83,7 +83,7 @@ export const ITEM_ALLERGENS = {
 
   // ─── DESSERTS (sans salade) ───
   "15": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS'] },                                          // Coulant au chocolat
-  "16": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS'] },                                          // Crème Tropicale
+  "16": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS'] },                                          // Panna cotta
   "17": { contains: [], traces: ['NUTS'] },                                                                  // Po'e Banane
   "18": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS', 'MUSTARD', 'SULPHITES'] },                    // Cheesecake — soja retiré (validation restaurateur)
 

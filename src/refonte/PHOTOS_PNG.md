@@ -72,7 +72,7 @@ distinguer visuellement, pas le nom.
 | id | Plat | Fichier attendu | JPG de repli existant | Note de prise de vue |
 |---|---|---|---|---|
 | 15 | Coulant au chocolat | `plats/dessert-coulant-chocolat.png` | `/dessert-coulant.jpg` | Cœur coulant ouvert, coulée figée au moment du shoot |
-| 16 | Crème Tropicale | `plats/dessert-creme-tropicale.png` | `/dessert-creme.jpg` | Verrine détourée ; coulis visible par transparence |
+| 16 | Panna cotta | `plats/dessert-creme-tropicale.png` | `/dessert-creme.jpg` | Verrine détourée ; coulis visible par transparence |
 | 17 | Po'e Banane | `plats/dessert-poe-banane.png` | `/dessert-poe.jpg` | **Badge Signature** — texture translucide, crème de coco en filet |
 | 18 | Cheesecake | `plats/dessert-cheesecake.png` | `/dessert-cheesecake.jpg` | Part nette, couches visibles de profil |
 

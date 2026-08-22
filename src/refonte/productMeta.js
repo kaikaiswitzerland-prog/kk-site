@@ -36,8 +36,8 @@ export const PNG_DIR = '/plats';
 
 // ─── BADGES ──────────────────────────────────────────────────────────────────
 //
-// Trois types seulement : 'halal' | 'nouveau' | 'signature'. Un plat n'en porte
-// qu'un — deux pastilles sur une vignette de 170 px, c'est illisible.
+// Quatre types seulement : 'halal' | 'maison' | 'nouveau' | 'signature'. Un plat
+// n'en porte qu'un — deux pastilles sur une vignette de 170 px, c'est illisible.
 //
 // ⚠ 'halal' reste disponible dans le système mais n'est posé sur AUCUN plat, et
 // c'est délibéré : le halal se joue au niveau de la GARNITURE, pas du plat.
@@ -47,6 +47,7 @@ export const PNG_DIR = '/plats';
 // ici tant que le restaurant n'a pas tranché pour les plats hors composeur.
 export const BADGE_LABELS = {
   halal: 'Halal',
+  maison: 'Maison',
   nouveau: 'Nouveau',
   signature: 'Signature',
 };
@@ -81,7 +82,7 @@ export const PRODUCT_META = {
   // ── Desserts ─────────────────────────────────────────────────────────────
   //    16 et 18 partagent le `desc` « Coulis au choix », qui tient tel quel.
   '15': { png: `${PNG_DIR}/dessert-coulant-chocolat.png`, jpg: '/dessert-coulant.jpg',     badge: null,        short: 'Gâteau au chocolat fondant' },
-  '16': { png: `${PNG_DIR}/dessert-creme-tropicale.png`,  jpg: '/dessert-creme.jpg',       badge: null },
+  '16': { png: `${PNG_DIR}/dessert-creme-tropicale.png`,  jpg: '/dessert-creme.jpg',       badge: 'maison' },
   '17': { png: `${PNG_DIR}/dessert-poe-banane.png`,       jpg: '/dessert-poe.jpg',         badge: 'signature', short: 'Dessert tahitien à la banane' },
   '18': { png: `${PNG_DIR}/dessert-cheesecake.png`,       jpg: '/dessert-cheesecake.jpg',  badge: null },
 
