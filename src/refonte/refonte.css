@@ -461,17 +461,24 @@ html:has(.rf-root), body:has(.rf-root) { overflow-x: clip; }
   z-index: 2;
   padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid rgba(224, 104, 95, 0.42);
-  background: rgba(6, 10, 7, 0.78);
+  border: 1px solid var(--rf-danger);
+  background: var(--rf-danger);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
   line-height: 1;
-  color: var(--rf-danger);
+  /* Encre sombre sur le rouge : du blanc n'y tiendrait que 3,3:1, le noir
+     profond monte à 8:1 — à 9 px en capitales, c'est ce qui se lit. */
+  color: #1B0604;
 }
 
-.rf-card--out .rf-card__media { filter: grayscale(1); opacity: 0.42; }
+/* Le grisage porte sur la PHOTO seule, pas sur toute la zone média.
+   Un filtre s'applique au sous-arbre entier : posé sur `.rf-card__media` il
+   désaturait aussi la pastille Rupture, qui était donc rouge dans la feuille
+   et grise à l'écran. Sur l'image, la carte reste éteinte et la pastille
+   garde sa couleur — c'est elle qui doit attraper l'œil. */
+.rf-card--out .rf-card__img { filter: grayscale(1); opacity: 0.42; }
 .rf-card--out .rf-card__name,
 .rf-card--out .rf-card__price { color: var(--rf-ink-3); }
 

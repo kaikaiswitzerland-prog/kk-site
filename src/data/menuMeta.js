@@ -84,6 +84,35 @@ export const WOK_GARNITURES = [
   { id: "boeuf", name: "Bœuf", desc: "Bœuf sauté au wok, sauce sésame", halal: true }
 ];
 
+// ─── LÉGUMES DU COMPOSEUR ────────────────────────────────────────────────
+//
+// Contrairement aux garnitures, les légumes ne sont PAS recopiés dans App.jsx :
+// celui-ci importe cette liste. Un seul exemplaire, donc rien à resynchroniser.
+//
+// Ils sont partagés par les 4 bases (21 à 24), et une rupture vaut pour toutes :
+// un légume manquant l'est en cuisine, pas pour une base en particulier. Leurs
+// clés de rupture vivent donc sous un id qui leur est propre — « legumes:choux »
+// — plutôt que sous « 21:choux », « 22:choux »… qui auraient forcé l'admin à
+// basculer quatre fois la même chose.
+//
+// ⚠ `legumeVariants` n'est volontairement PAS dans OPTION_FIELDS (stockRules).
+// Les légumes sont FACULTATIFS : zéro légume est une commande valide. Les
+// verser dans les options des bases ferait croire à la cascade que les trois
+// tombés rendent la base indisponible, ce qui serait faux.
+export const LEGUME_STOCK_ID = 'legumes';
+
+export const LEGUME_OPTS = [
+  { id: "choux", name: "Choux-carottes fondants", emoji: "🥬" },
+  { id: "patate", name: "Patate-patate douce au wok", emoji: "🍠" },
+  { id: "poivrons", name: "Poivrons sautés", emoji: "🫑" },
+];
+
+// Un légume précis est-il en rupture ? Enveloppe isOptionOut sur l'id réservé,
+// pour que les appelants n'aient pas à connaître la convention de clé.
+export function isLegumeOut(list, legumeId) {
+  return isOptionOut(list, LEGUME_STOCK_ID, legumeId);
+}
+
 // Plats 16 (Panna cotta) et 18 (Cheesecake) — vérifiés identiques.
 export const COULIS_OPTS = [
   { id: "mangue", name: "Coulis Mangue", desc: "Doux et tropical" },
@@ -378,6 +407,17 @@ export function variantRefs(itemId, variant) {
     // Variante simple {id, name, desc}
     if (typeof variant.id === 'string' && variant.id.trim()) {
       pushKey(refs, itemId, variant.id);
+    }
+
+    // Wok : la variante transporte en plus les légumes choisis. Ils ont leurs
+    // propres clés de rupture, sinon le garde-fou serveur laisserait passer un
+    // wok composé avec un légume que la cuisine n'a plus.
+    if (Array.isArray(variant.legumes)) {
+      for (const l of variant.legumes) {
+        if (l && typeof l.id === 'string' && l.id.trim()) {
+          pushKey(refs, LEGUME_STOCK_ID, l.id);
+        }
+      }
     }
   } catch {
     // Variante au format inattendu : on renvoie ce qu'on a pu résoudre plutôt

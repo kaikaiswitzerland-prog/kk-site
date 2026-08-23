@@ -34,6 +34,9 @@ import {
   COULIS_OPTS,
   JUS_OPTS,
   EAU_OPTS,
+  LEGUME_OPTS,
+  LEGUME_STOCK_ID,
+  isLegumeOut,
   FORMULE_PROTEIN_OPTS_STANDARD,
   FORMULE_PROTEIN_OPTS_OMELETTE,
   FORMULE_COULIS_OPTS,
@@ -149,11 +152,10 @@ const WOK_GARNITURES = [
 ];
 
 // LÉGUMES. Le premier est offert, chacun des suivants est facturé 1.50.
-const LEGUME_OPTS = [
-  { id: "choux", name: "Choux-carottes fondants", emoji: "🥬" },
-  { id: "patate", name: "Patate-patate douce au wok", emoji: "🍠" },
-  { id: "poivrons", name: "Poivrons sautés", emoji: "🫑" },
-];
+// La liste vit dans menuMeta.js et est IMPORTÉE, pas recopiée : l'admin, le
+// garde-fou serveur et le composeur lisent le même exemplaire. C'est ce qui
+// permet de basculer un légume en rupture depuis l'admin sans resynchroniser
+// deux tableaux à la main, comme il a fallu le faire pour WOK_GARNITURES.
 
 // Nombre de légumes offerts. Au-delà, chacun est facturé.
 // ⚠ Doit rester synchronisé avec LEGUMES_INCLUS dans api/_lib/menuPrices.js.
@@ -1529,7 +1531,12 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
   const options = base ? getItemOptions(base) : [];
   const option = options.find(o => o.id === optionId) || null;
 
-  const legumes = LEGUME_OPTS.filter(l => legumeIds.includes(l.id));
+  // Un légume basculé en rupture pendant la session sort du panier de lui-même :
+  // on le retire ici, donc il ne compte ni dans le prix affiché ni dans ce qui
+  // part au serveur. Sans ce filtre, un client qui l'avait coché avant la
+  // bascule se ferait refuser sa commande au checkout sans comprendre pourquoi.
+  const legumeOut = (id) => isLegumeOut(stockList, id);
+  const legumes = LEGUME_OPTS.filter(l => legumeIds.includes(l.id) && !legumeOut(l.id));
 
   // Ce qui part réellement au panier — sert aussi au calcul du total, donc
   // affiché et facturé sont calculés sur le MÊME objet.
@@ -1611,7 +1618,8 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
                 key={l.id}
                 emoji={l.emoji}
                 label={l.name}
-                active={legumeIds.includes(l.id)}
+                out={legumeOut(l.id)}
+                active={legumeIds.includes(l.id) && !legumeOut(l.id)}
                 onClick={() => toggleLegume(l.id)}
               />
             ))}
