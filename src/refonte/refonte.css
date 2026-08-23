@@ -444,7 +444,10 @@ html:has(.rf-root), body:has(.rf-root) { overflow-x: clip; }
   background: var(--rf-accent);
   color: #060a07;
 }
-.rf-badge--signature {
+/* « Signature » et « Populaire » sont deux accroches de même nature : même
+   habillage, seul le mot change. Les grouper évite qu'elles divergent. */
+.rf-badge--signature,
+.rf-badge--populaire {
   border: 1px solid var(--rf-line-strong);
   background: rgba(6, 10, 7, 0.72);
   color: var(--rf-accent);
