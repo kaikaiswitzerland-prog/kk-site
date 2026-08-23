@@ -73,12 +73,16 @@ export const BADGE_LABELS = {
 // et monter sa valeur descend la fenêtre dans la photo — ce qui fait REMONTER
 // le sujet dans la vignette.
 //
+// ⚠ Le velouté (plat 1) est à 0 % : la BUTÉE. Son bol ne peut plus descendre
+// d'un pixel par ce réglage. Pour aller plus loin il faudrait recadrer le JPG
+// source lui-même, pas toucher à cette valeur.
+//
 // ⚠ Ne s'applique qu'au JPG. Un PNG détouré s'affiche en `contain` et doit
 // rester centré : ProductCard ignore `jpgPos` dans ce cas.
 
 export const PRODUCT_META = {
   // ── Entrées ──────────────────────────────────────────────────────────────
-  '1':  { png: `${PNG_DIR}/entree-veloute.png`,           jpg: '/entree-veloute.jpg',      badge: null,        short: 'Légumes de saison, coco', jpgPos: '50% 10%' },
+  '1':  { png: `${PNG_DIR}/entree-veloute.png`,           jpg: '/entree-veloute.jpg',      badge: null,        short: 'Légumes de saison, coco', jpgPos: '50% 0%' },
   '2':  { png: `${PNG_DIR}/entree-salade-tropicale.png`,  jpg: '/entree-avocat.jpg',       badge: null,        short: 'Guacamole et cacahuètes' },
   '3':  { png: `${PNG_DIR}/entree-salade-poulet.png`,     jpg: '/entree-poulet.jpg',       badge: null,        short: 'Tomate, concombre, poulet', jpgPos: '50% 85%' },
   '4':  { png: `${PNG_DIR}/entree-tartare-thon.png`,      jpg: '/entree-tartare.jpg',      badge: 'signature', short: 'Mariné citron vert, 3 sauces' },
