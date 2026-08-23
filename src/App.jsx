@@ -2220,7 +2220,7 @@ function VariantModal({ item, stockList = [], onSelect, onClose }) {
 function JusModal({ item, stockList = [], onSelect, onClose }) {
   const jusEmojis = { 'pomme-kiwi': '🍏', 'fraise-framboise': '🍓', 'ananas-citron': '🍍', ace: '🍊' };
   return (
-    <BottomSheet title="Jus exotiques maison" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
+    <BottomSheet title="Jus exotiques" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
       {item.jusVariants.map((v, i) => {
         const out = isOptionOut(stockList, item.id, v.id);
         return (
