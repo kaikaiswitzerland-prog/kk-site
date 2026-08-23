@@ -145,11 +145,22 @@ export default function HeroScrub({ ctaTargetId = 'rf-entrees' }) {
       }
     };
 
+    // L'avancée se compte depuis le PREMIER pixel de scroll de la page, pas
+    // depuis le moment où le haut du track atteint le haut de l'écran.
+    //
+    // Le track commence sous le header collant : mesuré, 59 px sur un iPhone.
+    // Avec `-getBoundingClientRect().top`, ces 59 premiers pixels donnaient un
+    // travelled négatif, donc une avancée bloquée à 0 — on scrollait et la
+    // vidéo ne démarrait pas. C'était la zone morte.
+    //
+    // `distance` ne change pas : la course utile reste la même, donc la vitesse
+    // de la descente et son lissage sont strictement inchangés. Seul le temps
+    // mort se déplace, du début vers la fin — là où le plat est déjà terminé et
+    // le CTA affiché, c'est-à-dire là où il ne se voit pas.
     const progress = () => {
       const distance = track.offsetHeight - window.innerHeight;
       if (distance <= 0) return 0;
-      const travelled = -track.getBoundingClientRect().top;
-      return Math.min(1, Math.max(0, travelled / distance));
+      return Math.min(1, Math.max(0, window.scrollY / distance));
     };
 
     const tick = () => {

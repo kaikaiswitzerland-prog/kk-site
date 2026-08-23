@@ -49,7 +49,6 @@ export default function RefonteShell({
         openStatusLabel={openStatusLabel}
         cartCount={cartCount}
         onOpenCheckout={onOpenCheckout}
-        onShowAllergens={openAllergens}
         onShowAbout={onShowAbout}
         phone={restaurant?.phone}
       />

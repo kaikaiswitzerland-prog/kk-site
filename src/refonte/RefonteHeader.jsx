@@ -4,8 +4,11 @@
 // actuel — marque, statut ouvert/fermé, téléphone, panier avec compteur —
 // mais au thème noir/lime. Aucune logique ici : le statut et le compteur
 // arrivent en props depuis KaiKaiApp, qui reste la seule source.
+//
+// L'accès à la matrice allergènes ne vit plus ici : il reste dans le pied de
+// page (Footer.jsx), la modale n'est donc pas orpheline.
 
-import { Phone, ShoppingCart, ShieldAlert, Info } from 'lucide-react';
+import { Phone, ShoppingCart, Info } from 'lucide-react';
 
 // Trois états, exactement ceux d'OpenStatus sur le site actuel :
 //   ouvert · fermeture manuelle (stop commandes admin) · fermeture horaire.
@@ -20,7 +23,6 @@ export default function RefonteHeader({
   openStatusLabel,
   cartCount = 0,
   onOpenCheckout,
-  onShowAllergens,
   onShowAbout,
   phone,
 }) {
@@ -47,15 +49,6 @@ export default function RefonteHeader({
               <Info size={18} />
             </button>
           )}
-          <button
-            type="button"
-            className="rf-iconbtn"
-            onClick={onShowAllergens}
-            aria-label="Allergènes"
-            title="Allergènes"
-          >
-            <ShieldAlert size={18} />
-          </button>
           {phone && (
             <a href={`tel:${phone}`} className="rf-iconbtn" aria-label="Appeler">
               <Phone size={18} />

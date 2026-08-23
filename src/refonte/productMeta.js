@@ -68,14 +68,19 @@ export const BADGE_LABELS = {
 // CSS. Baisser le pourcentage montre plus du côté GAUCHE de la photo, ce qui
 // décale le sujet vers la DROITE dans la vignette.
 //
+// Les photos d'entrée sont en 4000×6000 (PORTRAIT) : là c'est la HAUTEUR qui
+// est rognée de 2000 px, pas la largeur. Le deuxième pourcentage compte donc,
+// et monter sa valeur descend la fenêtre dans la photo — ce qui fait REMONTER
+// le sujet dans la vignette.
+//
 // ⚠ Ne s'applique qu'au JPG. Un PNG détouré s'affiche en `contain` et doit
 // rester centré : ProductCard ignore `jpgPos` dans ce cas.
 
 export const PRODUCT_META = {
   // ── Entrées ──────────────────────────────────────────────────────────────
-  '1':  { png: `${PNG_DIR}/entree-veloute.png`,           jpg: '/entree-veloute.jpg',      badge: null,        short: 'Légumes de saison, coco' },
+  '1':  { png: `${PNG_DIR}/entree-veloute.png`,           jpg: '/entree-veloute.jpg',      badge: null,        short: 'Légumes de saison, coco', jpgPos: '50% 30%' },
   '2':  { png: `${PNG_DIR}/entree-salade-tropicale.png`,  jpg: '/entree-avocat.jpg',       badge: null,        short: 'Guacamole et cacahuètes' },
-  '3':  { png: `${PNG_DIR}/entree-salade-poulet.png`,     jpg: '/entree-poulet.jpg',       badge: null,        short: 'Tomate, concombre, poulet' },
+  '3':  { png: `${PNG_DIR}/entree-salade-poulet.png`,     jpg: '/entree-poulet.jpg',       badge: null,        short: 'Tomate, concombre, poulet', jpgPos: '50% 85%' },
   '4':  { png: `${PNG_DIR}/entree-tartare-thon.png`,      jpg: '/entree-tartare.jpg',      badge: 'signature', short: 'Mariné citron vert, 3 sauces' },
 
   // ── Plats chauds ─────────────────────────────────────────────────────────
