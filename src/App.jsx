@@ -1511,11 +1511,17 @@ function WokLegend({ step, title, note }) {
 }
 
 export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
-  const [baseId, setBaseId] = useState(bases[0]?.id ?? null);
+  // Aucune base pré-cochée : le composeur s'ouvre vierge et c'est le client qui
+  // choisit. `base` peut donc valoir null tout au long du rendu — chaque lecture
+  // en aval le suppose, y compris le récap et le total.
+  const [baseId, setBaseId] = useState(null);
   const [optionId, setOptionId] = useState(null);
   const [legumeIds, setLegumeIds] = useState([]);
 
-  const base = bases.find(b => b.id === baseId) || bases[0];
+  // Pas de repli sur bases[0] : ce repli est précisément ce qui pré-cochait
+  // « Nouilles sautées ». Une base inconnue (id périmé) donne null, pas la
+  // première de la liste.
+  const base = bases.find(b => b.id === baseId) || null;
   const options = base ? getItemOptions(base) : [];
   const option = options.find(o => o.id === optionId) || null;
 
@@ -1528,7 +1534,7 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
     : null;
 
   const baseOut = base ? outOfStockFor(base) : false;
-  const optionOut = option ? isOptionOut(stockList, base.id, option.id) : false;
+  const optionOut = base && option ? isOptionOut(stockList, base.id, option.id) : false;
   // Une base seule ne se commande pas : sans garniture il n'y a pas de prix.
   const canAdd = !!(base && option) && !baseOut && !optionOut;
 
@@ -1565,7 +1571,9 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
     add(base.id, variant);
   };
 
-  if (!base) return null;
+  // On ne sort que s'il n'y a AUCUNE base à proposer. Sortir parce qu'aucune
+  // n'est cochée ferait disparaître le composeur au chargement.
+  if (!bases.length) return null;
 
   // Pas de photo : les 4 bases sont de nouveaux produits et n'en ont pas
   // encore. Réutiliser celle d'un plat chaud existant afficherait un Chao Men
@@ -1583,7 +1591,7 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
                 key={b.id}
                 label={b.name}
                 out={outOfStockFor(b)}
-                active={b.id === base.id}
+                active={base?.id === b.id}
                 onClick={() => selectBase(b.id)}
               />
             ))}
@@ -1609,7 +1617,7 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
               montant n'apparaît ici : le prix ne vit que dans le total, qui
               s'ajuste à chaque sélection. */}
           <fieldset style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
-            <WokLegend step="3" title="Votre garniture" />
+            <WokLegend step="3" title="Votre garniture" note={base ? undefined : 'Choisissez d\'abord une base'} />
             {options.map((o) => (
               <WokOption
                 key={o.id}
@@ -1630,10 +1638,18 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
               Votre wok
             </div>
             <div className="mt-1 text-[15px] text-white">
-              {base.name}
-              {option
-                ? <> <span className="text-white/40">+</span> {option.name}</>
-                : <span className="text-white/40"> — choisissez une garniture</span>}
+              {/* Trois états, jamais un prix trompeur : rien de choisi, base
+                  seule (donc pas encore de montant), puis base + garniture. */}
+              {!base ? (
+                <span className="text-white/40">Choisissez votre base</span>
+              ) : (
+                <>
+                  {base.name}
+                  {option
+                    ? <> <span className="text-white/40">+</span> {option.name}</>
+                    : <span className="text-white/40"> — choisissez une garniture</span>}
+                </>
+              )}
               {legumes.length > 0 && (
                 <span className="text-white/55"> · {legumes.map(l => l.name).join(', ')}</span>
               )}
@@ -1657,7 +1673,7 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
               type="button"
               onClick={handleAdd}
               disabled={!canAdd}
-              title={canAdd ? 'Ajouter au panier' : 'Choisissez une garniture'}
+              title={canAdd ? 'Ajouter au panier' : (base ? 'Choisissez une garniture' : 'Choisissez votre base')}
               className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 font-medium transition-all ${
                 canAdd
                   ? 'bg-white text-black hover:bg-white/90 active:scale-95'
@@ -1670,7 +1686,7 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
           </div>
         </div>
 
-        {cart[base.id] > 0 && (
+        {base && cart[base.id] > 0 && (
           <p className="mt-3 text-xs text-white/45">
             {cart[base.id]} × {base.name} déjà au panier
           </p>
