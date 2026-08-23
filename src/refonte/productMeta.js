@@ -78,7 +78,7 @@ export const BADGE_LABELS = {
 
 export const PRODUCT_META = {
   // ── Entrées ──────────────────────────────────────────────────────────────
-  '1':  { png: `${PNG_DIR}/entree-veloute.png`,           jpg: '/entree-veloute.jpg',      badge: null,        short: 'Légumes de saison, coco', jpgPos: '50% 20%' },
+  '1':  { png: `${PNG_DIR}/entree-veloute.png`,           jpg: '/entree-veloute.jpg',      badge: null,        short: 'Légumes de saison, coco', jpgPos: '50% 10%' },
   '2':  { png: `${PNG_DIR}/entree-salade-tropicale.png`,  jpg: '/entree-avocat.jpg',       badge: null,        short: 'Guacamole et cacahuètes' },
   '3':  { png: `${PNG_DIR}/entree-salade-poulet.png`,     jpg: '/entree-poulet.jpg',       badge: null,        short: 'Tomate, concombre, poulet', jpgPos: '50% 85%' },
   '4':  { png: `${PNG_DIR}/entree-tartare-thon.png`,      jpg: '/entree-tartare.jpg',      badge: 'signature', short: 'Mariné citron vert, 3 sauces' },
