@@ -84,8 +84,8 @@ export const PRODUCT_META = {
   '4':  { png: `${PNG_DIR}/entree-tartare-thon.png`,      jpg: '/entree-tartare.jpg',      badge: 'signature', short: 'Mariné citron vert, 3 sauces' },
 
   // ── Plats chauds ─────────────────────────────────────────────────────────
-  '5':  { png: `${PNG_DIR}/chaud-chao-men.png`,           jpg: '/chaud-chaomen.jpg',       badge: 'populaire', short: 'Nouilles sautées, légumes' },
-  '6':  { png: `${PNG_DIR}/chaud-kai-fan.png`,            jpg: '/chaud-kaifan.jpg',        badge: 'populaire', short: 'Riz sauté, salade exotique' },
+  '5':  { png: `${PNG_DIR}/chaud-chao-men.png`,           jpg: '/chaud-chaomen.jpg',       badge: 'populaire', short: 'Nouilles sautées, légumes, viande au choix' },
+  '6':  { png: `${PNG_DIR}/chaud-kai-fan.png`,            jpg: '/chaud-kaifan.jpg',        badge: 'populaire', short: 'Riz sauté, viande au choix' },
   '7':  { png: `${PNG_DIR}/chaud-omelette-fu-young.png`,  jpg: '/chaud-omelette.jpg',      badge: null,        short: 'Omelette, légumes sautés' },
   '8':  { png: `${PNG_DIR}/chaud-wok-boeuf.png`,          jpg: '/chaud-boeuf.jpg',         badge: 'signature', short: 'Bœuf, légumes, sauce sésame' },
 
