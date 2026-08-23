@@ -1502,7 +1502,11 @@ function WokLegend({ step, title, note }) {
         {step} · {title}
       </span>
       {note && (
-        <span style={{ display: 'block', marginTop: 3, fontSize: 11, fontWeight: 500, color: '#C9A96E' }}>
+        // La note prend l'accent de la peau qui l'accueille, sans que ce
+        // composant ait à connaître la peau : `--rf-accent` n'est défini que
+        // sous `.rf-root`, donc la refonte rend le lime et le site historique
+        // retombe sur son doré. Un seul rendu, deux couleurs justes.
+        <span style={{ display: 'block', marginTop: 3, fontSize: 11, fontWeight: 500, color: 'var(--rf-accent, #C9A96E)' }}>
           {note}
         </span>
       )}
