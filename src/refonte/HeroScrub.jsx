@@ -25,7 +25,7 @@
 // ancêtre a `overflow-x: hidden`. App.jsx en pose un sur html/body via
 // globalStyles — à traiter le jour où le hero passe sur la page principale.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const VIDEO_SRC = '/hero-bol.mp4';
 
@@ -87,6 +87,38 @@ export default function HeroScrub({ ctaTargetId = 'rf-entrees' }) {
   const [scrolled, setScrolled] = useState(false);
   const [revealed, setRevealed] = useState(false);
 
+  // ─── Épinglage dès le premier pixel ──────────────────────────────────────
+  //
+  // Le header est `position: sticky`, donc il OCCUPE sa hauteur dans le flux et
+  // pousse le hero d'autant vers le bas — 59 px mesurés. Conséquence : pendant
+  // ces 59 premiers pixels de scroll, la scène n'est pas encore collée et
+  // remonte avec la page. On voyait donc le hero glisser vers le haut alors que
+  // les nouilles commençaient déjà à tomber.
+  //
+  // On remonte le track de la hauteur exacte du header. Il démarre alors au
+  // pixel 0 du document : la scène est collée dès la première image, le scroll
+  // ne fait plus qu'avancer l'animation, et la page ne repart qu'au décrochage
+  // — qui tombe précisément là où la composition atteint 100 %.
+  //
+  // `useLayoutEffect` et pas `useEffect` : la mesure doit être appliquée AVANT
+  // la peinture, sinon la première image montre le hero décalé puis un saut.
+  // La hauteur est relue au redimensionnement (le statut d'ouverture peut
+  // passer sur deux lignes et changer la hauteur du header).
+  useLayoutEffect(() => {
+    const track = trackRef.current;
+    if (!track || reduced) return undefined;
+    const caler = () => {
+      const h = document.querySelector('.rf-header')?.offsetHeight || 0;
+      track.style.marginTop = h ? `-${h}px` : '';
+    };
+    caler();
+    window.addEventListener('resize', caler);
+    return () => {
+      window.removeEventListener('resize', caler);
+      track.style.marginTop = '';
+    };
+  }, [reduced]);
+
   // React ne pose pas toujours la propriété `muted` sur l'élément à partir de
   // l'attribut JSX — et une vidéo non muette ne démarre nulle part sans geste.
   useEffect(() => {
@@ -145,22 +177,19 @@ export default function HeroScrub({ ctaTargetId = 'rf-entrees' }) {
       }
     };
 
-    // L'avancée se compte depuis le PREMIER pixel de scroll de la page, pas
-    // depuis le moment où le haut du track atteint le haut de l'écran.
+    // L'avancée mesure EXACTEMENT la phase épinglée : 0 quand le haut du track
+    // touche le haut de l'écran (la scène vient de se figer), 1 quand son bas
+    // le quitte (elle se décroche). Le plat se compose donc pendant que la page
+    // ne bouge pas, et le scroll ne repart qu'une fois la composition finie.
     //
-    // Le track commence sous le header collant : mesuré, 59 px sur un iPhone.
-    // Avec `-getBoundingClientRect().top`, ces 59 premiers pixels donnaient un
-    // travelled négatif, donc une avancée bloquée à 0 — on scrollait et la
-    // vidéo ne démarrait pas. C'était la zone morte.
-    //
-    // `distance` ne change pas : la course utile reste la même, donc la vitesse
-    // de la descente et son lissage sont strictement inchangés. Seul le temps
-    // mort se déplace, du début vers la fin — là où le plat est déjà terminé et
-    // le CTA affiché, c'est-à-dire là où il ne se voit pas.
+    // Cela ne tient que parce que le track commence au pixel 0 du document —
+    // c'est ce que garantit la cale négative posée plus bas. Sans elle, le
+    // header collant le pousserait vers le bas de sa propre hauteur et ces
+    // premiers pixels seraient soit morts, soit joués hors épinglage.
     const progress = () => {
       const distance = track.offsetHeight - window.innerHeight;
       if (distance <= 0) return 0;
-      return Math.min(1, Math.max(0, window.scrollY / distance));
+      return Math.min(1, Math.max(0, -track.getBoundingClientRect().top / distance));
     };
 
     const tick = () => {
