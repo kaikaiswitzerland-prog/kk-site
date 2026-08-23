@@ -3,7 +3,8 @@
 // plus un toggle par option, en retrait sous le plat.
 // POST /api/admin/toggle-item-stock met à jour la liste côté serveur.
 //
-// Clés manipulées : "5" (plat entier) et "5:porc" (option seule).
+// Clés manipulées : "5" (plat entier), "5:porc" (option seule) et
+// "legumes:choux" (un légume du composeur de woks).
 //
 // La cascade « toutes les options en rupture → plat indisponible » est
 // CALCULÉE à l'affichage (stockRules.isItemUnavailable) et n'est jamais
@@ -14,7 +15,13 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase.js';
-import { getMenuByGroup, MENU_ITEMS } from '../../data/menuMeta.js';
+import {
+  getMenuByGroup,
+  MENU_ITEMS,
+  LEGUME_OPTS,
+  LEGUME_STOCK_ID,
+  isLegumeOut,
+} from '../../data/menuMeta.js';
 import {
   getItemOptions,
   isItemExplicitlyOut,
@@ -92,7 +99,8 @@ export default function MenuView() {
         <p className="mt-2 text-[13px] leading-relaxed text-ink-2">
           Bascule un plat en rupture pour empêcher les commandes carte et le griser sur la carte client.
           Tu peux aussi ne couper qu'une option (une protéine, un coulis, un jus…) : le plat reste
-          commandable avec les autres. Les changements sont visibles côté public en moins de 30 secondes.
+          commandable avec les autres. Les légumes du composeur de woks se coupent en bas de page.
+          Les changements sont visibles côté public en moins de 30 secondes.
         </p>
         {(unavailableCount > 0 || outOptionCount > 0) && (
           <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.1em] text-accent-warm">
@@ -198,6 +206,50 @@ export default function MenuView() {
             </div>
           </div>
         ))
+      )}
+
+      {/* Légumes du composeur de woks. Bloc à part, et non une ligne de plat :
+          ils ne sont rattachés à aucune base — les quatre les partagent — et
+          il n'y a donc rien à basculer « en entier ». Une rupture ici vaut
+          pour tout le composeur. */}
+      {!loading && (
+        <div className="rounded-xl border border-line bg-bg-elev p-5">
+          <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.15em] text-ink-3">
+            Légumes du composeur
+          </div>
+          <p className="mb-3 text-[12px] leading-relaxed text-ink-3">
+            Partagés par les quatre bases du wok. Un légume en rupture est grisé
+            et non sélectionnable côté client, quelle que soit la base choisie.
+          </p>
+          <div className="space-y-1">
+            {LEGUME_OPTS.map(l => {
+              const key = makeStockKey(LEGUME_STOCK_ID, l.id);
+              const legumeAvailable = !isLegumeOut(outOfStock, l.id);
+              const legumePending = pendingKey === key;
+              return (
+                <div key={key} className="flex items-center justify-between gap-3 py-1">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] text-ink-2">{l.emoji} {l.name}</div>
+                    <div className="font-mono text-[10px] tracking-wider text-ink-3">{key}</div>
+                  </div>
+                  <button
+                    onClick={() => handleToggle(key, legumeAvailable)}
+                    disabled={legumePending}
+                    className={[
+                      'inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+                      legumeAvailable
+                        ? 'border-accent-green/30 bg-accent-green/10 text-accent-green hover:bg-accent-green/15'
+                        : 'border-red-500/40 bg-red-500/15 text-red-300 hover:bg-red-500/20',
+                    ].join(' ')}
+                  >
+                    <span className={`block h-[6px] w-[6px] rounded-full ${legumeAvailable ? 'bg-accent-green' : 'bg-red-400'}`} />
+                    {legumePending ? '…' : legumeAvailable ? 'Disponible' : 'En rupture'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {error && (

@@ -357,7 +357,7 @@ checkTicket('livraison + formule', makeOrder({
         boissons: ['Jus exotique', 'Eau'],
         jus: ['Ananas / Citron / Gingembre'],
         eau: ['Eau Gazeuse'],
-        dessert: 'Crème Tropicale',
+        dessert: 'Panna cotta',
         coulisDessert: 'Coulis Fruits Rouges',
       }],
     },

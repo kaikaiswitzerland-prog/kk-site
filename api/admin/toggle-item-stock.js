@@ -3,14 +3,17 @@
 // (JSONB array de strings). Visible côté client via useOutOfStock (polling 30s).
 //
 // `itemId` accepte deux formes :
-//   "5"       → le plat 5 entier
-//   "5:porc"  → la seule option "porc" du plat 5
+//   "5"            → le plat 5 entier
+//   "5:porc"       → la seule option "porc" du plat 5
+//   "legumes:choux" → un légume du composeur de woks. Les légumes ne sont
+//                     rattachés à aucune base : ils sont partagés par les
+//                     quatre, et une rupture vaut pour toutes.
 //
 // Auth : allowlist admin via requireAdmin (cohérente avec la RLS).
 
 import { supabaseAdmin } from '../_lib/supabaseServer.js';
 import { requireAdmin } from '../_lib/requireAdmin.js';
-import { MENU_ITEMS_BY_ID } from '../../src/data/menuMeta.js';
+import { MENU_ITEMS_BY_ID, LEGUME_OPTS, LEGUME_STOCK_ID } from '../../src/data/menuMeta.js';
 import { getItemOptions, makeStockKey, parseStockKey } from '../../src/lib/stockRules.js';
 
 export default async function handler(req, res) {
@@ -40,16 +43,26 @@ export default async function handler(req, res) {
       error: `Clé invalide : « ${itemId} ». Format attendu « 5 » ou « 5:porc ».`,
     });
   }
-  const menuItem = MENU_ITEMS_BY_ID[platId];
-  if (!menuItem) {
+  // Les légumes ne sont pas un plat : ils forment leur propre famille de clés.
+  // Un « legumes » nu n'a aucun sens (rien ne le lit) et serait une entrée
+  // morte de plus dans la liste — on le refuse explicitement.
+  const isLegumeKey = platId === LEGUME_STOCK_ID;
+  const menuItem = isLegumeKey ? null : MENU_ITEMS_BY_ID[platId];
+  if (!isLegumeKey && !menuItem) {
     return res.status(400).json({ error: `Plat inconnu : « ${platId} »` });
   }
+  if (isLegumeKey && !optionId) {
+    return res.status(400).json({
+      error: 'Les légumes se basculent un par un. Format attendu « legumes:choux ».',
+    });
+  }
   if (optionId) {
-    const options = getItemOptions(menuItem);
+    const options = isLegumeKey ? LEGUME_OPTS : getItemOptions(menuItem);
     if (!options.some((o) => o.id === optionId)) {
       const known = options.map((o) => o.id).join(', ') || 'aucune';
+      const quoi = isLegumeKey ? 'les légumes' : `« ${menuItem.name} »`;
       return res.status(400).json({
-        error: `Option « ${optionId} » inconnue pour « ${menuItem.name} » (options : ${known})`,
+        error: `Option « ${optionId} » inconnue pour ${quoi} (options : ${known})`,
       });
     }
   }

@@ -44,9 +44,9 @@ export const VARIANTS_VELOUTE = [
 
 // Plat 4 — Tartare de thon rouge
 export const VARIANTS_TARTARE = [
-  { id: "tahiti", name: "Tartare Tahiti", desc: "Sauce coco" },
-  { id: "hawaii", name: "Tartare Hawaï", desc: "Sauce sésame, mangue et ananas" },
-  { id: "samoa", name: "Tartare Samoa", desc: "Sauce piment maison" }
+  { id: "tahiti", name: "Coco", desc: "Sauce coco" },
+  { id: "hawaii", name: "Mangue-ananas", desc: "Sauce sésame, mangue et ananas" },
+  { id: "samoa", name: "Pimenté", desc: "Sauce piment maison" }
 ];
 
 // Plats 5 (Chao Men) et 6 (Kai Fan) — tableaux vérifiés strictement
@@ -71,15 +71,49 @@ export const PROTEIN_OPTS_OMELETTE = [
 // ⚠ Doit rester synchronisé avec WOK_GARNITURES dans src/App.jsx, qui est ce
 // que voit le client. Ici c'est la copie que lisent le moteur de ruptures et
 // le garde-fou serveur.
+//
+// `halal` n'est lu que par l'affichage du composeur, côté App.jsx. Il est
+// recopié ici uniquement pour que les deux listes restent caractère pour
+// caractère identiques : ni le moteur de ruptures ni le garde-fou serveur ne
+// le regardent, ils travaillent sur les ids.
 export const WOK_GARNITURES = [
-  { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
+  { id: "poulet", name: "Poulet", desc: "Wok de poulet", halal: true },
   { id: "porc", name: "Porc", desc: "Viande de porc mijotée façon KaïKaï" },
   { id: "porc-poulet", name: "Mix poulet-porc", desc: "Mix des deux viandes" },
   { id: "veggie", name: "Veggie (omelette)", desc: "100% végétarien" },
-  { id: "boeuf", name: "Bœuf", desc: "Bœuf sauté au wok, sauce sésame" }
+  { id: "boeuf", name: "Bœuf", desc: "Bœuf sauté au wok, sauce sésame", halal: true }
 ];
 
-// Plats 16 (Crème Tropicale) et 18 (Cheesecake) — vérifiés identiques.
+// ─── LÉGUMES DU COMPOSEUR ────────────────────────────────────────────────
+//
+// Contrairement aux garnitures, les légumes ne sont PAS recopiés dans App.jsx :
+// celui-ci importe cette liste. Un seul exemplaire, donc rien à resynchroniser.
+//
+// Ils sont partagés par les 4 bases (21 à 24), et une rupture vaut pour toutes :
+// un légume manquant l'est en cuisine, pas pour une base en particulier. Leurs
+// clés de rupture vivent donc sous un id qui leur est propre — « legumes:choux »
+// — plutôt que sous « 21:choux », « 22:choux »… qui auraient forcé l'admin à
+// basculer quatre fois la même chose.
+//
+// ⚠ `legumeVariants` n'est volontairement PAS dans OPTION_FIELDS (stockRules).
+// Les légumes sont FACULTATIFS : zéro légume est une commande valide. Les
+// verser dans les options des bases ferait croire à la cascade que les trois
+// tombés rendent la base indisponible, ce qui serait faux.
+export const LEGUME_STOCK_ID = 'legumes';
+
+export const LEGUME_OPTS = [
+  { id: "choux", name: "Choux-carottes fondants", emoji: "🥬" },
+  { id: "patate", name: "Patate-patate douce au wok", emoji: "🍠" },
+  { id: "poivrons", name: "Poivrons sautés", emoji: "🫑" },
+];
+
+// Un légume précis est-il en rupture ? Enveloppe isOptionOut sur l'id réservé,
+// pour que les appelants n'aient pas à connaître la convention de clé.
+export function isLegumeOut(list, legumeId) {
+  return isOptionOut(list, LEGUME_STOCK_ID, legumeId);
+}
+
+// Plats 16 (Panna cotta) et 18 (Cheesecake) — vérifiés identiques.
 export const COULIS_OPTS = [
   { id: "mangue", name: "Coulis Mangue", desc: "Doux et tropical" },
   { id: "fruits-rouges", name: "Coulis Fruits Rouges", desc: "Frais et acidulé" }
@@ -111,23 +145,23 @@ export const MENU_ITEMS = [
   { id: '1',  name: 'Velouté koko',         category: 'entrees', variants: VARIANTS_VELOUTE },
   { id: '2',  name: 'Salade Tropicale',     category: 'entrees' },
   { id: '3',  name: 'Salade de poulet',     category: 'entrees' },
-  { id: '4',  name: 'Tartare de thon rouge', category: 'entrees', variants: VARIANTS_TARTARE },
+  { id: '4',  name: 'Salade de thon rouge', category: 'entrees', variants: VARIANTS_TARTARE },
 
   { id: '5',  name: 'Chao Men',             category: 'chaud', proteinVariants: PROTEIN_OPTS_STANDARD },
   { id: '6',  name: 'Kai Fan',              category: 'chaud', proteinVariants: PROTEIN_OPTS_STANDARD },
   { id: '7',  name: 'Omelette Fu Young',    category: 'chaud', proteinVariants: PROTEIN_OPTS_OMELETTE },
   { id: '8',  name: 'Wok de Bœuf',          category: 'chaud' },
 
-  { id: '9',  name: 'Tahiti',               category: 'froid' },
-  { id: '10', name: 'Hawaï',                category: 'froid' },
-  { id: '11', name: 'Samoa',                category: 'froid' },
-  { id: '12', name: 'Manoa',                category: 'froid' },
+  { id: '9',  name: 'Tartare de thon rouge coco — « Tahiti »',            category: 'froid' },
+  { id: '10', name: 'Tartare de thon rouge mangue-ananas — « Hawaï »',    category: 'froid' },
+  { id: '11', name: 'Tartare de thon rouge pimenté — « Samoa »',          category: 'froid' },
+  { id: '12', name: 'Tartare de thon rouge guacamole — « Manoa »', category: 'froid' },
 
   { id: '13', name: 'Formule Découverte',   category: 'formules', hasFormule: true, formuleType: 'decouverte' },
   { id: '14', name: 'Formule Voyage',       category: 'formules', hasFormule: true, formuleType: 'voyage' },
 
   { id: '15', name: 'Coulant au chocolat',  category: 'desserts' },
-  { id: '16', name: 'Crème Tropicale',      category: 'desserts', coulisVariants: COULIS_OPTS },
+  { id: '16', name: 'Panna cotta',          category: 'desserts', coulisVariants: COULIS_OPTS },
   { id: '17', name: "Po'e Banane",          category: 'desserts' },
   { id: '18', name: 'Cheesecake',           category: 'desserts', coulisVariants: COULIS_OPTS },
 
@@ -224,20 +258,24 @@ export const FORMULE_EAU_OPTS = withEmoji([
 //
 // ⚠ Deux pièges vérifiés :
 //
-//  1. Les 3 libellés « Tartare … » ne correspondent à AUCUN name de MENU_ITEMS
-//     (le menu dit "Tahiti" / "Hawaï" / "Samoa"). Le rattachement aux plats
-//     froids 9/10/11 est confirmé : ce sont bien les plats froids, pas les
-//     variantes de l'entrée 4 (corroboré par src/data/allergens.js:71-73).
+//  1. Les libellés de formule sont désormais IDENTIQUES aux `name` des plats
+//     froids 9/10/11 dans MENU_ITEMS. Ils doivent le rester : renommer un plat
+//     froid sans reporter le libellé ici casserait la résolution de rupture
+//     des formules en silence.
 //
-//  2. Ces mêmes chaînes sont AUSSI, à l'octet près, les `name` des variantes
-//     du plat 4 (VARIANTS_TARTARE), dont les clés de rupture sont "4:tahiti",
-//     "4:hawaii", "4:samoa" — distinctes de "9" / "10" / "11". Entrée tartare
-//     et plat froid sont deux produits différents : ne jamais résoudre un
-//     libellé de formule autrement que via cette table.
+//  2. L'entrée 4 (« Salade de thon rouge ») et les plats froids restent DEUX
+//     produits distincts, avec des clés de rupture distinctes : "4:tahiti",
+//     "4:hawaii", "4:samoa" d'un côté, "9" / "10" / "11" de l'autre. Ses
+//     déclinaisons s'appellent maintenant Coco / Mangue-ananas / Pimenté, ce
+//     qui lève la collision de chaînes qui existait avec les libellés de
+//     formule. Ne jamais résoudre un libellé de formule autrement que par
+//     cette table.
 export const FORMULE_NAME_TO_ID = {
   'Chao Men': '5', 'Kai Fan': '6', 'Omelette Fu Young': '7', 'Wok de Bœuf': '8',
-  'Tartare Tahiti': '9', 'Tartare Hawaï': '10', 'Tartare Samoa': '11',
-  'Coulant au chocolat': '15', 'Crème Tropicale': '16', "Po'e Banane": '17',
+  'Tartare de thon rouge coco — « Tahiti »': '9',
+  'Tartare de thon rouge mangue-ananas — « Hawaï »': '10',
+  'Tartare de thon rouge pimenté — « Samoa »': '11',
+  'Coulant au chocolat': '15', 'Panna cotta': '16', "Po'e Banane": '17',
   'Cheesecake': '18',
 };
 
@@ -369,6 +407,17 @@ export function variantRefs(itemId, variant) {
     // Variante simple {id, name, desc}
     if (typeof variant.id === 'string' && variant.id.trim()) {
       pushKey(refs, itemId, variant.id);
+    }
+
+    // Wok : la variante transporte en plus les légumes choisis. Ils ont leurs
+    // propres clés de rupture, sinon le garde-fou serveur laisserait passer un
+    // wok composé avec un légume que la cuisine n'a plus.
+    if (Array.isArray(variant.legumes)) {
+      for (const l of variant.legumes) {
+        if (l && typeof l.id === 'string' && l.id.trim()) {
+          pushKey(refs, LEGUME_STOCK_ID, l.id);
+        }
+      }
     }
   } catch {
     // Variante au format inattendu : on renvoie ce qu'on a pu résoudre plutôt

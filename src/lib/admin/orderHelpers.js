@@ -154,7 +154,7 @@ export const ITEM_CATEGORY_MAP = {
   '13': 'formules',  // Formule Découverte
   '14': 'formules',  // Formule Voyage
   '15': 'desserts',  // Coulant au chocolat
-  '16': 'desserts',  // Crème Tropicale
+  '16': 'desserts',  // Panna cotta
   '17': 'desserts',  // Po'e Banane
   '18': 'desserts',  // Cheesecake
   '19': 'boissons',  // Jus exotiques

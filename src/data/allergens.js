@@ -68,14 +68,14 @@ export const ITEM_ALLERGENS = {
   },
 
   // ─── PLATS FROIDS (TOUS AVEC SALADE) ───
-  "9":  { contains: ['FISH'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },            // Tartare Tahiti
-  "10": { contains: ['FISH', 'SESAME'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },  // Tartare Hawaï
-  "11": {  // Tartare Samoa froid — sauce piquante avec soja + gluten + moutarde dans le plat
+  "9":  { contains: ['FISH'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },            // Tartare de thon rouge coco — « Tahiti »
+  "10": { contains: ['FISH', 'SESAME'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] },  // Tartare de thon rouge mangue-ananas — « Hawaï »
+  "11": {  // Tartare de thon rouge pimenté — « Samoa » — sauce piquante avec soja + gluten + moutarde dans le plat
     contains: ['GLUTEN', 'FISH', 'SOY', 'MUSTARD'],
     fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
     traces: []
   },
-  "12": { contains: ['FISH', 'PEANUTS'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] }, // Tartare Manoa
+  "12": { contains: ['FISH', 'PEANUTS'], fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'], traces: [] }, // Tartare de thon rouge guacamole — « Manoa »
 
   // ─── FORMULES (composition variable, message dédié dans UI) ───
   "13": { contains: [], traces: [] },  // Formule Découverte
@@ -83,9 +83,9 @@ export const ITEM_ALLERGENS = {
 
   // ─── DESSERTS (sans salade) ───
   "15": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS'] },                                          // Coulant au chocolat
-  "16": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS'] },                                          // Crème Tropicale
+  "16": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS'] },                                          // Panna cotta
   "17": { contains: [], traces: ['NUTS'] },                                                                  // Po'e Banane
-  "18": { contains: ['GLUTEN', 'EGGS', 'SOY', 'MILK'], traces: ['NUTS', 'MUSTARD', 'SULPHITES'] },           // Cheesecake
+  "18": { contains: ['GLUTEN', 'EGGS', 'MILK'], traces: ['NUTS', 'MUSTARD', 'SULPHITES'] },                    // Cheesecake — soja retiré (validation restaurateur)
 
   // ─── BOISSONS ───
   "19": { contains: [], traces: [] },  // Jus exotiques

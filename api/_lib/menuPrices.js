@@ -35,7 +35,7 @@ export const MENU_PRICES = {
 
   // DESSERTS
   '15': 9.90,   // Coulant au chocolat
-  '16': 9.90,   // Crème Tropicale (2 variantes coulis)
+  '16': 9.90,   // Panna cotta (2 variantes coulis)
   '17': 9.90,   // Po'e Banane
   '18': 12.90,  // Cheesecake (2 variantes coulis)
 

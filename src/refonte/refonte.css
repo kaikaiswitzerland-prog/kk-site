@@ -1,0 +1,919 @@
+/* ─── REFONTE GOIKO — feuille de style isolée ─────────────────────────────────
+ *
+ * Tout est préfixé `rf-` et rien n'est appliqué globalement : ce fichier n'est
+ * importé que par src/refonte/RefontePage.jsx (chargé en lazy sur /refonte).
+ * Le site live et l'admin ne le voient jamais.
+ *
+ * Palette : noir profond #060a07 + vert lime #d4ff6b.
+ * Typo    : Cormorant Garamond (titres, noms de plats) + DM Sans (interface).
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap');
+
+/* Les JETONS sont déclarés sur `.rf-root` ET sur `.rf-minicart` : le
+   mini-panier flottant est rendu par KaiKaiApp, en `position: fixed` au-dessus
+   de tout, donc HORS de `.rf-root` — sans ce second sélecteur il n'hériterait
+   d'aucune variable et retomberait sur ses couleurs du site historique.
+   Déclarer des variables n'applique aucun style : les propriétés réellement
+   appliquées restent dans la règle `.rf-root` juste en dessous. */
+.rf-root,
+.rf-minicart {
+  /* Fonds */
+  --rf-bg: #060a07;
+  --rf-bg-elev: #0b110e;
+  --rf-bg-elev-2: #111a15;
+
+  /* Accent — vert lime KaïKaï, le même que --color-accent de l'admin.
+     Le texte posé DESSUS doit toujours être #060a07 : sur ce lime, du blanc
+     tombe à 1.15:1 (illisible) là où le noir profond donne 17.4:1. */
+  --rf-accent: #d4ff6b;
+  --rf-accent-soft: #e2ff8f;   /* hover : plus clair, jamais plus saturé */
+  --rf-accent-dim: rgba(212, 255, 107, 0.55);
+
+  /* Encres */
+  --rf-ink: #F4F1EA;
+  --rf-ink-2: rgba(244, 241, 234, 0.62);
+  --rf-ink-3: rgba(244, 241, 234, 0.36);
+
+  /* Lignes — teintées lime.
+     Les alphas ne sont PAS ceux de l'or : le lime est 2,07× plus lumineux
+     (0.866 contre 0.419), donc à opacité égale un filet doré discret devient
+     un filet vert criard. Ces valeurs (~0,72× les anciennes) rendent la même
+     luminance composite sur le fond #060a07 — le dessin ne change pas, seule
+     la teinte change. Même logique pour tous les aplats translucides d'accent
+     plus bas (halo produit, stepper, halo footer). */
+  --rf-line: rgba(212, 255, 107, 0.12);
+  --rf-line-strong: rgba(212, 255, 107, 0.27);
+
+  /* États */
+  --rf-danger: #E0685F;
+
+  /* Typo */
+  --rf-font-display: "Cormorant Garamond", Georgia, serif;
+  --rf-font-body: "DM Sans", system-ui, -apple-system, sans-serif;
+
+  /* Rythme */
+  --rf-gutter: 12px;
+  --rf-radius: 16px;
+}
+
+.rf-root {
+  background: var(--rf-bg);
+  color: var(--rf-ink);
+  font-family: var(--rf-font-body);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mini-panier flottant, habillage refonte. Seules les COULEURS changent :
+   la géométrie (position, rayon, espacements, ombre) reste celle du site
+   historique, elle est posée en style inline par le composant. */
+.rf-minicart {
+  font-family: var(--rf-font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.rf-root *,
+.rf-root *::before,
+.rf-root *::after { box-sizing: border-box; }
+
+.rf-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: var(--rf-gutter);
+}
+@media (min-width: 768px) { .rf-root { --rf-gutter: 24px; } }
+
+/* ─── HERO ────────────────────────────────────────────────────────────────── */
+
+.rf-hero {
+  position: relative;
+  border-bottom: 1px solid var(--rf-line);
+  background: var(--rf-bg);
+}
+
+/* ─── HERO VIDÉO SCRUB ────────────────────────────────────────────────────── */
+
+/* ⚠ Prérequis du scrub. admin.css pose `html, body { overflow-x: hidden }` et
+   il est chargé sur TOUTES les routes (main.jsx importe AdminApp
+   statiquement, même quand il ne le rend pas). Sur body, cette règle fabrique
+   un conteneur de défilement, et un conteneur de défilement neutralise
+   `position: sticky` chez tous ses descendants — donc le hero.
+   `clip` protège exactement pareil du débordement horizontal SANS créer de
+   scrollport. Cette feuille n'étant chargée que sur /refonte, la règle ne
+   déborde pas sur le site actuel ni sur l'admin.
+   Depuis que la refonte est montée par KaiKaiApp, le <style>{globalStyles}</style>
+   d'App.jsx pose la même règle en `hidden` sur la page : le sélecteur est donc
+   qualifié par :has(.rf-root) pour gagner en spécificité quel que soit l'ordre
+   des feuilles, et ne s'appliquer qu'à la peau refonte.
+   Safari < 16 ne connaît pas `clip` : la déclaration est ignorée, le hero
+   défile alors normalement au lieu d'être scrubbé — dégradation acceptable. */
+html:has(.rf-root), body:has(.rf-root) { overflow-x: clip; }
+
+/* Le track ne sert qu'à fabriquer de la distance de scroll : c'est lui qui
+   donne au scrub sa longueur. La scène, elle, reste collée à l'écran. */
+.rf-scrub {
+  position: relative;
+  height: 200vh;
+}
+/* prefers-reduced-motion : plus de track étendu, une hauteur d'écran suffit. */
+.rf-scrub--still { height: auto; }
+
+.rf-scrub__stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--rf-bg);
+}
+.rf-scrub--still .rf-scrub__stage { position: relative; }
+
+.rf-scrub__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* La vidéo est un décor : le texte passe au-dessus, jamais dessous. */
+  z-index: 0;
+}
+
+/* Voile dégradé : lisibilité du texte en haut comme en bas, et raccord franc
+   avec le noir de la page à la sortie du hero. */
+.rf-scrub__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(6, 10, 7, 0.78) 0%,
+    rgba(6, 10, 7, 0.24) 26%,
+    rgba(6, 10, 7, 0.20) 48%,
+    rgba(6, 10, 7, 0.72) 78%,
+    rgba(6, 10, 7, 0.97) 100%
+  );
+}
+
+.rf-scrub__overlay {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 26px;
+  padding: 92px 20px 74px;
+  text-align: center;
+}
+
+.rf-scrub__kicker {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--rf-accent);
+  /* La vidéo passe par des frames très claires : sans halo sombre, l'or à
+     10 px se dissout dedans. */
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.85);
+}
+
+.rf-scrub__title {
+  margin: 10px 0 0;
+  font-family: var(--rf-font-display);
+  font-size: clamp(46px, 15vw, 96px);
+  font-weight: 600;
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+  text-transform: lowercase;
+  color: var(--rf-ink);
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.55);
+}
+.rf-scrub__title em {
+  display: block;
+  font-style: italic;
+  color: var(--rf-accent);
+}
+
+/* Badges + CTA : masqués tant que le scrub n'a pas atteint REVEAL_AT. */
+.rf-scrub__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+  transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.rf-scrub__actions--on {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.rf-scrub__badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rf-scrub__badge {
+  font-family: inherit;
+  padding: 6px 12px;
+  border: 1px solid var(--rf-line-strong);
+  border-radius: 999px;
+  background: rgba(6, 10, 7, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--rf-ink-2);
+}
+/* Les badges du hero sont devenus des accès cliquables : ils portent donc la
+   couleur du CTA « je commande » (fond lime, encre sombre) — trois boutons
+   côte à côte, une seule identité visuelle. SEULE la couleur est reprise :
+   padding, rayon, graisse et interlettrage restent ceux du badge, donc aucune
+   des trois pastilles ne change de taille.
+   La bordure passe au lime plutôt que de disparaître : la retirer ferait
+   maigrir le bouton de 2 px. */
+.rf-scrub__badge--link {
+  cursor: pointer;
+  background: var(--rf-accent);
+  border-color: var(--rf-accent);
+  color: #060a07;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+}
+.rf-scrub__badge--link:hover {
+  background: var(--rf-accent-soft);
+  border-color: var(--rf-accent-soft);
+}
+.rf-scrub__badge--link:active { transform: scale(0.97); }
+
+.rf-scrub__cta {
+  border: 0;
+  border-radius: 999px;
+  padding: 15px 32px;
+  background: var(--rf-accent);
+  color: #060a07;
+  font-family: var(--rf-font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.12s ease;
+}
+.rf-scrub__cta:hover { background: var(--rf-accent-soft); }
+.rf-scrub__cta:active { transform: scale(0.97); }
+
+/* Indice de scroll, calé au bas de la scène pour ne pas déplacer le titre
+   quand il s'efface. */
+.rf-scrub__hint {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: 22px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--rf-ink-3);
+  transition: opacity 0.45s ease;
+}
+.rf-scrub__hint--off { opacity: 0; }
+.rf-scrub__hint-arrow {
+  display: inline-block;
+  margin-right: 4px;
+  animation: rfHintBob 1.9s ease-in-out infinite;
+}
+@keyframes rfHintBob {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50%      { transform: translateY(4px); opacity: 1; }
+}
+
+@media (min-width: 768px) {
+  .rf-scrub__overlay { padding-bottom: 92px; gap: 30px; }
+}
+
+/* ─── EN-TÊTES DE SECTION ─────────────────────────────────────────────────── */
+
+.rf-section { padding-block: 34px 6px; }
+.rf-section:first-of-type { padding-top: 28px; }
+
+.rf-section__kicker {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--rf-accent);
+}
+.rf-section__title {
+  margin: 6px 0 0;
+  font-family: var(--rf-font-display);
+  font-size: clamp(26px, 7vw, 38px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--rf-ink);
+}
+.rf-section__note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--rf-ink-2);
+  max-width: 46ch;
+}
+.rf-section__rule {
+  margin-top: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--rf-line-strong), transparent 70%);
+}
+
+/* ─── GRILLE PRODUITS ─────────────────────────────────────────────────────── */
+
+.rf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 16px;
+}
+@media (min-width: 600px) { .rf-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } }
+@media (min-width: 960px) { .rf-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } }
+
+.rf-grid__full { grid-column: 1 / -1; }
+
+/* ─── CARTE PRODUIT ───────────────────────────────────────────────────────── */
+
+.rf-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-radius);
+  background: var(--rf-bg-elev);
+  overflow: hidden;
+  transition: border-color 0.22s ease, transform 0.22s ease;
+}
+@media (hover: hover) {
+  .rf-card:hover { border-color: var(--rf-line-strong); transform: translateY(-2px); }
+  .rf-card:hover .rf-card__img { transform: scale(1.045); }
+}
+
+/* Photo carrée dominante. Un PNG détouré s'affiche en `contain` sur le halo
+   doré ; tant qu'il n'existe pas, on retombe sur le JPG actuel en `cover`. */
+.rf-card__media {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background:
+    radial-gradient(78% 68% at 50% 46%, rgba(212, 255, 107, 0.11) 0%, rgba(212, 255, 107, 0.03) 46%, transparent 72%),
+    var(--rf-bg-elev-2);
+}
+.rf-card__img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* PNG détouré : le sujet flotte, ombre portée en CSS (pas cuite dans le PNG). */
+.rf-card__img--png {
+  object-fit: contain;
+  padding: 7%;
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.62));
+}
+/* Repli JPG plein cadre. */
+.rf-card__img--jpg { object-fit: cover; }
+
+.rf-card__media--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rf-card__media--empty::after {
+  content: "PNG à venir";
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rf-ink-3);
+}
+
+/* Badge en surimpression, coin haut-gauche */
+.rf-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  line-height: 1;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.rf-badge--halal {
+  border: 1px solid var(--rf-line-strong);
+  background: rgba(6, 10, 7, 0.72);
+  color: var(--rf-accent-soft);
+}
+/* « Maison » — même pastille sombre discrète que halal, mais en encre neutre :
+   les deux ne disent pas la même chose, ils ne doivent pas se confondre. */
+.rf-badge--maison {
+  border: 1px solid var(--rf-line-strong);
+  background: rgba(6, 10, 7, 0.72);
+  color: var(--rf-ink);
+}
+.rf-badge--nouveau {
+  border: 1px solid var(--rf-accent);
+  background: var(--rf-accent);
+  color: #060a07;
+}
+/* « Signature » et « Populaire » sont deux accroches de même nature : même
+   habillage, seul le mot change. Les grouper évite qu'elles divergent. */
+.rf-badge--signature,
+.rf-badge--populaire {
+  border: 1px solid var(--rf-line-strong);
+  background: rgba(6, 10, 7, 0.72);
+  color: var(--rf-accent);
+}
+
+/* Pastille rupture — même coin que le badge : les deux ne coexistent jamais. */
+.rf-flag-out {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--rf-danger);
+  background: var(--rf-danger);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  line-height: 1;
+  /* Encre sombre sur le rouge : du blanc n'y tiendrait que 3,3:1, le noir
+     profond monte à 8:1 — à 9 px en capitales, c'est ce qui se lit. */
+  color: #1B0604;
+}
+
+/* Le grisage porte sur la PHOTO seule, pas sur toute la zone média.
+   Un filtre s'applique au sous-arbre entier : posé sur `.rf-card__media` il
+   désaturait aussi la pastille Rupture, qui était donc rouge dans la feuille
+   et grise à l'écran. Sur l'image, la carte reste éteinte et la pastille
+   garde sa couleur — c'est elle qui doit attraper l'œil. */
+.rf-card--out .rf-card__img { filter: grayscale(1); opacity: 0.42; }
+.rf-card--out .rf-card__name,
+.rf-card--out .rf-card__price { color: var(--rf-ink-3); }
+
+/* Corps de carte */
+.rf-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 11px 12px;
+}
+@media (min-width: 600px) { .rf-card__body { padding: 12px 13px 14px; } }
+
+.rf-card__name {
+  margin: 0;
+  font-family: var(--rf-font-display);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.14;
+  letter-spacing: -0.005em;
+  color: var(--rf-ink);
+  /* 3 lignes max, mais 2 lignes réservées.
+     Les noms de plats froids portent leur déclinaison en fin de chaîne
+     (« … mangue-ananas — Hawaï ») : couper à 2 lignes escamotait justement ce
+     qui distingue les quatre tartares. La réserve reste à 2 lignes pour que
+     les noms courts n'enflent pas la grille. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(2 * 1.14em);
+}
+@media (min-width: 600px) { .rf-card__name { font-size: 19px; } }
+
+/* Description — une seule ligne, tronquée à l'ellipse.
+   Elle occupe la place laissée par l'ancienne ligne d'avis, avec exactement la
+   même hauteur de 12 px (la pastille étoile mesurait 12 px de haut), pour que
+   la carte garde ses dimensions au pixel près.
+   Le padding-bottom de 2 px, annulé par une marge négative de -2 px, éloigne
+   la zone de découpe des jambages (« g », « p ») sans rien ajouter à la
+   hauteur occupée dans la colonne. */
+.rf-card__desc {
+  margin: 0 0 -2px;
+  padding-bottom: 2px;
+  font-size: 11px;
+  line-height: 12px;
+  color: var(--rf-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Prix + action */
+.rf-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+.rf-card__price {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  color: var(--rf-accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rf-card__price-from {
+  display: block;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rf-ink-3);
+}
+
+.rf-add {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--rf-accent);
+  color: #060a07;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.12s ease;
+}
+.rf-add:hover { background: var(--rf-accent-soft); }
+.rf-add:active { transform: scale(0.93); }
+.rf-add:disabled {
+  background: transparent;
+  border: 1px solid var(--rf-line);
+  color: var(--rf-ink-3);
+  cursor: not-allowed;
+}
+
+/* Stepper affiché dès qu'il y a une quantité au panier */
+.rf-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 34px;
+  padding: 0 3px;
+  border: 1px solid var(--rf-line-strong);
+  border-radius: 999px;
+  background: rgba(212, 255, 107, 0.07);
+}
+.rf-step__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--rf-accent);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.rf-step__btn:hover { background: rgba(212, 255, 107, 0.13); }
+.rf-step__btn:disabled { color: var(--rf-ink-3); cursor: not-allowed; }
+.rf-step__qty {
+  min-width: 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rf-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── SECTION WOK (accueille le composeur existant, tel quel) ─────────────── */
+
+.rf-wok-slot { padding-top: 16px; }
+
+/* ─── FOOTER ──────────────────────────────────────────────────────────────── */
+
+.rf-footer {
+  margin-top: 56px;
+  border-top: 1px solid var(--rf-line);
+  background:
+    radial-gradient(90% 130% at 50% 100%, rgba(212, 255, 107, 0.05) 0%, transparent 60%),
+    var(--rf-bg);
+  padding-block: 40px 32px;
+}
+.rf-footer__brand {
+  font-family: var(--rf-font-display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--rf-ink);
+}
+.rf-footer__tag {
+  margin-top: 6px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--rf-ink-2);
+  max-width: 42ch;
+}
+.rf-footer__social { display: flex; gap: 10px; margin-top: 18px; }
+.rf-footer__social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--rf-line);
+  border-radius: 999px;
+  color: var(--rf-ink-2);
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+.rf-footer__social a:hover { color: var(--rf-accent); border-color: var(--rf-line-strong); }
+
+.rf-footer__cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid var(--rf-line);
+}
+@media (min-width: 700px) { .rf-footer__cols { grid-template-columns: repeat(3, 1fr); } }
+
+.rf-footer__label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--rf-accent);
+}
+.rf-footer__list { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.rf-footer__list li { font-size: 13px; line-height: 1.45; color: var(--rf-ink-2); }
+.rf-footer__list a { color: inherit; text-decoration: none; border-bottom: 1px solid transparent; }
+.rf-footer__list a:hover { color: var(--rf-ink); border-bottom-color: var(--rf-line-strong); }
+
+.rf-footer__legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rf-line);
+  font-size: 11px;
+  color: var(--rf-ink-3);
+}
+.rf-footer__legal a { color: inherit; text-decoration: none; }
+.rf-footer__legal a:hover { color: var(--rf-ink-2); }
+
+/* ─── Divers ──────────────────────────────────────────────────────────────── */
+
+.rf-root :focus-visible {
+  outline: 2px solid var(--rf-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rf-root * { transition: none !important; animation: none !important; }
+  .rf-card:hover { transform: none; }
+  .rf-card:hover .rf-card__img { transform: none; }
+}
+
+
+/* ─── HEADER STICKY ───────────────────────────────────────────────────────── */
+
+.rf-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--rf-line);
+  background: rgba(6, 10, 7, 0.86);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.rf-header__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 10px var(--rf-gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rf-header__brand { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rf-header__name {
+  font-family: var(--rf-font-display);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--rf-ink);
+}
+.rf-header__actions { display: flex; align-items: center; gap: 8px; flex: none; }
+
+/* Statut d'ouverture — mêmes trois états que le site actuel. */
+.rf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rf-status__dot { width: 6px; height: 6px; border-radius: 999px; flex: none; }
+.rf-status--open           { color: var(--rf-accent); }
+.rf-status--open .rf-status__dot { background: var(--rf-accent); animation: rfPulse 2s ease-in-out infinite; }
+.rf-status--manual         { color: #E0685F; }
+.rf-status--manual .rf-status__dot { background: #E0685F; }
+.rf-status--auto           { color: #E0A85F; }
+.rf-status--auto .rf-status__dot { background: #E0A85F; }
+@keyframes rfPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.rf-iconbtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border: 1px solid var(--rf-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--rf-ink-2);
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+.rf-iconbtn:hover { color: var(--rf-accent); border-color: var(--rf-line-strong); }
+.rf-iconbtn__count {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--rf-accent);
+  color: #060a07;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── MODALE (matrice allergènes) ─────────────────────────────────────────── */
+
+.rf-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(3, 6, 4, 0.82);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+@media (min-width: 700px) { .rf-modal { align-items: center; padding: 24px; } }
+
+.rf-modal__sheet {
+  width: 100%;
+  max-width: 720px;
+  max-height: 92svh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--rf-line);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+  background: var(--rf-bg-elev);
+}
+@media (min-width: 700px) {
+  .rf-modal__sheet { border-bottom: 1px solid var(--rf-line); border-radius: 20px; max-height: 86svh; }
+}
+
+.rf-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--rf-line);
+}
+.rf-modal__title {
+  margin: 4px 0 0;
+  font-family: var(--rf-font-display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--rf-ink);
+}
+.rf-modal__body { overflow-y: auto; padding: 16px 18px 26px; -webkit-overflow-scrolling: touch; }
+
+/* ─── Contenu allergènes ──────────────────────────────────────────────────── */
+
+.rf-allerg__intro { margin: 0 0 14px; font-size: 13px; line-height: 1.5; color: var(--rf-ink-2); }
+
+.rf-allerg__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 26px;
+  padding: 0;
+  list-style: none;
+}
+.rf-allerg__chip {
+  padding: 4px 9px;
+  border: 1px solid var(--rf-line);
+  border-radius: 999px;
+  background: rgba(212, 255, 107, 0.05);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  color: var(--rf-ink-2);
+}
+.rf-allerg__chip--legend { border-color: var(--rf-line-strong); color: var(--rf-accent); }
+
+.rf-allerg__group { margin-bottom: 24px; }
+.rf-allerg__group-title {
+  margin: 0 0 10px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--rf-accent);
+}
+.rf-allerg__list { margin: 0; padding: 0; list-style: none; }
+.rf-allerg__row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px 0;
+  border-top: 1px solid var(--rf-line);
+}
+.rf-allerg__dish {
+  font-family: var(--rf-font-display);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--rf-ink);
+}
+.rf-allerg__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.rf-allerg__ok   { font-size: 12px; color: var(--rf-accent); }
+.rf-allerg__none { font-size: 12px; color: var(--rf-ink-3); font-style: italic; }
+.rf-allerg__note { font-size: 11px; line-height: 1.4; color: var(--rf-ink-3); }
+
+.rf-allerg__warning {
+  margin: 6px 0 0;
+  padding: 14px;
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-radius);
+  background: var(--rf-bg-elev-2);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--rf-ink-2);
+}
+.rf-allerg__warning a { color: var(--rf-accent); }
+
+/* ─── Bouton-lien du footer ───────────────────────────────────────────────── */
+
+.rf-footer__linkbtn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+}
+.rf-footer__linkbtn:hover { color: var(--rf-ink); border-bottom-color: var(--rf-line-strong); }

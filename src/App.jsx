@@ -4,11 +4,17 @@
 //   - Suppression de PalmLeaves (composant désactivé qui retourne null)
 // Tout le reste est identique à la version précédente.
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, Suspense, lazy } from "react";
 import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight } from "lucide-react";
 import IslandModeToggle from "./components/IslandModeToggle.jsx";
 import HeroSliderV2 from "./components/HeroSliderV2.jsx";
 import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
+
+// Peau « refonte » (route /refonte). Chargée en LAZY, et c'est structurant :
+//   - son CSS et ses polices ne partent pas dans le bundle du site actuel ;
+//   - l'import dynamique casse le cycle App.jsx ↔ src/refonte/, qui n'importe
+//     jamais App.jsx en retour (tout lui est passé en props).
+const RefonteShell = lazy(() => import("./refonte/RefonteShell.jsx"));
 import { supabase } from "./lib/supabase.js";
 import { useRestaurantOpen } from "./hooks/useRestaurantOpen.js";
 import { useOutOfStock } from "./hooks/useOutOfStock.js";
@@ -28,6 +34,9 @@ import {
   COULIS_OPTS,
   JUS_OPTS,
   EAU_OPTS,
+  LEGUME_OPTS,
+  LEGUME_STOCK_ID,
+  isLegumeOut,
   FORMULE_PROTEIN_OPTS_STANDARD,
   FORMULE_PROTEIN_OPTS_OMELETTE,
   FORMULE_COULIS_OPTS,
@@ -52,6 +61,7 @@ import {
   getDeliveryFee,
   getAllNpas,
 } from "./lib/deliveryZones.js";
+import { RESTAURANT_INFO } from "./data/restaurant.js";
 
 // Clé localStorage versionnée — bump le suffixe v* si la structure change.
 const CART_STORAGE_KEY = 'kaikai_cart_v1';
@@ -115,45 +125,8 @@ const globalStyles = `
 
 `;
 
-// Informations du restaurant
-const RESTAURANT_INFO = {
-  name: "KaïKaï",
-  address: "Bd de la Tour 1, 1205 Genève",
-  phone: "+41765197670",
-  phoneDisplay: "+41 76 519 76 70",
-  instagram: "https://www.instagram.com/kaikaifood.ch",
-  facebook: "#",
-  email: "contact@kaikai.ch",
-  // Fiche Google Business KaïKaï (avis, photos, horaires) — utilisée par
-  // les liens "Voir sur Google Maps". Distinct de l'iframe embed qui doit
-  // garder une URL embed-friendly (?output=embed).
-  google_page: "https://maps.app.goo.gl/P1rmU4VNfXNxLWQi9?g_st=ic",
-  
-  // Display uniquement (footer + AboutModal) — heures de SERVICE affichées
-  // aux clients. Source de vérité numérique des plages de pré-commande :
-  // src/lib/restaurantHours.js (LUNCH/DINNER, dinner.open=17:30 pour la
-  // pré-commande). Ici on affiche 18h-22h (service réel) et on mentionne
-  // "pré-commande dès 17h30" séparément dans le copy footer/AboutModal.
-  hours: {
-    lunch: { start: "12:00", end: "14:00" },
-    dinner: { start: "18:00", end: "22:00" }
-  },
-  
-  // Liste des NPA et frais : voir src/lib/deliveryZones.js (source de vérité).
-  // Le champ deliveryZones ci-dessus était hardcodé à plat ; il est désormais
-  // dérivé de la table NPA_TO_ZONE via getAllNpas().
-  //
-  // deliveryTime : ETA total livraison (préparation + course coursier).
-  // prepTime     : préparation seule, pour le mode "À emporter".
-  // À garder synchronisés avec api/_lib/emails/orderConfirmation.js (ETA).
-  deliveryTime: "30-45",
-  prepTime: "20-25",
-  
-  coordinates: {
-    lat: 46.1983,
-    lng: 6.1472
-  }
-};
+// RESTAURANT_INFO vit désormais dans src/data/restaurant.js (importé ci-dessus)
+// pour être partagé avec les composants de la refonte.
 
 // ─── Catalogues du composeur de woks ────────────────────────────────────────
 //
@@ -164,20 +137,25 @@ const RESTAURANT_INFO = {
 // Les ids reprennent ceux des protéines déjà en base (porc, poulet,
 // porc-poulet, veggie, boeuf) : une clé de rupture « 21:poulet » suit donc la
 // même convention que partout ailleurs.
+//
+// `halal` est un champ d'AFFICHAGE, porté par la garniture et pas par le plat :
+// c'est le seul niveau où la question a un sens ici, puisque la même base peut
+// partir en poulet halal comme en porc. Poulet et Bœuf uniquement — ni Porc ni
+// le Mix qui en contient. Aucun prix, aucune clé de rupture ne dépend de ce
+// champ : les ids sont inchangés, la grille OPTION_PRICES aussi.
 const WOK_GARNITURES = [
-  { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
+  { id: "poulet", name: "Poulet", desc: "Wok de poulet", halal: true },
   { id: "porc", name: "Porc", desc: "Viande de porc mijotée façon KaïKaï" },
   { id: "porc-poulet", name: "Mix poulet-porc", desc: "Mix des deux viandes" },
   { id: "veggie", name: "Veggie (omelette)", desc: "100% végétarien" },
-  { id: "boeuf", name: "Bœuf", desc: "Bœuf sauté au wok, sauce sésame" },
+  { id: "boeuf", name: "Bœuf", desc: "Bœuf sauté au wok, sauce sésame", halal: true },
 ];
 
 // LÉGUMES. Le premier est offert, chacun des suivants est facturé 1.50.
-const LEGUME_OPTS = [
-  { id: "choux", name: "Choux-carottes fondants", emoji: "🥬" },
-  { id: "patate", name: "Patate-patate douce au wok", emoji: "🍠" },
-  { id: "poivrons", name: "Poivrons sautés", emoji: "🫑" },
-];
+// La liste vit dans menuMeta.js et est IMPORTÉE, pas recopiée : l'admin, le
+// garde-fou serveur et le composeur lisent le même exemplaire. C'est ce qui
+// permet de basculer un légume en rupture depuis l'admin sans resynchroniser
+// deux tableaux à la main, comme il a fallu le faire pour WOK_GARNITURES.
 
 // Nombre de légumes offerts. Au-delà, chacun est facturé.
 // ⚠ Doit rester synchronisé avec LEGUMES_INCLUS dans api/_lib/menuPrices.js.
@@ -228,8 +206,8 @@ const MENU = [
   { id: "3",  name: "Salade de poulet", desc: "Salade, tomate, patate, concombre, poulet", price: 9.90, category: "entrees" },
   { 
     id: "4",  
-    name: "Tartare de thon rouge", 
-    desc: "Mariné au citron vert et gingembre (3 variantes: Tahiti, Hawaï, Samoa)", 
+    name: "Salade de thon rouge", 
+    desc: "Mariné au citron vert et gingembre (3 déclinaisons : coco, mangue-ananas, pimenté)", 
     price: 12.90, 
     category: "entrees",
     hasVariants: true,
@@ -267,10 +245,10 @@ const MENU = [
   { id: "8",  name: "Wok de Bœuf", desc: "Wok de bœuf, légumes de saison, sauce sésame, servi avec du riz et une salade", price: 26.90, category: "chaud" },
 
   // PLATS FROIDS
-  { id: "9",  name: "Tahiti", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce coco", price: 22.90, category: "froid" },
-  { id: "10", name: "Hawaï", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce sésame, mangue et ananas", price: 22.90, category: "froid" },
-  { id: "11", name: "Samoa", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce piment maison", price: 22.90, category: "froid" },
-  { id: "12", name: "Manoa", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce arachide et guacamole maison", price: 24.90, category: "froid" },
+  { id: "9",  name: "Tartare de thon rouge coco — « Tahiti »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce coco", price: 22.90, category: "froid" },
+  { id: "10", name: "Tartare de thon rouge mangue-ananas — « Hawaï »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce sésame, mangue et ananas", price: 22.90, category: "froid" },
+  { id: "11", name: "Tartare de thon rouge pimenté — « Samoa »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce piment maison", price: 22.90, category: "froid" },
+  { id: "12", name: "Tartare de thon rouge guacamole — « Manoa »", desc: "Thon rouge mariné au citron vert et gingembre, tomate, concombre, sauce arachide et guacamole maison", price: 24.90, category: "froid" },
 
   // FORMULES
   { 
@@ -296,7 +274,7 @@ const MENU = [
   { id: "15", name: "Coulant au chocolat", desc: "Gâteau au chocolat à la texture fondante", price: 9.90, category: "desserts" },
   { 
     id: "16", 
-    name: "Crème Tropicale", 
+    name: "Panna cotta", 
     desc: "Coulis au choix", 
     price: 9.90, 
     category: "desserts",
@@ -471,9 +449,9 @@ const MENU_BY_ID = Object.fromEntries(MENU.map(m => [m.id, m]));
 // Listes de composition des formules, remontées au niveau module : la carte a
 // besoin de savoir si une formule est encore composable AVANT d'ouvrir la
 // modale. Contenu strictement identique à ce qui vivait dans FormuleModal.
-const FORMULE_PLATS_DECOUVERTE = ['Chao Men','Kai Fan','Omelette Fu Young','Tartare Tahiti','Tartare Hawaï','Tartare Samoa'];
-const FORMULE_PLATS_VOYAGE = ['Chao Men','Kai Fan','Omelette Fu Young','Wok de Bœuf','Tartare Tahiti','Tartare Hawaï','Tartare Samoa'];
-const FORMULE_DESSERTS = ['Coulant au chocolat','Crème Tropicale',"Po'e Banane",'Cheesecake'];
+const FORMULE_PLATS_DECOUVERTE = ['Chao Men','Kai Fan','Omelette Fu Young','Tartare de thon rouge coco — « Tahiti »','Tartare de thon rouge mangue-ananas — « Hawaï »','Tartare de thon rouge pimenté — « Samoa »'];
+const FORMULE_PLATS_VOYAGE = ['Chao Men','Kai Fan','Omelette Fu Young','Wok de Bœuf','Tartare de thon rouge coco — « Tahiti »','Tartare de thon rouge mangue-ananas — « Hawaï »','Tartare de thon rouge pimenté — « Samoa »'];
+const FORMULE_DESSERTS = ['Coulant au chocolat','Panna cotta',"Po'e Banane",'Cheesecake'];
 
 // Un libellé de formule est commandable si le plat de carte qu'il désigne
 // l'est (cascade comprise : un Chao Men dont les 4 protéines sont coupées
@@ -516,6 +494,27 @@ function isMenuItemUnavailable(stockList, item) {
   if (item.hasFormule) return isFormuleUnavailable(stockList, item);
   return isItemUnavailable(stockList, item);
 }
+
+// ─── Passerelle refonte ──────────────────────────────────────────────────────
+//
+// Ce que la refonte (src/refonte/) consomme d'App.jsx, regroupé en UN seul
+// export nommé : MENU, les listes de sections et le moteur de ruptures restent
+// module-privés, et le fichier n'expose pas dix constantes non-composants (ce
+// que react-refresh déconseille). Aucune donnée n'est dupliquée : la carte, les
+// prix et les règles de rupture n'ont toujours qu'une seule source, ici.
+export const menuCatalog = {
+  sections: {
+    entrees:  SEC_ENTREES,
+    wok:      SEC_WOK,
+    chaud:    SEC_CHAUD,
+    froid:    SEC_FROID,
+    formules: SEC_FORMULES,
+    desserts: SEC_DESSERT,
+    boissons: SEC_BOISSON,
+  },
+  isUnavailable: isMenuItemUnavailable,
+};
+
 
 // Purge du panier après une bascule de rupture. Fonction pure : rend
 // { cart, variants, changed }, et rend les objets d'origine si rien n'a bougé
@@ -821,7 +820,12 @@ function useActiveCategory() {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function KaiKaiApp() {
+// `skin` ne change QUE la couche présentation. L'état du panier, les modaux
+// d'options, le checkout, les ruptures, les horaires et l'insertion de la
+// commande sont strictement les mêmes objets dans les deux peaux : il n'y a
+// qu'une seule implémentation de la commande, ici.
+export default function KaiKaiApp({ skin = 'legacy' }) {
+  const isRefonte = skin === 'refonte';
   const { isOpen: restaurantOpen, manualClosure, statusLabel: openStatusLabel, status: openStatus } = useRestaurantOpen();
   const { items: outOfStockItems } = useOutOfStock();
 
@@ -929,6 +933,15 @@ export default function KaiKaiApp() {
     return n; 
   });
   const clear = () => { setCart({}); setCartVariants({}); };
+
+  // Modaux d'options pour les grilles sans état propre (refonte). Le hook est
+  // appelé dans les deux peaux — règle des hooks — mais ne rend rien tant que
+  // requestAdd n'a pas été appelé.
+  const { requestAdd, optionModals } = useOptionModals({ stockList: outOfStockItems, add });
+  const cartCount = useMemo(
+    () => Object.values(cart).reduce((s, q) => s + q, 0),
+    [cart],
+  );
 
   // ─── Panier persistant (localStorage) ─────────────────────────────────
   // Au mount : restaurer si présent + non expiré + IDs encore au menu.
@@ -1141,7 +1154,8 @@ export default function KaiKaiApp() {
     <>
       <style>{globalStyles}</style>
       <div className="min-h-screen bg-black text-white">
-      {/* Header */}
+      {/* Header — peau historique */}
+      {!isRefonte && (
       <header className="sticky top-0 z-49 border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
@@ -1181,6 +1195,7 @@ export default function KaiKaiApp() {
           </div>
         </div>
       </header>
+      )}
 
       {showAbout && (
         <AboutModal
@@ -1193,8 +1208,39 @@ export default function KaiKaiApp() {
         />
       )}
 
-      {/* Menu principal */}
-      {step === "menu" && (
+      {/* Peau refonte — même logique de commande, présentation différente. */}
+      {isRefonte && (
+        <Suspense fallback={<div style={{ minHeight: '100vh', background: '#060a07' }} />}>
+          <RefonteShell
+            showContent={step === "menu"}
+            sections={menuCatalog.sections}
+            wokComposer={
+              <WokComposer
+                bases={SEC_WOK}
+                cart={cart}
+                add={add}
+                stockList={outOfStockItems}
+                outOfStockFor={(it) => isMenuItemUnavailable(outOfStockItems, it)}
+              />
+            }
+            cart={cart}
+            cartCount={cartCount}
+            onAdd={(it) => requestAdd(it, isMenuItemUnavailable(outOfStockItems, it))}
+            onRemove={(it) => remove(it.id)}
+            isUnavailable={(it) => isMenuItemUnavailable(outOfStockItems, it)}
+            onOpenCheckout={() => setStep("checkout")}
+            restaurantOpen={restaurantOpen}
+            manualClosure={manualClosure}
+            openStatusLabel={openStatusLabel}
+            onShowZones={() => setShowZonesModal(true)}
+            onShowAbout={() => setShowAbout(true)}
+            restaurant={RESTAURANT_INFO}
+          />
+        </Suspense>
+      )}
+
+      {/* Menu principal — peau historique */}
+      {step === "menu" && !isRefonte && (
         <>
           <CategoryNav activeCategory={activeCategory} />
           <HeroSliderV2 />
@@ -1296,6 +1342,9 @@ export default function KaiKaiApp() {
         />
       )}
 
+      {/* Modaux d'options de la grille refonte — mêmes composants que MenuItem. */}
+      {optionModals}
+
       {showZonesModal && <ZonesModal onClose={() => setShowZonesModal(false)} />}
 
       {step === "success" && (
@@ -1321,9 +1370,12 @@ export default function KaiKaiApp() {
           restaurantOpen={restaurantOpen}
           manualClosure={manualClosure}
           openStatusLabel={openStatusLabel}
+          skin={skin}
         />
       )}
 
+      {!isRefonte && (
+      <>
       {/* Mode Île — pastille membres */}
       <div style={{ display: 'flex', justifyContent: 'center', margin: '40px auto' }}>
         <IslandModeToggle />
@@ -1363,6 +1415,8 @@ export default function KaiKaiApp() {
 
         </div>
       </footer>
+      </>
+      )}
     </div>
     </>
   );
@@ -1388,7 +1442,7 @@ export default function KaiKaiApp() {
 // (fond 0.03, bordure 0.08, sélection 0.11/0.28 + pastille blanche à coche
 // noire) en plus compact : trois colonnes côte à côte ne laissent pas la place
 // aux tuiles emoji de 46 px des bottom sheets.
-function WokOption({ emoji, label, note, out, active, onClick }) {
+function WokOption({ emoji, label, note, halal, out, active, onClick }) {
   return (
     <button
       type="button"
@@ -1414,6 +1468,19 @@ function WokOption({ emoji, label, note, out, active, onClick }) {
         {label}
         {note && <span style={{ display: 'block', fontSize: 11, color: 'rgba(255,255,255,0.40)', marginTop: 1 }}>{note}</span>}
       </span>
+      {/* Mention halal — même géométrie que la pastille Rupture (font-mono 9px,
+          uppercase, tracking) pour ne pas introduire un second vocabulaire.
+          Affichée MÊME en rupture, contrairement aux badges de la grille : ce
+          n'est pas une accroche marketing mais une information diététique, et
+          c'est ici que le client arbitre. La masquer sur une garniture
+          temporairement épuisée la rendrait ambiguë le jour où elle revient.
+          Les deux pastilles cohabitent sans se gêner : la ligne fait ~330 px
+          au plus étroit et les libellés concernés sont courts. */}
+      {halal && (
+        <span className="rounded-md border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-emerald-300/75" style={{ flexShrink: 0 }}>
+          Halal
+        </span>
+      )}
       {out && (
         <span className="rounded-md border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-red-300" style={{ flexShrink: 0 }}>
           Rupture
@@ -1437,7 +1504,11 @@ function WokLegend({ step, title, note }) {
         {step} · {title}
       </span>
       {note && (
-        <span style={{ display: 'block', marginTop: 3, fontSize: 11, fontWeight: 500, color: '#C9A96E' }}>
+        // La note prend l'accent de la peau qui l'accueille, sans que ce
+        // composant ait à connaître la peau : `--rf-accent` n'est défini que
+        // sous `.rf-root`, donc la refonte rend le lime et le site historique
+        // retombe sur son doré. Un seul rendu, deux couleurs justes.
+        <span style={{ display: 'block', marginTop: 3, fontSize: 11, fontWeight: 500, color: 'var(--rf-accent, #C9A96E)' }}>
           {note}
         </span>
       )}
@@ -1445,16 +1516,27 @@ function WokLegend({ step, title, note }) {
   );
 }
 
-function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
-  const [baseId, setBaseId] = useState(bases[0]?.id ?? null);
+export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
+  // Aucune base pré-cochée : le composeur s'ouvre vierge et c'est le client qui
+  // choisit. `base` peut donc valoir null tout au long du rendu — chaque lecture
+  // en aval le suppose, y compris le récap et le total.
+  const [baseId, setBaseId] = useState(null);
   const [optionId, setOptionId] = useState(null);
   const [legumeIds, setLegumeIds] = useState([]);
 
-  const base = bases.find(b => b.id === baseId) || bases[0];
+  // Pas de repli sur bases[0] : ce repli est précisément ce qui pré-cochait
+  // « Nouilles sautées ». Une base inconnue (id périmé) donne null, pas la
+  // première de la liste.
+  const base = bases.find(b => b.id === baseId) || null;
   const options = base ? getItemOptions(base) : [];
   const option = options.find(o => o.id === optionId) || null;
 
-  const legumes = LEGUME_OPTS.filter(l => legumeIds.includes(l.id));
+  // Un légume basculé en rupture pendant la session sort du panier de lui-même :
+  // on le retire ici, donc il ne compte ni dans le prix affiché ni dans ce qui
+  // part au serveur. Sans ce filtre, un client qui l'avait coché avant la
+  // bascule se ferait refuser sa commande au checkout sans comprendre pourquoi.
+  const legumeOut = (id) => isLegumeOut(stockList, id);
+  const legumes = LEGUME_OPTS.filter(l => legumeIds.includes(l.id) && !legumeOut(l.id));
 
   // Ce qui part réellement au panier — sert aussi au calcul du total, donc
   // affiché et facturé sont calculés sur le MÊME objet.
@@ -1463,7 +1545,7 @@ function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
     : null;
 
   const baseOut = base ? outOfStockFor(base) : false;
-  const optionOut = option ? isOptionOut(stockList, base.id, option.id) : false;
+  const optionOut = base && option ? isOptionOut(stockList, base.id, option.id) : false;
   // Une base seule ne se commande pas : sans garniture il n'y a pas de prix.
   const canAdd = !!(base && option) && !baseOut && !optionOut;
 
@@ -1500,7 +1582,9 @@ function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
     add(base.id, variant);
   };
 
-  if (!base) return null;
+  // On ne sort que s'il n'y a AUCUNE base à proposer. Sortir parce qu'aucune
+  // n'est cochée ferait disparaître le composeur au chargement.
+  if (!bases.length) return null;
 
   // Pas de photo : les 4 bases sont de nouveaux produits et n'en ont pas
   // encore. Réutiliser celle d'un plat chaud existant afficherait un Chao Men
@@ -1518,7 +1602,7 @@ function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
                 key={b.id}
                 label={b.name}
                 out={outOfStockFor(b)}
-                active={b.id === base.id}
+                active={base?.id === b.id}
                 onClick={() => selectBase(b.id)}
               />
             ))}
@@ -1534,7 +1618,8 @@ function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
                 key={l.id}
                 emoji={l.emoji}
                 label={l.name}
-                active={legumeIds.includes(l.id)}
+                out={legumeOut(l.id)}
+                active={legumeIds.includes(l.id) && !legumeOut(l.id)}
                 onClick={() => toggleLegume(l.id)}
               />
             ))}
@@ -1544,11 +1629,12 @@ function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
               montant n'apparaît ici : le prix ne vit que dans le total, qui
               s'ajuste à chaque sélection. */}
           <fieldset style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
-            <WokLegend step="3" title="Votre garniture" />
+            <WokLegend step="3" title="Votre garniture" note={base ? undefined : 'Choisissez d\'abord une base'} />
             {options.map((o) => (
               <WokOption
                 key={o.id}
                 label={o.name}
+                halal={o.halal}
                 out={isOptionOut(stockList, base.id, o.id)}
                 active={option?.id === o.id}
                 onClick={() => setOptionId(o.id)}
@@ -1564,10 +1650,18 @@ function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
               Votre wok
             </div>
             <div className="mt-1 text-[15px] text-white">
-              {base.name}
-              {option
-                ? <> <span className="text-white/40">+</span> {option.name}</>
-                : <span className="text-white/40"> — choisissez une garniture</span>}
+              {/* Trois états, jamais un prix trompeur : rien de choisi, base
+                  seule (donc pas encore de montant), puis base + garniture. */}
+              {!base ? (
+                <span className="text-white/40">Choisissez votre base</span>
+              ) : (
+                <>
+                  {base.name}
+                  {option
+                    ? <> <span className="text-white/40">+</span> {option.name}</>
+                    : <span className="text-white/40"> — choisissez une garniture</span>}
+                </>
+              )}
               {legumes.length > 0 && (
                 <span className="text-white/55"> · {legumes.map(l => l.name).join(', ')}</span>
               )}
@@ -1591,7 +1685,7 @@ function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
               type="button"
               onClick={handleAdd}
               disabled={!canAdd}
-              title={canAdd ? 'Ajouter au panier' : 'Choisissez une garniture'}
+              title={canAdd ? 'Ajouter au panier' : (base ? 'Choisissez une garniture' : 'Choisissez votre base')}
               className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 font-medium transition-all ${
                 canAdd
                   ? 'bg-white text-black hover:bg-white/90 active:scale-95'
@@ -1604,7 +1698,7 @@ function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
           </div>
         </div>
 
-        {cart[base.id] > 0 && (
+        {base && cart[base.id] > 0 && (
           <p className="mt-3 text-xs text-white/45">
             {cart[base.id]} × {base.name} déjà au panier
           </p>
@@ -1612,6 +1706,63 @@ function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
       </div>
     </div>
   );
+}
+
+// Quel modal d'options ouvrir pour ce plat, ou null s'il s'ajoute directement.
+//
+// L'ordre des tests est celui, historique, de MenuItem.handlePlusClick — il
+// compte : un plat peut porter plusieurs champs (une formule a aussi des
+// protéines via ses sous-choix). Cette fonction est la SEULE définition de ce
+// dispatch : MenuItem (site actuel) et useOptionModals (refonte) s'appuient
+// tous les deux dessus, pour qu'ajouter un type d'option demain ne demande
+// qu'une seule modification.
+function pickOptionModal(item) {
+  if (!item) return null;
+  if (item.hasVariants) return 'variants';
+  if (item.hasJusVariants) return 'jus';
+  if (item.hasFormule) return 'formule';
+  if (item.hasProteinVariants) return 'protein';
+  if (item.hasCoulisVariants) return 'coulis';
+  if (item.hasEauVariants) return 'eau';
+  return null;
+}
+
+// Hôte de modaux d'options au niveau page, pour les grilles qui ne portent pas
+// leur propre état (la grille de la refonte). Même dispatch, mêmes composants
+// de modal et même `add(id, variant)` que MenuItem : c'est le même chemin de
+// commande, seule la carte qui déclenche change.
+export function useOptionModals({ stockList = [], add }) {
+  const [pending, setPending] = useState(null); // { item, kind }
+
+  const requestAdd = (item, outOfStock = false) => {
+    if (!item || outOfStock) return;
+    const kind = pickOptionModal(item);
+    if (!kind) { add(item.id, null); return; }
+    setPending({ item, kind });
+  };
+
+  const close = () => setPending(null);
+  const select = (variant) => {
+    if (pending) add(pending.item.id, variant);
+    setPending(null);
+  };
+
+  const item = pending?.item ?? null;
+  const kind = pending?.kind ?? null;
+  const shared = { item, stockList, onClose: close };
+
+  const optionModals = !item ? null : (
+    <>
+      {kind === 'variants' && <VariantModal {...shared} onSelect={select} />}
+      {kind === 'jus'      && <JusModal     {...shared} onSelect={select} />}
+      {kind === 'protein'  && <ProteinModal {...shared} onSelect={select} />}
+      {kind === 'coulis'   && <CoulisModal  {...shared} onSelect={select} />}
+      {kind === 'eau'      && <EauModal     {...shared} onSelect={select} />}
+      {kind === 'formule'  && <FormuleModal {...shared} onConfirm={select} />}
+    </>
+  );
+
+  return { requestAdd, optionModals };
 }
 
 // Composant MenuItem avec support de TOUS les modals
@@ -1645,20 +1796,15 @@ function MenuItem({ item, cart, add, remove, outOfStock = false, stockList = [],
   
   const handlePlusClick = () => {
     if (outOfStock) return;
-    if (item.hasVariants) {
-      setShowVariants(true);
-    } else if (item.hasJusVariants) {
-      setShowJus(true);
-    } else if (item.hasFormule) {
-      setShowFormuleModal(true);
-    } else if (item.hasProteinVariants) {
-      setShowProteinModal(true);
-    } else if (item.hasCoulisVariants) {
-      setShowCoulisModal(true);
-    } else if (item.hasEauVariants) {
-      setShowEauModal(true);
-    } else {
-      handleAdd();
+    // Même dispatch que la grille de la refonte — cf. pickOptionModal.
+    switch (pickOptionModal(item)) {
+      case 'variants': setShowVariants(true); break;
+      case 'jus':      setShowJus(true); break;
+      case 'formule':  setShowFormuleModal(true); break;
+      case 'protein':  setShowProteinModal(true); break;
+      case 'coulis':   setShowCoulisModal(true); break;
+      case 'eau':      setShowEauModal(true); break;
+      default:         handleAdd();
     }
   };
 
@@ -1891,7 +2037,7 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
   );
 }
 
-function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge, disabled }) {
+function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge, halal, disabled }) {
   return (
     <button
       className={`modal-tile tile-${Math.min(index, 6)}`}
@@ -1916,6 +2062,11 @@ function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge, disa
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: 6 }}>
           {name}
+          {/* Mention halal — même géométrie que la pastille `badge` ci-dessous,
+              en vert pour ne pas se confondre avec l'ambre des ruptures. Elle
+              reste affichée sur une option en rupture : c'est une information
+              diététique, pas une accroche, et la ligne est déjà grisée. */}
+          {halal && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'rgba(80,220,140,0.13)', color: 'rgba(110,235,170,0.90)', border: '1px solid rgba(80,220,140,0.22)' }}>HALAL</span>}
           {badge && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'rgba(255,180,0,0.15)', color: 'rgba(255,180,0,0.85)', border: '1px solid rgba(255,180,0,0.2)' }}>{badge}</span>}
         </div>
         {desc && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</div>}
@@ -2077,7 +2228,7 @@ function VariantModal({ item, stockList = [], onSelect, onClose }) {
 function JusModal({ item, stockList = [], onSelect, onClose }) {
   const jusEmojis = { 'pomme-kiwi': '🍏', 'fraise-framboise': '🍓', 'ananas-citron': '🍍', ace: '🍊' };
   return (
-    <BottomSheet title="Jus exotiques maison" subtitle="Pressés à la commande" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
+    <BottomSheet title="Jus exotiques" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
       {item.jusVariants.map((v, i) => {
         const out = isOptionOut(stockList, item.id, v.id);
         return (
@@ -2088,6 +2239,18 @@ function JusModal({ item, stockList = [], onSelect, onClose }) {
   );
 }
 
+// Protéines annonçables halal, pour les modales de choix des plats chauds
+// (Chao Men, Kai Fan, Omelette Fu Young). Ni le porc, ni le mix qui en
+// contient. Le bœuf y figure alors qu'aucun de ces trois plats ne le propose
+// aujourd'hui : c'est la règle qui est écrite ici, pas la carte du moment.
+//
+// ⚠ Volontairement au RENDU et pas dans PROTEIN_OPTS_* : ces tableaux sont
+// spreadés dans FORMULE_PROTEIN_OPTS_OMELETTE et partent dans l'objet variant
+// enregistré avec la commande. Un champ posé dans les données contaminerait
+// les modales de formules et la charge utile des commandes ; ici, la mention
+// ne vit que dans la modale visée.
+const HALAL_PROTEIN_IDS = new Set(['poulet', 'boeuf']);
+
 function ProteinModal({ item, stockList = [], onSelect, onClose }) {
   const protEmojis = { porc: '🍖', poulet: '🍗', 'porc-poulet': '🍽️', veggie: '🥦' };
   return (
@@ -2095,7 +2258,7 @@ function ProteinModal({ item, stockList = [], onSelect, onClose }) {
       {item.proteinVariants.map((v, i) => {
         const out = isOptionOut(stockList, item.id, v.id);
         return (
-          <OptionTile key={v.id} emoji={protEmojis[v.id] || '🍽️'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} disabled={out} badge={out ? OUT_BADGE : null} />
+          <OptionTile key={v.id} emoji={protEmojis[v.id] || '🍽️'} name={v.name} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} disabled={out} halal={HALAL_PROTEIN_IDS.has(v.id)} badge={out ? OUT_BADGE : null} />
         );
       })}
     </BottomSheet>
@@ -2290,12 +2453,12 @@ function FormuleModal({ item, stockList = [], onConfirm, onClose }) {
   // contrairement aux options qui restent visibles mais grisées.
   const platsDec = formuleNamesAvailable(stockList, FORMULE_PLATS_DECOUVERTE);
   const platsVoy = formuleNamesAvailable(stockList, FORMULE_PLATS_VOYAGE);
-  const platEmojis = { 'Chao Men':'🍜','Kai Fan':'🍚','Omelette Fu Young':'🍳','Wok de Bœuf':'🥩','Tartare Tahiti':'🐟','Tartare Hawaï':'🥭','Tartare Samoa':'🌶️' };
-  const platDescs = { 'Chao Men':'Nouilles sautées','Kai Fan':'Riz sauté','Omelette Fu Young':'Omelette aux légumes','Wok de Bœuf':'Wok de bœuf, sauce sésame','Tartare Tahiti':'Thon rouge, sauce coco','Tartare Hawaï':'Thon rouge, sauce sésame','Tartare Samoa':'Thon rouge, sauce piment' };
+  const platEmojis = { 'Chao Men':'🍜','Kai Fan':'🍚','Omelette Fu Young':'🍳','Wok de Bœuf':'🥩','Tartare de thon rouge coco — « Tahiti »':'🐟','Tartare de thon rouge mangue-ananas — « Hawaï »':'🥭','Tartare de thon rouge pimenté — « Samoa »':'🌶️' };
+  const platDescs = { 'Chao Men':'Nouilles sautées','Kai Fan':'Riz sauté','Omelette Fu Young':'Omelette aux légumes','Wok de Bœuf':'Wok de bœuf, sauce sésame','Tartare de thon rouge coco — « Tahiti »':'Servi avec riz et salade','Tartare de thon rouge mangue-ananas — « Hawaï »':'Servi avec riz et salade','Tartare de thon rouge pimenté — « Samoa »':'Servi avec riz et salade' };
   const needsProtein = (p) => ['Chao Men','Kai Fan','Omelette Fu Young'].includes(p);
-  const needsCoulis = (d) => ['Crème Tropicale','Cheesecake'].includes(d);
+  const needsCoulis = (d) => ['Panna cotta','Cheesecake'].includes(d);
   const desserts = formuleNamesAvailable(stockList, FORMULE_DESSERTS);
-  const dessertEmojis = { 'Coulant au chocolat':'🍫','Crème Tropicale':'🥥',"Po'e Banane":'🍌','Cheesecake':'🍰' };
+  const dessertEmojis = { 'Coulant au chocolat':'🍫','Panna cotta':'🥥',"Po'e Banane":'🍌','Cheesecake':'🍰' };
 
   const proteinOpts = (plat) => plat === 'Omelette Fu Young'
     ? FORMULE_PROTEIN_OPTS_OMELETTE
@@ -2637,8 +2800,42 @@ function FormuleModal({ item, stockList = [], onConfirm, onClose }) {
 }
 
 // ─── MINI PANIER FLOTTANT ────────────────────────────────────────────────────
-function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, restaurantOpen = true, manualClosure = false, openStatusLabel = '' }) {
+function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, restaurantOpen = true, manualClosure = false, openStatusLabel = '', skin = 'legacy' }) {
   const totalQty = Object.values(cart).reduce((s, q) => s + q, 0);
+
+  // Habillage refonte : le carré blanc du site historique jure sur le fond
+  // vert-noir. On ne touche QUE les couleurs — position, rayon, espacements et
+  // ombre restent identiques dans les deux peaux, donc rien ne bouge.
+  //
+  // Les valeurs sont lues dans les jetons de src/refonte/refonte.css via
+  // var(--rf-*) plutôt que recopiées ici : la classe `rf-minicart` les déclare
+  // (ce composant est rendu hors de `.rf-root`, il n'en hérite pas).
+  const rf = skin === 'refonte';
+  const c = rf ? {
+    fond:       'var(--rf-bg-elev)',
+    bordure:    '1px solid var(--rf-line)',
+    pastille:   'var(--rf-accent)',
+    icone:      '#060a07',
+    compteur:   'var(--rf-bg)',
+    anneau:     '2px solid var(--rf-bg-elev)',
+    compteurTexte: 'var(--rf-ink)',
+    principal:  'var(--rf-ink)',
+    secondaire: 'var(--rf-ink-3)',
+    chevron:    'var(--rf-ink-3)',
+    eta:        'var(--rf-accent)',
+  } : {
+    fond:       'white',
+    bordure:    'none',
+    pastille:   'black',
+    icone:      'white',
+    compteur:   '#111',
+    anneau:     '2px solid white',
+    compteurTexte: 'white',
+    principal:  'black',
+    secondaire: 'rgba(0,0,0,0.45)',
+    chevron:    'rgba(0,0,0,0.4)',   // 0.4 et non 0.45 : valeur d'origine, conservée telle quelle
+    eta:        '#C9A96E',
+  };
   const cartItems = items.filter(i => i.qty > 0).slice(0, 3);
   // ETA visible directement dans le mini-cart pour rassurer avant clic
   // (mode='delivery' par défaut tant que le client n'a pas ouvert le
@@ -2658,6 +2855,7 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
   return (
     <div
       onClick={onOpen}
+      className={rf ? 'rf-minicart' : undefined}
       style={{
         position: 'fixed',
         bottom: 24,
@@ -2667,7 +2865,8 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
         alignItems: 'center',
         gap: 12,
         padding: '12px 16px',
-        background: 'white',
+        background: c.fond,
+        border: c.bordure,
         borderRadius: 20,
         boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
         cursor: 'pointer',
@@ -2681,14 +2880,14 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
       onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.45)'; }}
     >
       <div style={{ position: 'relative', flexShrink: 0 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <ShoppingCart size={18} color="white" />
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: c.pastille, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ShoppingCart size={18} color={c.icone} />
         </div>
         <span style={{
           position: 'absolute', top: -6, right: -6,
           width: 20, height: 20, borderRadius: '50%',
-          background: '#111', border: '2px solid white',
-          color: 'white', fontSize: 10, fontWeight: 700,
+          background: c.compteur, border: c.anneau,
+          color: c.compteurTexte, fontSize: 10, fontWeight: 700,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {totalQty}
@@ -2696,21 +2895,21 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.45)', marginBottom: 1 }}>
+        <div style={{ fontSize: 11, color: c.secondaire, marginBottom: 1 }}>
           {cartItems.map(i => i.name).join(', ')}{cartItems.length < Object.keys(cart).length ? '…' : ''}
         </div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'black' }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: c.principal }}>
           {format(total)}
-          {discount > 0 && <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(0,0,0,0.45)', marginLeft: 4 }}>(-10%)</span>}
+          {discount > 0 && <span style={{ fontSize: 11, fontWeight: 400, color: c.secondaire, marginLeft: 4 }}>(-10%)</span>}
         </div>
         {restaurantOpen && (
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#C9A96E', marginTop: 1 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: c.eta, marginTop: 1 }}>
             {etaLabel}
           </div>
         )}
       </div>
 
-      <ChevronRight size={16} color="rgba(0,0,0,0.4)" style={{ flexShrink: 0 }} />
+      <ChevronRight size={16} color={c.chevron} style={{ flexShrink: 0 }} />
     </div>
   );
 }
