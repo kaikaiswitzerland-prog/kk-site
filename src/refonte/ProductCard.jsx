@@ -73,6 +73,11 @@ export default function ProductCard({
             decoding="async"
             onError={onError}
             className={`rf-card__img rf-card__img--${current.kind}`}
+            /* Recadrage du repli JPG quand le sujet n'est pas au centre de la
+               photo (cf. `jpgPos` dans productMeta.js). Sans effet sur la mise
+               en page : object-position déplace l'image DANS sa boîte, il n'en
+               change pas les dimensions. */
+            style={current.kind === 'jpg' && meta.jpgPos ? { objectPosition: meta.jpgPos } : undefined}
           />
         )}
       </div>

@@ -55,6 +55,22 @@ export const BADGE_LABELS = {
   signature: 'Signature',
 };
 
+// ─── CADRAGE DES JPG ─────────────────────────────────────────────────────────
+//
+// `jpgPos` surcharge l'`object-position` du repli JPG. Les photos sont en
+// 6000×4000 (3:2) alors que la vignette est carrée : `object-fit: cover` rogne
+// donc 2000 px de largeur, 1000 de chaque côté par défaut. Quand le sujet n'est
+// pas au centre du cadre photo, ce rognage l'ampute — c'est le cas du
+// cheesecake, dont la part est dans le tiers gauche de l'image.
+//
+// La valeur ne change AUCUNE dimension : `object-position` ne fait que
+// déplacer l'image à l'intérieur d'une boîte dont la taille est fixée par le
+// CSS. Baisser le pourcentage montre plus du côté GAUCHE de la photo, ce qui
+// décale le sujet vers la DROITE dans la vignette.
+//
+// ⚠ Ne s'applique qu'au JPG. Un PNG détouré s'affiche en `contain` et doit
+// rester centré : ProductCard ignore `jpgPos` dans ce cas.
+
 export const PRODUCT_META = {
   // ── Entrées ──────────────────────────────────────────────────────────────
   '1':  { png: `${PNG_DIR}/entree-veloute.png`,           jpg: '/entree-veloute.jpg',      badge: null,        short: 'Légumes de saison, coco' },
@@ -87,7 +103,7 @@ export const PRODUCT_META = {
   '15': { png: `${PNG_DIR}/dessert-coulant-chocolat.png`, jpg: '/dessert-coulant.jpg',     badge: null,        short: 'Gâteau au chocolat fondant' },
   '16': { png: `${PNG_DIR}/dessert-creme-tropicale.png`,  jpg: '/dessert-creme.jpg',       badge: 'maison' },
   '17': { png: `${PNG_DIR}/dessert-poe-banane.png`,       jpg: '/dessert-poe.jpg',         badge: 'maison',    short: 'Dessert tahitien à la banane' },
-  '18': { png: `${PNG_DIR}/dessert-cheesecake.png`,       jpg: '/dessert-cheesecake.jpg',  badge: null },
+  '18': { png: `${PNG_DIR}/dessert-cheesecake.png`,       jpg: '/dessert-cheesecake.jpg',  badge: null, jpgPos: '0% 50%' },
 
   // ── Boissons ─────────────────────────────────────────────────────────────
   //    19 : quatre parfums dans JUS_OPTS (menuMeta.js), le détail est dans le
@@ -104,7 +120,7 @@ export const PRODUCT_META = {
   '24': { png: `${PNG_DIR}/wok-riz-blanc.png`,            jpg: null, badge: 'nouveau' },
 };
 
-const EMPTY_META = { png: null, jpg: null, badge: null, short: null };
+const EMPTY_META = { png: null, jpg: null, badge: null, short: null, jpgPos: null };
 
 // Lecture tolérante : un id inconnu ne casse pas la grille, il rend une carte
 // sans photo ni badge — la description retombe sur celle du plat.
