@@ -26,6 +26,7 @@
 // globalStyles — à traiter le jour où le hero passe sur la page principale.
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 const VIDEO_SRC = '/hero-bol.mp4';
 
@@ -234,7 +235,18 @@ export default function HeroScrub({ ctaTargetId = 'rf-entrees' }) {
     const onScroll = () => {
       unlock();
       target = progress();
-      if (target > 0.002) setScrolled(true);
+      // Réversible : l'indice de scroll revient si on remonte tout en haut.
+      // Le hero y retrouve sa première image, l'écran est identique au
+      // chargement — l'invitation doit l'être aussi, sinon seul un
+      // rechargement la ramène.
+      //
+      // Le seuil de 0,2 % est une zone morte contre le bruit sous-pixel :
+      // il vaut ~2 px sur un écran de 930 px (la distance de scrub égale une
+      // hauteur d'écran), et sans lui la moindre valeur non nulle lancerait un
+      // fondu aller-retour. Le rebond élastique du haut de page, lui, est déjà
+      // neutralisé en amont : progress() borne à 0 via Math.max, un
+      // sur-défilement négatif ne peut donc pas faire disparaître l'indice.
+      setScrolled(target > 0.002);
       setRevealed(target >= REVEAL_AT);
       kick();
     };
@@ -319,12 +331,21 @@ export default function HeroScrub({ ctaTargetId = 'rf-entrees' }) {
           </div>
         </div>
 
+        {/* Invitation à défiler. Elle n'est PAS rendue sous
+            prefers-reduced-motion : là, le scrub est désactivé, le plat est
+            déjà composé et le CTA visible — inviter à défiler « pour
+            découvrir » pointerait vers une animation qui n'a pas lieu.
+
+            Elle s'efface dès le premier vrai pixel de scroll et revient si on
+            remonte tout en haut (`scrolled`, cf. onScroll), en fondu de 0.45 s
+            côté CSS dans les deux sens. */}
         {!reduced && (
           <div
             className={`rf-scrub__hint${scrolled ? ' rf-scrub__hint--off' : ''}`}
             aria-hidden="true"
           >
-            <span className="rf-scrub__hint-arrow">▼</span> scrolle
+            <span className="rf-scrub__hint-label">Défilez pour découvrir</span>
+            <ChevronDown className="rf-scrub__hint-arrow" size={18} strokeWidth={2.2} />
           </div>
         )}
       </div>

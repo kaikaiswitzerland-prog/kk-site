@@ -275,30 +275,64 @@ html:has(.rf-root), body:has(.rf-root) { overflow-x: clip; }
 .rf-scrub__cta:active { transform: scale(0.97); }
 
 /* Indice de scroll, calé au bas de la scène pour ne pas déplacer le titre
-   quand il s'efface. */
+   quand il s'efface.
+
+   Ce hero ne défile pas, il se COMPOSE : le scroll pilote la vidéo au lieu de
+   faire descendre la page. Sans invitation, l'accueil se lit comme une image
+   fixe et l'animation n'est jamais déclenchée — d'où un libellé qui promet une
+   découverte, pas un simple « vous pouvez défiler ».
+
+   Décoratif de bout en bout : `aria-hidden` côté JSX, et `pointer-events: none`
+   ici. Ce n'est pas un correctif — vérifié en 740x360, 500x932 et 390x600, sa
+   boîte ne croise celle du CTA sur aucun : c'est une précaution. Une fois à
+   `opacity: 0` il reste présent et pleine largeur au bas de la scène, donc
+   n'importe quel remaniement qui remonte le CTA le ferait avaler un tap sans
+   rien montrer à l'écran. Le coût est nul, la panne serait invisible.
+
+   ⚠ prefers-reduced-motion : le composant ne le rend PAS du tout (voir
+   HeroScrub.jsx). Sous cette préférence le scrub est désactivé, le plat est
+   déjà composé et le CTA visible d'emblée : inviter à défiler « pour
+   découvrir » désignerait une animation qui n'existe plus. Le neutraliser ne
+   suffirait donc pas, il faut le retirer. */
 .rf-scrub__hint {
   position: absolute;
   z-index: 2;
   left: 0;
   right: 0;
   bottom: 22px;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+.rf-scrub__hint--off { opacity: 0; }
+
+.rf-scrub__hint-label {
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--rf-ink-3);
-  transition: opacity 0.45s ease;
+  /* Lime atténué : l'indice invite, il ne rivalise pas avec le titre. */
+  color: var(--rf-accent-dim);
+  /* Même halo que le kicker, et pour la même raison : la vidéo traverse des
+     frames très claires, où du lime à 10 px se dissout sans fond sombre. */
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.85);
 }
-.rf-scrub__hint--off { opacity: 0; }
+
+/* La flèche porte le lime plein : c'est elle qui accroche l'œil et qui dit le
+   sens du geste. `drop-shadow` et non `text-shadow` — c'est un SVG, pas du
+   texte. */
 .rf-scrub__hint-arrow {
-  display: inline-block;
-  margin-right: 4px;
+  display: block;
+  color: var(--rf-accent);
+  filter: drop-shadow(0 1px 8px rgba(0, 0, 0, 0.8));
   animation: rfHintBob 1.9s ease-in-out infinite;
 }
 @keyframes rfHintBob {
-  0%, 100% { transform: translateY(0); opacity: 0.55; }
-  50%      { transform: translateY(4px); opacity: 1; }
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50%      { transform: translateY(5px); opacity: 1; }
 }
 
 @media (min-width: 768px) {
