@@ -29,6 +29,7 @@ const SECTION_META = [
     note: 'Servis avec riz et salade.' },
   { key: 'formules', id: 'rf-formules', kicker: 'À partager',     title: 'Formules' },
   { key: 'desserts', id: 'rf-desserts', kicker: 'Pour finir',     title: 'Desserts' },
+  { key: 'jusMaison', id: 'rf-jus-maison', kicker: 'Pressés maison', title: 'Jus maison' },
   { key: 'boissons', id: 'rf-boissons', kicker: 'À côté',         title: 'Boissons' },
 ];
 

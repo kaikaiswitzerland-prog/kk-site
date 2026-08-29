@@ -36,10 +36,18 @@ export const PNG_DIR = '/plats';
 
 // ─── BADGES ──────────────────────────────────────────────────────────────────
 //
-// Cinq types seulement : 'halal' | 'maison' | 'nouveau' | 'populaire' |
-// 'signature'. Un plat n'en porte qu'UN — la pastille est en position absolue
-// dans le coin haut-gauche de la photo, deux se superposeraient. Poser un
-// nouveau badge sur une carte qui en avait déjà un le REMPLACE donc.
+// Six types seulement : 'halal' | 'maison' | 'nouveau' | 'poids' |
+// 'populaire' | 'signature'. Un plat n'en porte qu'UN — la pastille est en
+// position absolue dans le coin haut-gauche de la photo, deux se
+// superposeraient. Poser un nouveau badge sur une carte qui en avait déjà un
+// le REMPLACE donc.
+//
+// ⚠ C'est ce qui est arrivé à Tahiti (plat 9) : il portait 'signature', il
+// porte maintenant '180 g'. Arbitrage assumé — le grammage est une donnée
+// vérifiable qui aide à comparer les quatre tartares entre eux, « Signature »
+// était une auto-déclaration. Les quatre plats froids sont désormais
+// homogènes ; l'entrée 4 (« Salade de thon rouge »), qui est un autre produit
+// et un autre format, garde la sienne.
 //
 // ⚠ 'halal' reste disponible dans le système mais n'est posé sur AUCUN plat, et
 // c'est délibéré : le halal se joue au niveau de la GARNITURE, pas du plat.
@@ -51,6 +59,9 @@ export const BADGE_LABELS = {
   halal: 'Halal',
   maison: 'Maison',
   nouveau: 'Nouveau',
+  // Espace INSÉCABLE entre le nombre et l'unité : « 180 » et « g » ne doivent
+  // jamais se retrouver sur deux lignes, et la pastille fait 9 px de haut.
+  poids: '180\u00A0g',
   populaire: 'Populaire',
   signature: 'Signature',
 };
@@ -97,10 +108,10 @@ export const PRODUCT_META = {
   //    Le nom porte déjà la déclinaison, la section porte déjà l'accompagnement
   //    (« Servis avec riz et salade ») : la ligne courte dit donc la marinade,
   //    commune aux quatre, et la sauce, qui les sépare.
-  '9':  { png: `${PNG_DIR}/froid-tahiti.png`,             jpg: '/froid-tahitien.jpg',      badge: 'signature', short: 'Citron vert, sauce coco' },
-  '10': { png: `${PNG_DIR}/froid-hawai.png`,              jpg: '/froid-kaikai.jpg',        badge: null,        short: 'Citron vert, sauce sésame' },
-  '11': { png: `${PNG_DIR}/froid-samoa.png`,              jpg: '/froid-haka.jpg',          badge: null,        short: 'Citron vert, sauce piment' },
-  '12': { png: `${PNG_DIR}/froid-manoa.png`,              jpg: '/froid-mokai.jpg',         badge: null,        short: 'Citron vert, sauce arachide' },
+  '9':  { png: `${PNG_DIR}/froid-tahiti.png`,             jpg: '/froid-tahitien.jpg',      badge: 'poids',     short: 'Citron vert, sauce coco' },
+  '10': { png: `${PNG_DIR}/froid-hawai.png`,              jpg: '/froid-kaikai.jpg',        badge: 'poids',     short: 'Citron vert, sauce sésame' },
+  '11': { png: `${PNG_DIR}/froid-samoa.png`,              jpg: '/froid-haka.jpg',          badge: 'poids',     short: 'Citron vert, sauce piment' },
+  '12': { png: `${PNG_DIR}/froid-manoa.png`,              jpg: '/froid-mokai.jpg',         badge: 'poids',     short: 'Citron vert, sauce arachide' },
 
   // ── Formules ─────────────────────────────────────────────────────────────
   //    13 tient déjà sur une ligne : pas de `short`, le `desc` officiel passe.
@@ -119,6 +130,24 @@ export const PRODUCT_META = {
   //    modal de choix. 20 tient déjà sur une ligne.
   '19': { png: `${PNG_DIR}/boisson-jus-exotiques.png`,    jpg: '/boisson-jus.jpg',         badge: null,        short: '4 parfums au choix' },
   '20': { png: `${PNG_DIR}/boisson-eau.png`,              jpg: '/boisson-eau.jpg',         badge: null },
+
+  // ── Jus maison (section à part : gamme distincte des jus exotiques) ──────
+  //    Pas de PNG détouré : la photo EST un packshot, gobelet sur fond net.
+  //    `jpgPos` haut (30 %) parce que la photo est verticale et que le sujet
+  //    occupe le haut du cadre — un centrage montrerait surtout le sol.
+  //    `short: ''` et non l'absence de `short` : la carte ne porte AUCUNE
+  //    ligne de description. Sans `short`, elle retomberait sur la description
+  //    du plat, c'est-à-dire la liste des quatre parfums — précisément ce
+  //    qu'on ne veut pas voir ici (cf. ProductCard).
+  //
+  //    La vignette montre les QUATRE jus ensemble : la carte vend la gamme,
+  //    pas un parfum. Les visuels individuels restent sur les parfums, dans la
+  //    modale de choix (JUS_PHOTOS dans App.jsx).
+  //
+  //    Pas de `jpgPos` : sur une photo de groupe le sujet occupe toute la
+  //    largeur, un recadrage décentré amputerait un gobelet d'un côté. Le
+  //    centre est ici le seul cadrage neutre.
+  '25': { png: null,                                     jpg: '/jus-maison-groupe.jpg',   badge: 'maison',    short: '' },
 
   // ── Bases du composeur de wok (jamais rendues en fiche produit ; le PNG
   //    sert aux vignettes du composeur une fois shooté). Aucun JPG n'existe,

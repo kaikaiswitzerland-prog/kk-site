@@ -48,7 +48,13 @@ export default function ProductCard({
   // pour cette largeur (productMeta.js). Sans elle, on retombe sur la
   // description officielle du plat (MENU dans App.jsx), tronquée par le CSS —
   // jamais sur du vide.
-  const desc = meta.short || item.desc || '';
+  //
+  // ⚠ Trois cas, pas deux. `short` ABSENT (ou null) veut dire « pas de version
+  // courte, prends celle du plat » ; `short: ''` veut dire « pas de ligne du
+  // tout », ce que demande une carte dont le nom se suffit. Un simple `||`
+  // confondait les deux et faisait réapparaître la description longue là où on
+  // voulait le silence.
+  const desc = meta.short != null ? meta.short : (item.desc || '');
 
   return (
     <article className={`rf-card${outOfStock ? ' rf-card--out' : ''}`}>
