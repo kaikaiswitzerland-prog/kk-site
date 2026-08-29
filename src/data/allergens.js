@@ -89,6 +89,7 @@ export const ITEM_ALLERGENS = {
 
   // ─── BOISSONS ───
   "19": { contains: [], traces: [] },  // Jus exotiques
+  "25": { contains: [], traces: [] },  // Jus maison KaïKaï
   "20": { contains: [], traces: [] },  // Eau plate/gazeuse
 
   // ─── BASES DU COMPOSEUR DE WOKS ───

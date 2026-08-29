@@ -43,6 +43,9 @@ export const MENU_PRICES = {
   '19': 3.50,   // Jus exotiques (4 variantes)
   '20': 3.00,   // Eau plate/gazeuse (2 variantes)
 
+  // JUS MAISON — gamme distincte des jus exotiques (19), à son propre prix.
+  '25': 4.90,   // Jus maison KaïKaï (4 parfums)
+
   // BASES DU COMPOSEUR DE WOKS — ces ids n'ont pas de prix propre : c'est la
   // garniture qui fait le prix (MENU_OPTION_PRICES ci-dessous). La valeur ici
   // n'est qu'un repli, utilisé seulement si un panier arrivait sans garniture.
@@ -82,6 +85,12 @@ export const MENU_OPTION_PRICES = {
   '22:leg:choux': 1.50, '22:leg:patate': 1.50, '22:leg:poivrons': 1.50,
   '23:leg:choux': 1.50, '23:leg:patate': 1.50, '23:leg:poivrons': 1.50,
   '24:leg:choux': 1.50, '24:leg:patate': 1.50, '24:leg:poivrons': 1.50,
+
+  // Portion de garniture supplémentaire — additif, comme les légumes.
+  '21:sup:portion': 1.50,
+  '22:sup:portion': 1.50,
+  '23:sup:portion': 1.50,
+  '24:sup:portion': 1.50,
 };
 
 // Nombre de légumes offerts avec un plat. Au-delà, chacun est facturé.
@@ -133,6 +142,19 @@ export function getServerUnitPrice(itemId, variant) {
     // jamais sous-facturer.
     supplements.sort((a, b) => a - b);
     supplements.slice(LEGUMES_INCLUS).forEach((p) => { price += p; });
+  }
+
+  // 3. Portion de garniture supplémentaire — ADDITIVE, un seul exemplaire.
+  //
+  // Le composeur n'en propose qu'une : ce n'est pas un compteur. On ne lit
+  // donc pas de quantité, et un panier forgé qui en enverrait une ne serait
+  // facturé qu'une fois — jamais moins que ce que le client a vu.
+  //
+  // `=== true` strictement : la même condition que côté client, pour que
+  // affiché et facturé ne puissent pas diverger sur une valeur limite.
+  if (variant && typeof variant === 'object' && variant.supPortion === true) {
+    const sup = MENU_OPTION_PRICES[`${id}:sup:portion`];
+    if (typeof sup === 'number' && sup > 0) price += sup;
   }
 
   // Arrondi au centime : 18.90 + 1.50 traîne des flottants en binaire.

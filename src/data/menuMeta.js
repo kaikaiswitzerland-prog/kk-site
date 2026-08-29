@@ -17,6 +17,14 @@ export const MENU_GROUPS = [
   { id: 'froid',    label: 'Plats froids' },
   { id: 'formules', label: 'Formules' },
   { id: 'desserts', label: 'Desserts' },
+  // Avant « Boissons », comme sur la carte : les jus maison sont une gamme à
+  // part, pas une sous-rubrique des boissons.
+  //
+  // ⚠ Un plat dont la `category` n'a pas de groupe ici est ORPHELIN : il
+  // disparaît de l'admin stock (getMenuByGroup) et de la matrice allergènes,
+  // qui filtrent tous deux par groupe. Il resterait commandable, mais plus
+  // personne ne pourrait le basculer en rupture.
+  { id: 'jus-maison', label: 'Jus maison' },
   { id: 'boissons', label: 'Boissons' },
 ];
 
@@ -128,6 +136,23 @@ export const JUS_OPTS = [
   { id: "ace", name: "🍊 Cocktail ACE", desc: "Vitaminé (A, C, E)" }
 ];
 
+// Plat 25 — Jus maison KaïKaï. Gamme NOUVELLE, qui coexiste avec les jus
+// exotiques du plat 19 : celui-ci reste à la carte, à son prix et avec ses
+// parfums d'origine.
+//
+// ⚠ Ces ids sont propres au plat 25. Les clés de rupture sont préfixées par
+// l'id du plat (« 19:fraise-framboise » et « 25:fraise-framboise » sont deux
+// clés distinctes), donc couper un parfum d'un côté ne coupe rien de l'autre —
+// ce sont deux produits, pressés différemment, vendus à deux prix.
+//
+// Comme JUS_OPTS, l'emoji fait partie du `name` : la modale le sépare au rendu.
+export const JUS_MAISON_OPTS = [
+  { id: "kiwi-pomme", name: "🥝 Kiwi – Pomme", desc: "Frais et acidulé" },
+  { id: "fraise-framboise", name: "🍓 Fraise – Framboise", desc: "Doux et fruité" },
+  { id: "ananas-pomme", name: "🍍 Ananas – Pomme", desc: "Tropical et doux" },
+  { id: "orange-carotte", name: "🥕 Orange – Carotte", desc: "Vitaminé" }
+];
+
 // Plat 20 — Eau. Même remarque que JUS_OPTS sur l'emoji dans le `name`.
 export const EAU_OPTS = [
   { id: "plate", name: "💧 Eau Plate", desc: "Eau minérale naturelle" },
@@ -167,6 +192,8 @@ export const MENU_ITEMS = [
 
   { id: '19', name: 'Jus exotiques',        category: 'boissons', jusVariants: JUS_OPTS },
   { id: '20', name: 'Eau plate/gazeuse',    category: 'boissons', eauVariants: EAU_OPTS },
+
+  { id: '25', name: 'Jus maison KaïKaï',    category: 'jus-maison', jusVariants: JUS_MAISON_OPTS },
 
   // Bases du composeur de woks. Elles ne sont pas rendues en fiche sur le site
   // public, mais elles DOIVENT figurer ici : api/create-checkout.js résout

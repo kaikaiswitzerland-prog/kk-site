@@ -33,6 +33,7 @@ import {
   PROTEIN_OPTS_OMELETTE,
   COULIS_OPTS,
   JUS_OPTS,
+  JUS_MAISON_OPTS,
   EAU_OPTS,
   LEGUME_OPTS,
   LEGUME_STOCK_ID,
@@ -182,6 +183,15 @@ const OPTION_PRICES = {
   "22:leg:choux": 1.50, "22:leg:patate": 1.50, "22:leg:poivrons": 1.50,
   "23:leg:choux": 1.50, "23:leg:patate": 1.50, "23:leg:poivrons": 1.50,
   "24:leg:choux": 1.50, "24:leg:patate": 1.50, "24:leg:poivrons": 1.50,
+
+  // Portion de garniture supplémentaire — additif, comme les légumes.
+  // Une clé par base plutôt qu'une constante unique : c'est ce qui permettra
+  // de faire diverger le tarif d'une base à l'autre sans toucher au calcul,
+  // et une base inconnue ne peut pas se voir facturer un supplément.
+  "21:sup:portion": 1.50,
+  "22:sup:portion": 1.50,
+  "23:sup:portion": 1.50,
+  "24:sup:portion": 1.50,
 };
 
 // Un plat dont les options ne coûtent pas toutes la même chose : le prix de
@@ -312,6 +322,19 @@ const MENU = [
     eauVariants: EAU_OPTS
   },
 
+  // JUS MAISON — gamme distincte des jus exotiques (19), pressée maison.
+  // Le plat 19 reste à la carte, à son prix et avec ses parfums d'origine :
+  // ce sont deux produits, pas un remplacement.
+  {
+    id: "25",
+    name: "Jus maison KaïKaï",
+    desc: "Kiwi-pomme, fraise-framboise, ananas-pomme, orange-carotte",
+    price: 4.90,
+    category: "jus-maison",
+    hasJusVariants: true,
+    jusVariants: JUS_MAISON_OPTS
+  },
+
   // ─── BASES DU COMPOSEUR DE WOKS (ids 21 à 24) ─────────────────────────────
   //
   // ⚠ Ces 4 entrées ne sont JAMAIS rendues en fiche plat. Elles n'existent que
@@ -401,6 +424,15 @@ function unitPrice(item, variant) {
     supplements.slice(LEGUMES_INCLUS).forEach((p) => { price += p; });
   }
 
+  // Portion de garniture supplémentaire — additif, un seul exemplaire.
+  // `=== true` et pas une simple vérité : un panier forgé portant
+  // `supPortion: 1` ne doit pas emprunter un chemin de prix différent de
+  // celui qu'a vu le client. Le serveur applique la MÊME condition stricte.
+  if (variant && typeof variant === "object" && variant.supPortion === true) {
+    const p = OPTION_PRICES[`${item.id}:sup:portion`];
+    if (typeof p === "number" && p > 0) price += p;
+  }
+
   return Math.round(price * 100) / 100;
 }
 
@@ -427,6 +459,9 @@ const IDS_FROID    = [9, 10, 11, 12];
 const IDS_FORMULES = [13, 14];
 const IDS_DESSERT  = [15, 16, 17, 18];
 const IDS_BOISSON  = [19, 20];
+// Section propre : les jus maison ne se rangent pas avec les jus exotiques,
+// ce sont deux gammes distinctes, à deux prix.
+const IDS_JUS_MAISON = [25];
 
 const byIds = (ids) => ids.map(id => MENU.find(m => m.id === String(id))).filter(Boolean);
 const SEC_ENTREES  = byIds(IDS_ENTREES);
@@ -436,11 +471,12 @@ const SEC_FROID    = byIds(IDS_FROID);
 const SEC_FORMULES = byIds(IDS_FORMULES);
 const SEC_DESSERT  = byIds(IDS_DESSERT);
 const SEC_BOISSON  = byIds(IDS_BOISSON);
+const SEC_JUS_MAISON = byIds(IDS_JUS_MAISON);
 
 // Les bases y figurent bien : MENU_SORTED sert au panier et à la validation du
 // panier restauré, pas seulement à l'affichage des fiches. Sans elles, un wok
 // composé disparaîtrait du panier au rechargement.
-const ORDERED_IDS = [...IDS_ENTREES, ...IDS_WOK, ...IDS_CHAUD, ...IDS_FROID, ...IDS_FORMULES, ...IDS_DESSERT, ...IDS_BOISSON];
+const ORDERED_IDS = [...IDS_ENTREES, ...IDS_WOK, ...IDS_CHAUD, ...IDS_FROID, ...IDS_FORMULES, ...IDS_DESSERT, ...IDS_BOISSON, ...IDS_JUS_MAISON];
 const MENU_SORTED = byIds(ORDERED_IDS);
 
 const MENU_BY_ID = Object.fromEntries(MENU.map(m => [m.id, m]));
@@ -511,6 +547,7 @@ export const menuCatalog = {
     formules: SEC_FORMULES,
     desserts: SEC_DESSERT,
     boissons: SEC_BOISSON,
+    jusMaison: SEC_JUS_MAISON,
   },
   isUnavailable: isMenuItemUnavailable,
 };
@@ -636,10 +673,15 @@ const DESSERT_PHOTO_POS = {
 const BOISSON_PHOTOS = {
   "19": "/boisson-jus.jpg",
   "20": "/boisson-eau.jpg",
+  // Jus maison : la photo de GROUPE. Elle sert la fiche produit de la peau
+  // historique et l'en-tête de la modale — les deux vendent la gamme entière.
+  // Les visuels par parfum vivent dans JUS_PHOTOS, sur les tuiles de choix.
+  "25": "/jus-maison-groupe.jpg",
 };
 const BOISSON_PHOTO_POS = {
   "19": "center 50%",
   "20": "center 45%",
+  "25": "center",
 };
 
 function format(price) {
@@ -1027,6 +1069,26 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
     setCartVariants(nextVariants);
   }, [outOfStockItems, cart, cartVariants]);
 
+  // Retour au menu depuis l'écran de confirmation. Partagé par les deux peaux :
+  // il nettoie l'URL pour qu'un F5 ne ramène pas sur /payment-success.
+  const backToMenuFromSuccess = () => {
+    try { window.history.replaceState(null, '', '/'); } catch { /* ignore */ }
+    setSuccessOrderId(null);
+    setStep('menu');
+  };
+
+  // Remontée en haut à l'entrée en confirmation.
+  //
+  // La correction de fond est ailleurs (la confirmation est désormais rendue
+  // DANS le shell, pas en frère — voir RefonteShell.jsx) : sans elle, remonter
+  // ne ferait que révéler un écran vide. Ceci couvre le cas restant, le retour
+  // de SumUp : la page est rechargée sur /payment-success et le navigateur y
+  // restaure parfois la position de défilement d'avant le paiement.
+  useEffect(() => {
+    if (step !== 'success') return;
+    try { window.scrollTo(0, 0); } catch { /* ignore */ }
+  }, [step]);
+
   const handleOrderSubmit = async ({ form, paymentMethod }) => {
     // Garde-fou front : si le restaurant a fermé entre l'ouverture du
     // Checkout et le clic submit (toggle admin ou bascule horaire pendant
@@ -1235,7 +1297,16 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
             onShowZones={() => setShowZonesModal(true)}
             onShowAbout={() => setShowAbout(true)}
             restaurant={RESTAURANT_INFO}
-          />
+          >
+            {/* Rendu à la place de la carte, pas en dessous : `.rf-root` fait
+                100vh de haut, un frère commencerait donc un écran plus bas. */}
+            {step === "success" && (
+              <OrderSuccessPage
+                initialOrderId={successOrderId}
+                onBackToMenu={backToMenuFromSuccess}
+              />
+            )}
+          </RefonteShell>
         </Suspense>
       )}
 
@@ -1303,6 +1374,12 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
                   photo={DESSERT_PHOTOS[item.id]} photoPos={DESSERT_PHOTO_POS[item.id]} />
               ))}
 
+              <h3 id="section-jus-maison" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧃 Jus maison</h3>
+              {SEC_JUS_MAISON.map(item => (
+                <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={isMenuItemUnavailable(outOfStockItems, item)} stockList={outOfStockItems}
+                  photo={BOISSON_PHOTOS[item.id]} photoPos={BOISSON_PHOTO_POS[item.id]} />
+              ))}
+
               <h3 id="section-boissons" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧉 Boissons</h3>
               {SEC_BOISSON.map(item => (
                 <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={isMenuItemUnavailable(outOfStockItems, item)} stockList={outOfStockItems}
@@ -1347,15 +1424,14 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
 
       {showZonesModal && <ZonesModal onClose={() => setShowZonesModal(false)} />}
 
-      {step === "success" && (
+      {/* Peau historique uniquement : son menu est entièrement démonté en
+          confirmation et aucun conteneur intermédiaire ne réserve une hauteur
+          d'écran, donc le rendu en frère y est sans danger. La refonte, elle,
+          rend la confirmation DANS son shell (voir plus haut). */}
+      {step === "success" && !isRefonte && (
         <OrderSuccessPage
           initialOrderId={successOrderId}
-          onBackToMenu={() => {
-            // Nettoie l'URL pour que F5 ne ramène pas sur /payment-success
-            try { window.history.replaceState(null, '', '/'); } catch { /* ignore */ }
-            setSuccessOrderId(null);
-            setStep('menu');
-          }}
+          onBackToMenu={backToMenuFromSuccess}
         />
       )}
 
@@ -1523,6 +1599,8 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
   const [baseId, setBaseId] = useState(null);
   const [optionId, setOptionId] = useState(null);
   const [legumeIds, setLegumeIds] = useState([]);
+  // Portion de garniture en plus : un interrupteur, pas un compteur.
+  const [supPortion, setSupPortion] = useState(false);
 
   // Pas de repli sur bases[0] : ce repli est précisément ce qui pré-cochait
   // « Nouilles sautées ». Une base inconnue (id périmé) donne null, pas la
@@ -1540,9 +1618,22 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
 
   // Ce qui part réellement au panier — sert aussi au calcul du total, donc
   // affiché et facturé sont calculés sur le MÊME objet.
+  // `supPortion` n'est posé que s'il est vrai : une variante sans supplément
+  // garde exactement la forme qu'elle avait avant, donc les paniers déjà en
+  // base et les tickets déjà imprimés se relisent à l'identique.
   const variant = option
-    ? { ...option, legumes: legumes.map(({ id, name }) => ({ id, name })) }
+    ? {
+        ...option,
+        legumes: legumes.map(({ id, name }) => ({ id, name })),
+        ...(supPortion ? { supPortion: true } : {}),
+      }
     : null;
+
+  // Le veggie est une omelette : lui proposer une « portion de viande » serait
+  // faux. Même supplément, même tarif, seul le mot change avec la garniture.
+  const supLabel = option?.id === 'veggie'
+    ? "Portion d'omelette en plus"
+    : 'Portion de viande en plus';
 
   const baseOut = base ? outOfStockFor(base) : false;
   const optionOut = base && option ? isOptionOut(stockList, base.id, option.id) : false;
@@ -1629,7 +1720,11 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
               montant n'apparaît ici : le prix ne vit que dans le total, qui
               s'ajuste à chaque sélection. */}
           <fieldset style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
-            <WokLegend step="3" title="Votre garniture" note={base ? undefined : 'Choisissez d\'abord une base'} />
+            <WokLegend
+              step="3"
+              title="Votre garniture"
+              note={base ? `Portion en plus · +${format(1.5)}` : 'Choisissez d\'abord une base'}
+            />
             {options.map((o) => (
               <WokOption
                 key={o.id}
@@ -1640,6 +1735,20 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
                 onClick={() => setOptionId(o.id)}
               />
             ))}
+
+            {/* Portion supplémentaire — n'apparaît qu'une fois la garniture
+                choisie : hors de ce contexte elle ne désigne rien, et son
+                libellé dépend justement de la garniture. Aucun montant sur la
+                tuile : comme pour les légumes, le tarif est annoncé une seule
+                fois dans la légende, et seul le total bouge. */}
+            {option && (
+              <WokOption
+                emoji="➕"
+                label={supLabel}
+                active={supPortion}
+                onClick={() => setSupPortion(v => !v)}
+              />
+            )}
           </fieldset>
         </div>
 
@@ -1665,10 +1774,20 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
               {legumes.length > 0 && (
                 <span className="text-white/55"> · {legumes.map(l => l.name).join(', ')}</span>
               )}
+              {supPortion && option && (
+                <span className="text-white/55"> · {supLabel.toLowerCase()}</span>
+              )}
             </div>
-            {nbSupplements > 0 && (
+            {/* Ligne de détail : elle ne s'affiche que s'il y a réellement un
+                supplément à justifier, et elle dit d'où vient chaque franc.
+                Sans elle, le total monterait sans explication. */}
+            {(nbSupplements > 0 || (supPortion && option)) && (
               <div className="mt-1 text-[11.5px] text-white/45">
-                {LEGUMES_INCLUS} légume inclus · {nbSupplements} supplément{nbSupplements > 1 ? 's' : ''} à {format(1.5)}
+                {[
+                  nbSupplements > 0
+                    && `${LEGUMES_INCLUS} légume inclus · ${nbSupplements} supplément${nbSupplements > 1 ? 's' : ''} à ${format(1.5)}`,
+                  supPortion && option && `portion en plus à ${format(1.5)}`,
+                ].filter(Boolean).join(' · ')}
               </div>
             )}
           </div>
@@ -1953,6 +2072,17 @@ function MenuItem({ item, cart, add, remove, outOfStock = false, stockList = [],
 // ─── SYSTÈME DE MODAUX BOTTOM SHEET ─────────────────────────────────────────
 
 function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, footerContent }) {
+  // Photo d'en-tête indisponible → on BASCULE sur l'en-tête sans photo, au
+  // lieu de masquer le bloc.
+  //
+  // L'ancien `onError` posait `display: none` sur le conteneur — or le titre
+  // ET le bouton de fermeture vivent DEDANS. Une image manquante donnait donc
+  // une feuille sans titre et sans croix, qu'on ne pouvait plus fermer qu'en
+  // tapant à côté. Le repli `{!photo && …}` existait déjà juste en dessous : il
+  // suffit de le laisser rendre, ce que fait cet état.
+  const [photoKo, setPhotoKo] = useState(false);
+  useEffect(() => { setPhotoKo(false); }, [photo]);
+  const photoOk = photo && !photoKo;
   useEffect(() => {
     const scrollY = window.scrollY;
     document.body.style.overflow = 'hidden';
@@ -1990,12 +2120,12 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
           <div style={{ width: 38, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
         </div>
 
-        {photo && (
+        {photoOk && (
           <div style={{ position: 'relative', height: 190, flexShrink: 0, overflow: 'hidden', margin: '10px 16px 0', borderRadius: 20 }}>
             <img
               src={photo} alt={title}
               style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoPos || 'center' }}
-              onError={e => { e.target.parentNode.style.display = 'none'; }}
+              onError={() => setPhotoKo(true)}
             />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(13,13,13,0.92) 100%)' }} />
             <div style={{ position: 'absolute', bottom: 14, left: 16, right: 52 }}>
@@ -2009,7 +2139,7 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
           </div>
         )}
 
-        {!photo && (
+        {!photoOk && (
           <div style={{ padding: '6px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
             <div>
               <div style={{ fontSize: 20, fontWeight: 700, color: 'white' }}>{title}</div>
@@ -2037,7 +2167,13 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
   );
 }
 
-function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge, halal, disabled }) {
+function OptionTile({ emoji, photo, name, desc, isSelected, onClick, index, badge, halal, disabled }) {
+  // La vignette occupe l'emplacement de l'emoji, aux mêmes 46 px : rien ne
+  // bouge dans la ligne selon qu'il y a une photo ou non. Si le fichier
+  // manque, on retombe sur l'emoji — la modale reste utilisable tant que les
+  // visuels ne sont pas livrés.
+  const [photoKo, setPhotoKo] = useState(false);
+  const vignette = photo && !photoKo;
   return (
     <button
       className={`modal-tile tile-${Math.min(index, 6)}`}
@@ -2054,9 +2190,18 @@ function OptionTile({ emoji, name, desc, isSelected, onClick, index, badge, hala
         opacity: disabled ? 0.4 : 1,
       }}
     >
-      {emoji && (
-        <span style={{ fontSize: 26, width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 13, flexShrink: 0 }}>
-          {emoji}
+      {(emoji || vignette) && (
+        <span style={{ fontSize: 26, width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 13, flexShrink: 0, overflow: 'hidden' }}>
+          {vignette ? (
+            <img
+              src={photo}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              onError={() => setPhotoKo(true)}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          ) : emoji}
         </span>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -2225,14 +2370,52 @@ function VariantModal({ item, stockList = [], onSelect, onClose }) {
   );
 }
 
+// Photos des parfums, clé « <id de plat>:<id de parfum> ».
+//
+// La clé porte l'id du PLAT parce que deux gammes de jus coexistent : les jus
+// exotiques (19) n'ont pas de visuel par parfum, les jus maison (25) en ont
+// un chacun. Une clé par parfum seul les confondrait — « fraise-framboise »
+// existe des deux côtés, avec deux recettes et deux prix.
+//
+// ⚠ Volontairement ICI et pas dans JUS_OPTS / JUS_MAISON_OPTS (menuMeta.js) :
+// ces tableaux sont passés tels quels à onSelect et partent dans l'objet
+// variant ENREGISTRÉ avec la commande. Un chemin d'image y serait recopié
+// dans chaque ligne de chaque commande, en base comme sur les tickets, sans
+// servir à rien. Même raison que HALAL_PROTEIN_IDS plus bas.
+//
+// Si un fichier manque, OptionTile retombe sur l'emoji : la modale reste
+// utilisable, et il n'y a rien à activer le jour où les visuels arrivent.
+const JUS_PHOTOS = {
+  '25:kiwi-pomme':        '/jus-kiwi-pomme.jpg',
+  '25:fraise-framboise':  '/jus-fraise-framboise.jpg',
+  '25:ananas-pomme':      '/jus-ananas-pomme.jpg',
+  '25:orange-carotte':    '/jus-orange-carotte.jpg',
+};
+
+// Le nom d'un parfum porte son emoji en tête (cf. JUS_OPTS). On le sépare au
+// rendu plutôt que de tenir une table d'emojis indexée par id : celle qui
+// existait dupliquait OPTION_EMOJIS de menuMeta.js et n'aurait de toute façon
+// pas connu les ids du plat 25.
+//
+// Le test porte sur « le premier caractère n'est pas une lettre » : un nom
+// sans emoji est rendu ENTIER, jamais amputé de son premier mot.
+const splitEmoji = (nom) => {
+  const m = /^(\P{L}\S*)\s+(.+)$/u.exec(nom || '');
+  return m ? { emoji: m[1], label: m[2] } : { emoji: '🧃', label: nom || '' };
+};
+
+// Sert les DEUX gammes de jus : le titre vient de l'item, plus d'un libellé
+// en dur. Le dispatch (pickOptionModal) n'a donc pas de sixième type à
+// connaître, et la cascade de rupture marche déjà — `jusVariants` est dans
+// OPTION_FIELDS.
 function JusModal({ item, stockList = [], onSelect, onClose }) {
-  const jusEmojis = { 'pomme-kiwi': '🍏', 'fraise-framboise': '🍓', 'ananas-citron': '🍍', ace: '🍊' };
   return (
-    <BottomSheet title="Jus exotiques" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
+    <BottomSheet title={item.name} photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
       {item.jusVariants.map((v, i) => {
         const out = isOptionOut(stockList, item.id, v.id);
+        const { emoji, label } = splitEmoji(v.name);
         return (
-          <OptionTile key={v.id} emoji={jusEmojis[v.id] || '🧃'} name={v.name.replace(/^[^\s]+ /, '')} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} disabled={out} badge={out ? OUT_BADGE : null} />
+          <OptionTile key={v.id} emoji={emoji} photo={JUS_PHOTOS[`${item.id}:${v.id}`]} name={label} desc={v.desc} isSelected={false} onClick={() => onSelect(v)} index={i} disabled={out} badge={out ? OUT_BADGE : null} />
         );
       })}
     </BottomSheet>

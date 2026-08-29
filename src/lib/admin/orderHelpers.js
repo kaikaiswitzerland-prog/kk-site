@@ -158,6 +158,7 @@ export const ITEM_CATEGORY_MAP = {
   '17': 'desserts',  // Po'e Banane
   '18': 'desserts',  // Cheesecake
   '19': 'boissons',  // Jus exotiques
+  '25': 'boissons',  // Jus maison KaïKaï
   '20': 'boissons',  // Eau plate/gazeuse
   // Bases du composeur de woks. Sans elles, getItemCategoryLabel rendrait « ? »
   // sur chaque wok composé dans l'admin et la compta.
@@ -306,6 +307,17 @@ export function renderVariantLines(variants) {
         .map((l) => (typeof l === 'string' ? l : l?.name))
         .filter(Boolean);
       if (noms.length) lines.push(`Légumes : ${noms.join(', ')}`);
+    }
+    // 4ter. Portion de garniture supplémentaire. Elle est FACTURÉE (+1.50) :
+    // sans cette ligne la cuisine servirait une portion simple et le client
+    // aurait payé pour rien. Elle doit donc apparaître partout où les lignes
+    // de variante sont rendues — ticket, carte de commande, modale admin.
+    //
+    // Le mot dépend de la garniture, comme dans le composeur : le veggie est
+    // une omelette, pas de la viande.
+    if (v?.supPortion === true) {
+      const veggie = typeof v?.id === 'string' && v.id === 'veggie';
+      lines.push(`+ Portion ${veggie ? "d'omelette" : 'de viande'} en plus`);
     }
     } catch (err) {
       // Variant au format inattendu : on log côté console et on pousse une

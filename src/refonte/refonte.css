@@ -473,6 +473,30 @@ html:has(.rf-root), body:has(.rf-root) { overflow-x: clip; }
   background: rgba(6, 10, 7, 0.72);
   color: var(--rf-ink);
 }
+/* Grammage — même pastille neutre que « Maison » : c'est une information
+   technique et vérifiable, pas une accroche, elle ne prend donc pas le lime
+   réservé à « Signature » et « Populaire ».
+
+   ⚠ `text-transform: none` contre la règle générale de `.rf-badge`, et ce
+   n'est pas une coquetterie : « g » est le symbole du gramme, « 180G » ne
+   veut rien dire. Un symbole d'unité ne se met jamais en capitale.
+   L'interlettrage baisse en conséquence — 0.13em est calibré pour des
+   capitales, il disloque des chiffres en bas de casse. */
+.rf-badge--poids {
+  border: 1px solid var(--rf-line-strong);
+  /* Fond plus dense que les autres pastilles (0.82 contre 0.72) : celle-ci
+     porte un chiffre, qui se lit mal sur une photo claire dès qu'il transparaît.
+     Les accroches, elles, se devinent ; un grammage se lit ou ne sert à rien. */
+  background: rgba(6, 10, 7, 0.82);
+  color: var(--rf-ink);
+  text-transform: none;
+  letter-spacing: 0.06em;
+  /* Un cran au-dessus des autres badges (10.5 px contre 9), et le rembourrage
+     suit pour garder la pastille proportionnée. Aucun effet sur la mise en
+     page : le badge est en position absolue, il ne pousse rien. */
+  font-size: 10.5px;
+  padding: 5px 9px;
+}
 .rf-badge--nouveau {
   border: 1px solid var(--rf-accent);
   background: var(--rf-accent);

@@ -20,6 +20,15 @@ import './refonte.css';
 export default function RefonteShell({
   // Présentation
   showContent = true,
+  // Contenu rendu À LA PLACE de la carte quand `showContent` est faux —
+  // l'écran de confirmation de commande, aujourd'hui.
+  //
+  // ⚠ Il est rendu DEDANS, et pas en frère du shell, parce que `.rf-root`
+  // porte `min-height: 100vh` : un frère démarre donc un écran plein plus
+  // bas, sous un bloc vide. C'est exactement le bug qu'avait la page de
+  // confirmation — le client voyait un écran noir, le « Merci » attendait
+  // 136 px sous la ligne de flottaison sans que rien n'invite à défiler.
+  children,
   sections,
   wokComposer,
   // Panier (tout vient de KaiKaiApp)
@@ -53,7 +62,7 @@ export default function RefonteShell({
         phone={restaurant?.phone}
       />
 
-      {showContent && (
+      {showContent ? (
         <RefontePage
           sections={sections}
           wokComposer={wokComposer}
@@ -65,6 +74,8 @@ export default function RefonteShell({
           onShowAllergens={openAllergens}
           restaurant={restaurant}
         />
+      ) : (
+        children
       )}
 
       {showAllergens && (
