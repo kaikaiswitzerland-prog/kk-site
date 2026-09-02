@@ -89,6 +89,32 @@ export function renderVariantLines(variants) {
         continue;
       }
       if (v?.name) lines.push(v.name);
+
+      // Composeur de woks. Ces trois lignes manquaient : l'e-mail de
+      // confirmation annonçait « Poulet » pour un wok à 23.40, sans dire d'où
+      // venaient les 4.50 d'écart avec la fiche. Le ticket cuisine, lui, les
+      // imprimait déjà (src/lib/admin/orderHelpers.js).
+      //
+      // Libellés en clair et non en capitales, contrairement au ticket : celui-ci
+      // s'adresse à un cuisinier qui doit repérer l'extra d'un coup d'œil sous la
+      // hotte, celui-là à un client qui relit sa commande. Même information, deux
+      // lecteurs, deux tons — la duplication de ce fichier est déjà assumée
+      // (api/ n'importe pas src/), autant qu'elle serve.
+      if (Array.isArray(v?.legumes) && v.legumes.length) {
+        const noms = v.legumes
+          .map((l) => (typeof l === 'string' ? l : l?.name))
+          .filter(Boolean);
+        if (noms.length) lines.push(`Légumes : ${noms.join(', ')}`);
+      }
+      // `=== true` strictement : exactement la condition qui facture dans
+      // getServerUnitPrice. Ce qui n'est pas facturé n'est pas annoncé.
+      if (v?.supPortion === true) {
+        const veggie = typeof v?.id === 'string' && v.id === 'veggie';
+        lines.push(`+ Portion ${veggie ? "d'omelette" : 'de viande'} en plus`);
+      }
+      if (v?.supXL === true) {
+        lines.push('+ Format XL (bol 1400 ml)');
+      }
     } catch (err) {
       console.warn('[KaïKaï mail] variant invalide', v, err);
     }

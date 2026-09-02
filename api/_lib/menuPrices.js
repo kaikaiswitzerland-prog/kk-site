@@ -44,7 +44,7 @@ export const MENU_PRICES = {
   '20': 3.00,   // Eau plate/gazeuse (2 variantes)
 
   // JUS MAISON — gamme distincte des jus exotiques (19), à son propre prix.
-  '25': 4.90,   // Jus maison KaïKaï (4 parfums)
+  '25': 4.90,   // Boissons fraîches maison (4 parfums)
 
   // BASES DU COMPOSEUR DE WOKS — ces ids n'ont pas de prix propre : c'est la
   // garniture qui fait le prix (MENU_OPTION_PRICES ci-dessous). La valeur ici
@@ -91,6 +91,14 @@ export const MENU_OPTION_PRICES = {
   '22:sup:portion': 1.50,
   '23:sup:portion': 1.50,
   '24:sup:portion': 1.50,
+
+  // Format XL — bol de 1400 ml au lieu de 750, portions quasi doublées.
+  // Forfaitaire et additif : il ne dépend ni de la garniture ni du nombre de
+  // légumes, il ne multiplie donc aucun autre supplément.
+  '21:sup:xl': 3.00,
+  '22:sup:xl': 3.00,
+  '23:sup:xl': 3.00,
+  '24:sup:xl': 3.00,
 };
 
 // Nombre de légumes offerts avec un plat. Au-delà, chacun est facturé.
@@ -155,6 +163,20 @@ export function getServerUnitPrice(itemId, variant) {
   if (variant && typeof variant === 'object' && variant.supPortion === true) {
     const sup = MENU_OPTION_PRICES[`${id}:sup:portion`];
     if (typeof sup === 'number' && sup > 0) price += sup;
+  }
+
+  // 4. Format XL — ADDITIF, un seul exemplaire, mêmes règles que la portion.
+  //
+  // Cumulable avec elle : ce sont deux choses différentes (plus de garniture
+  // d'un côté, un plus grand bol de l'autre), le client peut vouloir les deux.
+  //
+  // `=== true` strictement, et c'est ce qui compte le plus ici : la ligne du
+  // ticket cuisine (renderVariantLines) teste EXACTEMENT la même condition.
+  // Toute divergence entre les deux fabriquerait un bol XL servi sans être
+  // facturé — ou facturé sans être servi.
+  if (variant && typeof variant === 'object' && variant.supXL === true) {
+    const xl = MENU_OPTION_PRICES[`${id}:sup:xl`];
+    if (typeof xl === 'number' && xl > 0) price += xl;
   }
 
   // Arrondi au centime : 18.90 + 1.50 traîne des flottants en binaire.

@@ -17,14 +17,16 @@ export const MENU_GROUPS = [
   { id: 'froid',    label: 'Plats froids' },
   { id: 'formules', label: 'Formules' },
   { id: 'desserts', label: 'Desserts' },
-  // Avant « Boissons », comme sur la carte : les jus maison sont une gamme à
-  // part, pas une sous-rubrique des boissons.
+  // Avant « Boissons », comme sur la carte : les boissons fraîches maison sont
+  // une gamme à part, pas une sous-rubrique des boissons.
   //
   // ⚠ Un plat dont la `category` n'a pas de groupe ici est ORPHELIN : il
   // disparaît de l'admin stock (getMenuByGroup) et de la matrice allergènes,
   // qui filtrent tous deux par groupe. Il resterait commandable, mais plus
   // personne ne pourrait le basculer en rupture.
-  { id: 'jus-maison', label: 'Jus maison' },
+  // ⚠ L'id du groupe reste « jus-maison » : c'est la `category` que portent les
+  // plats, elle sert de clé et pas d'étiquette. Seul le libellé est renommé.
+  { id: 'jus-maison', label: 'Boissons fraîches maison' },
   { id: 'boissons', label: 'Boissons' },
 ];
 
@@ -136,7 +138,7 @@ export const JUS_OPTS = [
   { id: "ace", name: "🍊 Cocktail ACE", desc: "Vitaminé (A, C, E)" }
 ];
 
-// Plat 25 — Jus maison KaïKaï. Gamme NOUVELLE, qui coexiste avec les jus
+// Plat 25 — Boissons fraîches maison. Gamme qui coexiste avec les jus
 // exotiques du plat 19 : celui-ci reste à la carte, à son prix et avec ses
 // parfums d'origine.
 //
@@ -193,7 +195,7 @@ export const MENU_ITEMS = [
   { id: '19', name: 'Jus exotiques',        category: 'boissons', jusVariants: JUS_OPTS },
   { id: '20', name: 'Eau plate/gazeuse',    category: 'boissons', eauVariants: EAU_OPTS },
 
-  { id: '25', name: 'Jus maison KaïKaï',    category: 'jus-maison', jusVariants: JUS_MAISON_OPTS },
+  { id: '25', name: 'Boissons fraîches maison', category: 'jus-maison', jusVariants: JUS_MAISON_OPTS },
 
   // Bases du composeur de woks. Elles ne sont pas rendues en fiche sur le site
   // public, mais elles DOIVENT figurer ici : api/create-checkout.js résout

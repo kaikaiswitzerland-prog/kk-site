@@ -4,8 +4,8 @@
 //   - Suppression de PalmLeaves (composant désactivé qui retourne null)
 // Tout le reste est identique à la version précédente.
 
-import React, { useMemo, useState, useEffect, Suspense, lazy } from "react";
-import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight } from "lucide-react";
+import React, { useMemo, useState, useEffect, useRef, useId, Suspense, lazy } from "react";
+import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight, ChevronDown } from "lucide-react";
 import IslandModeToggle from "./components/IslandModeToggle.jsx";
 import HeroSliderV2 from "./components/HeroSliderV2.jsx";
 import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
@@ -63,6 +63,7 @@ import {
   getAllNpas,
 } from "./lib/deliveryZones.js";
 import { RESTAURANT_INFO } from "./data/restaurant.js";
+import { flyToCart, CART_TARGET_ATTR } from "./lib/flyToCart.js";
 
 // Clé localStorage versionnée — bump le suffixe v* si la structure change.
 const CART_STORAGE_KEY = 'kaikai_cart_v1';
@@ -120,8 +121,244 @@ const globalStyles = `
     100% { transform: scale(1); }
   }
   .wok-price-pop { animation: wokPricePop 0.44s cubic-bezier(0.34,1.56,0.64,1); transform-origin: center; }
+
+  /* Tuile du composeur. Le fond et la bordure ont quitté le style inline pour
+     vivre ICI, et ce n'est pas cosmétique : .modal-tile:hover ci-dessus pose
+     ses couleurs en !important, donc un simple survol effaçait la couleur de
+     sélection. Une règle de spécificité supérieure, elle aussi en !important,
+     la tient (.modal-tile.wok-tile--on:hover).
+
+     La couleur de sélection vient de --rf-accent — lime #d4ff6b sous
+     .rf-root, doré #C9A96E en repli sur le site historique —, comme la note et
+     le numéro des étapes plus bas. Un seul rendu, deux couleurs justes, aucune
+     valeur en dur en double.
+
+     La bordure fait 2 px dans les DEUX états : cochée ou non, la tuile occupe
+     la même place, rien ne saute d'un pixel au clic.
+
+     color-mix est doublé d'un rgba déclaré juste avant : Safari < 16.2 ignore
+     la déclaration qu'il ne comprend pas et garde le fond neutre — la bordure
+     et la coche portent alors seules la sélection, ce qui suffit. */
+  .wok-tile {
+    background: rgba(255,255,255,0.03);
+    border: 2px solid rgba(255,255,255,0.08);
+  }
+  .wok-tile--on {
+    background: rgba(255,255,255,0.11);
+    background: color-mix(in srgb, var(--rf-accent, #C9A96E) 13%, transparent);
+    border-color: var(--rf-accent, #C9A96E);
+  }
+  .modal-tile.wok-tile--on:hover {
+    background: rgba(255,255,255,0.15) !important;
+    background: color-mix(in srgb, var(--rf-accent, #C9A96E) 19%, transparent) !important;
+    border-color: var(--rf-accent, #C9A96E) !important;
+  }
+
+  /* Accordéon des quatre étapes. Une seule ouverte à la fois : le composeur
+     tenait sur près de deux écrans de téléphone, il tient maintenant sur un.
+
+     La colonne est bridée à 620 px et centrée. Sans ça, la carte fait toute la
+     largeur de la grille sur grand écran et les tuiles s'étireraient sur
+     1180 px — une ligne de liste de plus d'un mètre de large ne se lit pas.
+     La barre récap se cale sur la même largeur, plus bas. */
+  .wok-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 620px;
+    margin-inline: auto;
+  }
+
+  .wok-step {
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 18px;
+    background: rgba(255,255,255,0.02);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .wok-step--open {
+    border-color: rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.04);
+  }
+  .wok-step--locked { opacity: 0.42; }
+
+  .wok-step__head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    /* 52 px : c'est une cible tactile pleine largeur, la plus facile à viser
+       du composeur. */
+    min-height: 52px;
+    padding: 9px 14px;
+    background: none;
+    border: 0;
+    border-radius: 18px;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .wok-step__head:disabled { cursor: default; }
+
+  /* Le numéro reste un numéro même une fois l'étape faite — il dit où on en est
+     dans la suite. C'est son remplissage à l'accent qui dit qu'elle est faite,
+     doublé du ✓ posé après le choix : jamais la couleur seule. */
+  .wok-step__num {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    border: 1px solid rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.55);
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .wok-step--done .wok-step__num {
+    border-color: var(--rf-accent, #C9A96E);
+    background: var(--rf-accent, #C9A96E);
+    color: #060a07;
+  }
+
+  .wok-step__label { flex: none; min-width: 0; }
+  .wok-step__title {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+  .wok-step__note {
+    display: block;
+    margin-top: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--rf-accent, #C9A96E);
+  }
+
+  /* Le choix d'une étape repliée. Une seule ligne, tronquée : le récap complet
+     vit dans la barre du bas, cette ligne-ci ne fait que rappeler. */
+  .wok-step__pick {
+    flex: 1;
+    min-width: 0;
+    text-align: right;
+    font-size: 13px;
+    color: rgba(255,255,255,0.82);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .wok-step__pick--empty { color: rgba(255,255,255,0.34); }
+  .wok-step__tick { color: var(--rf-accent, #C9A96E); font-weight: 700; }
+
+  .wok-step__chev {
+    flex: none;
+    margin-left: auto;
+    color: rgba(255,255,255,0.35);
+    transition: transform 0.25s ease;
+  }
+  .wok-step__pick + .wok-step__chev { margin-left: 8px; }
+  .wok-step--open .wok-step__chev { transform: rotate(180deg); }
+
+  /* Dépliage sans hauteur codée en dur : la piste de grille passe de 0fr à 1fr
+     et le navigateur interpole. Pas de max-height arbitraire à maintenir quand
+     un légume s'ajoute à la carte, et pas de mesure en JavaScript.
+     Là où grid-template-rows ne s'anime pas (Safari < 16), le panneau s'ouvre
+     d'un coup : la fonction est intacte, seule la transition manque. */
+  .wok-step__panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .wok-step--open .wok-step__panel { grid-template-rows: 1fr; }
+  .wok-step__panelin { overflow: hidden; }
+  .wok-step__body { padding: 2px 14px 6px; }
+
+  /* Barre récap du composeur : collée en bas de l'écran tant que la carte
+     défile, reposée à sa place au bas de la carte quand on en sort.
+
+     ⚠ Elle ne tient QUE parce que la carte est passée en overflow-x: clip.
+     overflow: hidden fabrique un conteneur de défilement, et un conteneur de
+     défilement neutralise position: sticky chez tous ses descendants — le
+     même piège que celui documenté dans refonte.css pour le hero scrubbé.
+     clip protège identiquement du débordement horizontal SANS créer de
+     scrollport. Safari < 16 ignore clip : la carte ne rogne alors plus ses
+     coins, ce que rien ne déborde de toute façon ici.
+
+     Les marges négatives valent exactement le p-5 de la carte (20 px) : la
+     barre va donc bord à bord, et pas un pixel au-delà. */
+  .wok-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: 20px -20px -20px;
+    padding: 13px 20px calc(13px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgba(255,255,255,0.10);
+    border-radius: 0 0 24px 24px;
+    background: rgba(6,10,7,0.93);
+    background: color-mix(in srgb, var(--rf-bg-elev, #0a0a0a) 94%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  /* Même gabarit que .wok-steps : le récap se lit dans l'axe des étapes, alors
+     que le fond de la barre, lui, va bord à bord. */
+  .wok-bar__inner {
+    max-width: 620px;
+    margin-inline: auto;
+  }
+
+  /* Ajout au panier — deux gestes complémentaires : le bouton accuse réception
+     (« c'est pris »), puis l'article file vers l'icône panier du header
+     (« c'est parti là-haut »). Le header étant sticky, la cible est toujours à
+     l'écran, y compris sur téléphone. */
+  @keyframes wokAddPulse {
+    0%   { transform: scale(1); }
+    28%  { transform: scale(0.94); }
+    58%  { transform: scale(1.06); }
+    100% { transform: scale(1); }
+  }
+  .wok-add-pulse { animation: wokAddPulse 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+
+  @keyframes wokCartBump {
+    0%, 100% { transform: scale(1); }
+    35%      { transform: scale(1.22); }
+  }
+  .kk-cart-bump { animation: wokCartBump 0.42s cubic-bezier(0.34,1.56,0.64,1); }
+
+  /* Le projectile est créé en JS et posé sur <body>, hors de tout conteneur qui
+     pourrait le rogner. Il n'anime que transform et opacity : aucun recalcul de
+     mise en page pendant le vol, ce qui est précisément ce qui compte sur
+     téléphone. Sa couleur est lue au point de départ (voir
+     src/lib/flyToCart.js), donc il prend l'accent de la peau sans la connaître.
+
+     Le préfixe n'est plus « wok- » : la pastille sert désormais tous les
+     ajouts, pas seulement le composeur. */
+  .kk-flyer {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+    color: #060a07;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+    will-change: transform, opacity;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .wok-price-pop { animation: none; }
+    .wok-price-pop, .wok-add-pulse, .kk-cart-bump { animation: none; }
+    .wok-step, .wok-step__num, .wok-step__chev, .wok-step__panel { transition: none; }
   }
 
 `;
@@ -192,6 +429,15 @@ const OPTION_PRICES = {
   "22:sup:portion": 1.50,
   "23:sup:portion": 1.50,
   "24:sup:portion": 1.50,
+
+  // Format XL — bol de 1400 ml au lieu de 750, portions quasi doublées.
+  // Forfaitaire et additif : il ne dépend ni de la garniture ni du nombre de
+  // légumes, il ne multiplie donc aucun autre supplément. Cumulable avec la
+  // portion supplémentaire.
+  "21:sup:xl": 3.00,
+  "22:sup:xl": 3.00,
+  "23:sup:xl": 3.00,
+  "24:sup:xl": 3.00,
 };
 
 // Un plat dont les options ne coûtent pas toutes la même chose : le prix de
@@ -322,12 +568,18 @@ const MENU = [
     eauVariants: EAU_OPTS
   },
 
-  // JUS MAISON — gamme distincte des jus exotiques (19), pressée maison.
+  // BOISSONS FRAÎCHES MAISON — gamme distincte des jus exotiques (19).
   // Le plat 19 reste à la carte, à son prix et avec ses parfums d'origine :
   // ce sont deux produits, pas un remplacement.
+  //
+  // ⚠ L'id « 25 » et la catégorie « jus-maison » NE BOUGENT PAS : le plat est
+  // en production, ses clés de rupture sont préfixées par l'id (« 25:kiwi-pomme »)
+  // et les commandes déjà passées portent l'ancien nom dans orders.items[].name.
+  // Renommer l'affichage ne réécrit pas l'historique, et c'est voulu : une
+  // commande de juin doit rester lisible telle qu'elle a été passée.
   {
     id: "25",
-    name: "Jus maison KaïKaï",
+    name: "Boissons fraîches maison",
     desc: "Kiwi-pomme, fraise-framboise, ananas-pomme, orange-carotte",
     price: 4.90,
     category: "jus-maison",
@@ -433,6 +685,14 @@ function unitPrice(item, variant) {
     if (typeof p === "number" && p > 0) price += p;
   }
 
+  // Format XL — additif, un seul exemplaire, cumulable avec la portion.
+  // Même condition stricte, pour la même raison : le serveur et le ticket
+  // cuisine testent `=== true`, les trois doivent tomber d'accord.
+  if (variant && typeof variant === "object" && variant.supXL === true) {
+    const p = OPTION_PRICES[`${item.id}:sup:xl`];
+    if (typeof p === "number" && p > 0) price += p;
+  }
+
   return Math.round(price * 100) / 100;
 }
 
@@ -459,7 +719,8 @@ const IDS_FROID    = [9, 10, 11, 12];
 const IDS_FORMULES = [13, 14];
 const IDS_DESSERT  = [15, 16, 17, 18];
 const IDS_BOISSON  = [19, 20];
-// Section propre : les jus maison ne se rangent pas avec les jus exotiques,
+// Section propre : les boissons fraîches maison ne se rangent pas avec les jus
+// exotiques,
 // ce sont deux gammes distinctes, à deux prix.
 const IDS_JUS_MAISON = [25];
 
@@ -673,7 +934,7 @@ const DESSERT_PHOTO_POS = {
 const BOISSON_PHOTOS = {
   "19": "/boisson-jus.jpg",
   "20": "/boisson-eau.jpg",
-  // Jus maison : la photo de GROUPE. Elle sert la fiche produit de la peau
+  // Boissons fraîches maison : la photo de GROUPE. Elle sert la fiche de la peau
   // historique et l'en-tête de la modale — les deux vendent la gamme entière.
   // Les visuels par parfum vivent dans JUS_PHOTOS, sur les tuiles de choix.
   "25": "/jus-maison-groupe.jpg",
@@ -880,6 +1141,36 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   // Modale "Voir les zones desservies" — ouverte depuis le Checkout (si NPA
   // hors zone) ou depuis l'AboutModal.
   const [showZonesModal, setShowZonesModal] = useState(false);
+  // Dernier point de pointeur connu : c'est de là que part la pastille. On le
+  // relève au niveau du document plutôt que de faire remonter un ref depuis
+  // chaque bouton — il y en a des dizaines, répartis sur les cartes, six
+  // modales d'options et le composeur, dans deux peaux.
+  //
+  // En phase de CAPTURE : un `stopPropagation` en cours de route ne doit pas
+  // nous priver de la position.
+  const pointeur = useRef(null);
+  useEffect(() => {
+    const onDown = (e) => {
+      if (typeof e.clientX !== 'number' || (e.clientX === 0 && e.clientY === 0)) return;
+      pointeur.current = { x: e.clientX, y: e.clientY, el: e.target };
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    return () => document.removeEventListener('pointerdown', onDown, true);
+  }, []);
+
+  // Montage du mini-panier retenu le temps que la pastille du premier ajout
+  // arrive. Purement visuel : le panier, lui, est déjà à jour.
+  const [miniCartHold, setMiniCartHold] = useState(false);
+  const holdTimer = useRef(null);
+  useEffect(() => () => clearTimeout(holdTimer.current), []);
+
+  // La barre récap du composeur de woks occupe-t-elle le bas de l'écran ?
+  // Tant qu'elle y est, le mini-panier flottant s'escamote : ils se posent au
+  // même endroit et disent la même chose, et l'empilement recouvrait le bouton
+  // « Ajouter » — celui-là même qu'on veut rendre évident.
+  // `setWokBarPinned` est passé tel quel au composeur : une référence stable,
+  // donc son observateur ne se reconstruit pas à chaque rendu de la page.
+  const [wokBarPinned, setWokBarPinned] = useState(false);
   // TODO réactiver -10% quand le Mode Île (programme membre) revient.
   // Garder le couponApplied pour que la logique discount/MiniCart/Checkout
   // continue de fonctionner sans changement quand on remettra à true.
@@ -915,13 +1206,36 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   }, [mode, subtotal, deliveryNpa]);
   const total = useMemo(() => Math.max(0, subtotal - discount) + deliveryFee, [subtotal, discount, deliveryFee]);
 
+  // Point de passage UNIQUE de tout ajout au panier : bouton + d'une carte,
+  // tuiles des modales d'options, composeur de woks, sur les deux peaux. C'est
+  // pour ça que le vol de la pastille se déclenche ici et nulle part ailleurs —
+  // un futur chemin d'ajout en hérite sans qu'on y pense, et aucun appelant n'a
+  // à transporter une notion d'animation.
+  //
+  // ⚠ La logique d'ajout n'est pas touchée : le vol est joué APRÈS les deux
+  // setState, il ne peut rien empêcher, et son échec est silencieux.
   const add = (id, variant = null) => {
+    const panierVide = Object.values(cart).reduce((t, q) => t + q, 0) === 0;
+
     setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
     if (variant) {
       setCartVariants(cv => {
         const currentVariants = cv[id] || [];
         return { ...cv, [id]: [...currentVariants, variant] };
       });
+    }
+
+    const duree = flyToCart(pointeur.current);
+
+    // Premier article : le mini-panier n'existe pas encore, et le faire
+    // apparaître tout de suite viderait le vol de son sens — la pastille
+    // arriverait sur un panier déjà là. On retient donc son montage jusqu'à
+    // l'atterrissage. Sans animation (mouvement réduit, pointeur inconnu), la
+    // durée vaut 0 et il apparaît immédiatement, comme avant.
+    if (panierVide && duree > 0) {
+      setMiniCartHold(true);
+      clearTimeout(holdTimer.current);
+      holdTimer.current = setTimeout(() => setMiniCartHold(false), duree - 60);
     }
   };
   
@@ -1283,6 +1597,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
                 add={add}
                 stockList={outOfStockItems}
                 outOfStockFor={(it) => isMenuItemUnavailable(outOfStockItems, it)}
+                onBarPinned={setWokBarPinned}
               />
             }
             cart={cart}
@@ -1347,6 +1662,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
                 add={add}
                 stockList={outOfStockItems}
                 outOfStockFor={(it) => isMenuItemUnavailable(outOfStockItems, it)}
+                onBarPinned={setWokBarPinned}
               />
 
               <h3 id="section-chaud" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🔥 Plat Chaud</h3>
@@ -1374,7 +1690,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
                   photo={DESSERT_PHOTOS[item.id]} photoPos={DESSERT_PHOTO_POS[item.id]} />
               ))}
 
-              <h3 id="section-jus-maison" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧃 Jus maison</h3>
+              <h3 id="section-jus-maison" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🧃 Boissons fraîches maison</h3>
               {SEC_JUS_MAISON.map(item => (
                 <MenuItem key={item.id} item={item} cart={cart} add={add} remove={remove} outOfStock={isMenuItemUnavailable(outOfStockItems, item)} stockList={outOfStockItems}
                   photo={BOISSON_PHOTOS[item.id]} photoPos={BOISSON_PHOTO_POS[item.id]} />
@@ -1435,8 +1751,9 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         />
       )}
 
-      {step === "menu" && Object.values(cart).reduce((s, q) => s + q, 0) > 0 && (
+      {step === "menu" && Object.values(cart).reduce((s, q) => s + q, 0) > 0 && !miniCartHold && (
         <MiniCart
+          hidden={wokBarPinned}
           cart={cart}
           items={items}
           total={total}
@@ -1514,10 +1831,16 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
 // choisis : { ...option, legumes: [{id, name}] }. C'est ce champ que lisent
 // getServerUnitPrice (facturation) et renderVariantLines (ticket cuisine).
 
-// Ligne d'option du composeur. Reprend le vocabulaire visuel d'OptionTile
-// (fond 0.03, bordure 0.08, sélection 0.11/0.28 + pastille blanche à coche
-// noire) en plus compact : trois colonnes côte à côte ne laissent pas la place
-// aux tuiles emoji de 46 px des bottom sheets.
+// Ligne d'option du composeur. Reprend la géométrie compacte d'OptionTile —
+// trois colonnes côte à côte ne laissent pas la place aux tuiles emoji de 46 px
+// des bottom sheets — mais PAS son état sélectionné : les clients ne voyaient
+// pas ce qu'ils avaient coché. Le blanc à 0.11/0.28 est remplacé par une
+// bordure de 2 px à l'accent et une pastille de coche de la même couleur
+// (classes .wok-tile / .wok-tile--on dans globalStyles).
+//
+// Fond et bordure ne sont donc PLUS en style inline : un style inline bat toute
+// règle CSS non-!important, la sélection n'aurait jamais pris. Tout le reste de
+// la géométrie reste inline, comme avant.
 function WokOption({ emoji, label, note, halal, out, active, onClick }) {
   return (
     <button
@@ -1525,14 +1848,14 @@ function WokOption({ emoji, label, note, halal, out, active, onClick }) {
       onClick={out ? undefined : onClick}
       disabled={out}
       aria-pressed={active}
-      className="modal-tile"
+      className={`modal-tile wok-tile${active ? ' wok-tile--on' : ''}`}
       style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: 10,
         // 44 px minimum : c'est une cible tactile, pas une ligne de liste.
         minHeight: 44,
-        padding: '11px 13px', marginBottom: 8,
-        background: active ? 'rgba(255,255,255,0.11)' : 'rgba(255,255,255,0.03)',
-        border: active ? '1px solid rgba(255,255,255,0.28)' : '1px solid rgba(255,255,255,0.08)',
+        // Le padding compense la bordure de 2 px pour que la hauteur utile ne
+        // bouge pas par rapport à la version à 1 px.
+        padding: '10px 12px', marginBottom: 8,
         borderRadius: 16,
         cursor: out ? 'not-allowed' : 'pointer',
         textAlign: 'left',
@@ -1562,37 +1885,94 @@ function WokOption({ emoji, label, note, halal, out, active, onClick }) {
           Rupture
         </span>
       )}
+      {/* Pastille de coche à l'accent. L'encre reste `#060a07` et non du blanc :
+          sur le lime, du blanc tombe à 1.15:1 quand le noir profond monte à
+          17.4:1 (cf. le commentaire du jeton dans refonte.css). Sur le doré du
+          site historique, ce même noir reste parfaitement lisible.
+          La coche double la bordure : la sélection ne repose jamais sur la seule
+          couleur, elle reste lisible en vision daltonienne. */}
       {active && (
-        <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Check size={12} color="black" strokeWidth={3} />
+        <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--rf-accent, #C9A96E)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Check size={12} color="#060a07" strokeWidth={3} />
         </span>
       )}
     </button>
   );
 }
 
-// Intitulé d'étape. Même graisse et même casse que SectionLabel, pour que le
-// composeur parle la langue des bottom sheets.
-function WokLegend({ step, title, note }) {
+// Une étape de l'accordéon : un en-tête cliquable, et les tuiles dessous.
+//
+// Remplace l'ancien WokLegend, qui n'était qu'un intitulé au-dessus d'une
+// colonne toujours dépliée. Le vocabulaire typographique de la légende est
+// conservé au caractère près (10 px, 700, capitales, interlettrage 0.09em,
+// blanc à 30 %, note à l'accent) : seule la mécanique change, pas la langue.
+//
+// L'en-tête est un vrai <button> avec aria-expanded / aria-controls, pas une
+// <div> qui écoute le clic : c'est ce qui le rend atteignable au clavier et
+// annonçable par un lecteur d'écran.
+//
+// `locked` sert aux étapes qui ne veulent rien dire encore — la garniture avant
+// qu'une base soit choisie, les extras avant qu'une garniture le soit. Le bloc
+// reste VISIBLE, en retrait : le client voit ce qui l'attend, ce qu'un bloc
+// masqué ne dirait pas.
+function WokStep({
+  n, title, note, pick, pickEmpty, open, done, locked, lockedHint, onToggle, innerRef, children,
+}) {
+  const uid = useId();
+  const panelId = `wok-panel-${uid}`;
+  const headId = `wok-head-${uid}`;
+
   return (
-    <legend style={{ padding: '0 0 10px', width: '100%' }}>
-      <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', letterSpacing: '0.09em', textTransform: 'uppercase' }}>
-        {step} · {title}
-      </span>
-      {note && (
-        // La note prend l'accent de la peau qui l'accueille, sans que ce
-        // composant ait à connaître la peau : `--rf-accent` n'est défini que
-        // sous `.rf-root`, donc la refonte rend le lime et le site historique
-        // retombe sur son doré. Un seul rendu, deux couleurs justes.
-        <span style={{ display: 'block', marginTop: 3, fontSize: 11, fontWeight: 500, color: 'var(--rf-accent, #C9A96E)' }}>
-          {note}
+    <section
+      ref={innerRef}
+      className={`wok-step${open ? ' wok-step--open' : ''}${done ? ' wok-step--done' : ''}${locked ? ' wok-step--locked' : ''}`}
+    >
+      <button
+        type="button"
+        id={headId}
+        className="wok-step__head"
+        onClick={onToggle}
+        disabled={locked}
+        aria-expanded={open}
+        aria-controls={panelId}
+      >
+        <span className="wok-step__num" aria-hidden="true">{n}</span>
+        <span className="wok-step__label">
+          <span className="wok-step__title">{title}</span>
+          {/* La note n'a de sens qu'en face des tuiles qu'elle explique : elle
+              disparaît au repli, où c'est le choix fait qui compte. */}
+          {open && note && <span className="wok-step__note">{note}</span>}
         </span>
-      )}
-    </legend>
+        {/* Étape repliée : on rappelle le choix. « ✓ » double le remplissage du
+            numéro, pour que l'état « fait » ne repose pas sur la seule couleur. */}
+        {!open && (locked || pick) && (
+          <span className={`wok-step__pick${locked || pickEmpty ? ' wok-step__pick--empty' : ''}`}>
+            {locked ? lockedHint : pick}
+            {!locked && !pickEmpty && <span className="wok-step__tick"> ✓</span>}
+          </span>
+        )}
+        <ChevronDown size={16} className="wok-step__chev" aria-hidden="true" />
+      </button>
+
+      {/* `inert` coupe le clavier et les lecteurs d'écran sur un panneau replié.
+          Sans lui, les tuiles restent tabulables derrière une hauteur nulle :
+          on tabule dans le vide. On ne démonte pas le contenu pour autant, sinon
+          il n'y aurait rien à animer à l'ouverture. */}
+      <div className="wok-step__panel" id={panelId} role="region" aria-labelledby={headId} inert={!open}>
+        <div className="wok-step__panelin">
+          <div className="wok-step__body">{children}</div>
+        </div>
+      </div>
+    </section>
   );
 }
 
-export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
+// `onBarPinned` est prévenu quand la barre récap occupe le bas de l'écran.
+// KaiKaiApp s'en sert pour escamoter le mini-panier flottant le temps de la
+// traversée : les deux vivent au même endroit et disent la même chose (un
+// total, un bouton), les empiler mangeait le bouton « Ajouter ».
+// Prop FACULTATIVE : sans elle le composeur se comporte exactement comme avant.
+export function WokComposer({ bases, cart, add, stockList, outOfStockFor, onBarPinned }) {
   // Aucune base pré-cochée : le composeur s'ouvre vierge et c'est le client qui
   // choisit. `base` peut donc valoir null tout au long du rendu — chaque lecture
   // en aval le suppose, y compris le récap et le total.
@@ -1601,6 +1981,9 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
   const [legumeIds, setLegumeIds] = useState([]);
   // Portion de garniture en plus : un interrupteur, pas un compteur.
   const [supPortion, setSupPortion] = useState(false);
+  // Format XL — bol de 1400 ml. Interrupteur lui aussi, et INDÉPENDANT du
+  // précédent : les deux extras se cumulent.
+  const [supXL, setSupXL] = useState(false);
 
   // Pas de repli sur bases[0] : ce repli est précisément ce qui pré-cochait
   // « Nouilles sautées ». Une base inconnue (id périmé) donne null, pas la
@@ -1626,6 +2009,7 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
         ...option,
         legumes: legumes.map(({ id, name }) => ({ id, name })),
         ...(supPortion ? { supPortion: true } : {}),
+        ...(supXL ? { supXL: true } : {}),
       }
     : null;
 
@@ -1634,6 +2018,240 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
   const supLabel = option?.id === 'veggie'
     ? "Portion d'omelette en plus"
     : 'Portion de viande en plus';
+  const XL_LABEL = 'Format XL';
+
+  // Tarifs AFFICHÉS, lus dans le catalogue plutôt que réécrits à la main.
+  // Une tuile qui annonce 3.00 quand la caisse en prend 3.50 est pire que pas
+  // de tuile du tout, et c'est le genre d'écart qui survit des mois. Le
+  // catalogue qui fait foi reste api/_lib/menuPrices.js : celui-ci n'en est
+  // que le miroir, mais au moins l'affichage et le calcul client lisent la
+  // même case.
+  //
+  // Les 4 bases partagent la même grille : on lit celle de la base choisie, et
+  // celle de la première tant que rien n'est coché.
+  const tarif = (cle) => {
+    const p = OPTION_PRICES[`${(base ?? bases[0])?.id}:${cle}`];
+    return typeof p === 'number' ? format(p) : '';
+  };
+
+  // Jetons du récap. Ils se lisent sur `legumes` et `supPortion`, c'est-à-dire
+  // exactement ce qui part dans `variant` : ce qui est affiché est ce qui est
+  // commandé, un légume passé en rupture disparaît des deux en même temps.
+  // « +Portion » est le seul libellé raccourci : `supLabel` fait onze mots sur
+  // une ligne qui en tolère cinq, et le détail juste dessous le nomme en toutes
+  // lettres avec son tarif.
+  const extras = [
+    ...legumes.map(l => l.name),
+    ...(supPortion && option ? ['+Portion'] : []),
+    ...(supXL && option ? ['+XL'] : []),
+  ];
+  const resumeComplet = option && base
+    ? [
+        option.name,
+        base.name,
+        ...legumes.map(l => l.name),
+        ...(supPortion ? [supLabel] : []),
+        ...(supXL ? [XL_LABEL] : []),
+      ].join(' · ')
+    : '';
+
+  // ─── Accordéon ────────────────────────────────────────────────────────────
+  //
+  // PLUSIEURS étapes peuvent être ouvertes en même temps : ce n'est pas un
+  // accordéon exclusif. Cliquer un en-tête n'ouvre et ne replie que celui-là,
+  // jamais ses voisins ; l'enchaînement automatique, lui, vit dans selectIn.
+  //
+  // Ce champ porte l'INTENTION d'ouverture, pas l'ouverture effective : une
+  // étape verrouillée reste fermée à l'écran même marquée ouverte ici. C'est
+  // `isOpen` qui tranche, au rendu, quand l'état est à jour.
+  //
+  // L'étape 1 est ouverte au chargement : le composeur doit montrer quelque
+  // chose à choisir, pas quatre barres fermées.
+  const [openSteps, setOpenSteps] = useState({ 1: true, 2: false, 3: false, 4: false });
+
+  // Les étapes 2 et 4 sont à choix multiple ET facultatives : aucun clic ne les
+  // « termine », et ne rien y prendre est un choix valide. Sans mémoire, un
+  // client qui ouvre les légumes, n'en veut aucun et referme retrouverait un
+  // bloc muet, impossible à distinguer d'un bloc jamais ouvert. On retient donc
+  // qu'elles ont été TRAVERSÉES, ce qui permet d'y afficher « Aucun ✓ » plutôt
+  // que rien. Les étapes 1 et 3, elles, se lisent directement sur `base` et
+  // `option` — pas de second exemplaire d'un état qui existe déjà.
+  //
+  // La marque est posée à la SORTIE de l'étape, pas à son ouverture : ouvrir les
+  // extras allumerait sinon leur pastille avant que le client ait rien décidé.
+  const [seen, setSeen] = useState({ 2: false, 4: false });
+  const leaveStep = (from) => {
+    if (from !== 2 && from !== 4) return;
+    setSeen(prev => (prev[from] ? prev : { ...prev, [from]: true }));
+  };
+
+  // Une étape verrouillée n'a rien à montrer : sans base il n'y a pas de
+  // garniture à lister (`options` est vide), et sans garniture le libellé du
+  // supplément ne veut rien dire (omelette ou viande, cf. supLabel).
+  const stepLocked = { 1: false, 2: false, 3: !base, 4: !option };
+  // « Réglée » = un choix a été fait, OU l'étape facultative a été traversée.
+  // Cocher un légume allume donc la pastille tout de suite, sans attendre la
+  // sortie de l'étape.
+  const stepDone = {
+    1: !!base,
+    2: seen[2] || legumes.length > 0,
+    3: !!option,
+    4: seen[4] || supPortion || supXL,
+  };
+
+  // Une étape ouverte peut se verrouiller sous les pieds du client : changer de
+  // base réinitialise la garniture si la nouvelle base ne la propose pas, et les
+  // extras — ouverts — n'ont alors plus rien à montrer. On la referme plutôt que
+  // de laisser un panneau grisé et vide. Dérivé du rendu, et pas un effet de
+  // bord à resynchroniser.
+  // Une étape verrouillée n'est jamais montrée dépliée, même si elle l'était :
+  // changer de base réinitialise la garniture quand la nouvelle base ne la
+  // propose pas, et les extras — ouverts — n'ont alors plus rien à montrer. On
+  // la referme plutôt que de laisser un panneau grisé et vide. Dérivé du rendu,
+  // et pas un effet de bord à resynchroniser.
+  const isOpen = (n) => !!openSteps[n] && !stepLocked[n];
+  const openKey = [1, 2, 3, 4].filter(isOpen).join(',');
+
+  const stepRefs = useRef({});
+  // Position à l'écran de l'en-tête qu'on vient de cliquer, relevée AVANT que
+  // l'état change. C'est l'ancre : après le clic, cet en-tête doit se retrouver
+  // au pixel près là où le doigt l'a laissé.
+  const anchor = useRef(null);
+
+  // Relève la position à l'écran de l'en-tête de l'étape n. À appeler AVANT
+  // tout changement d'état susceptible de replier un bloc — y compris le clic
+  // sur une TUILE, pas seulement sur un en-tête : c'est le repli différé qui
+  // raccourcit la carte au-dessus, et sans ancre la page remonterait sous le
+  // doigt exactement comme au premier bug de recadrage.
+  const anchorOn = (n) => {
+    const el = stepRefs.current[n];
+    anchor.current = el ? { n, top: el.getBoundingClientRect().top } : null;
+  };
+
+  // ANCRAGE, et surtout pas un recadrage.
+  //
+  // Ouvrir un bloc en replie un autre. Quand le bloc replié est AU-DESSUS de
+  // celui qu'on ouvre, tout ce qui suit remonte d'un coup de la hauteur du
+  // panneau perdu : l'en-tête qu'on vient de toucher s'échappe sous le doigt et
+  // il faut aller le rechercher. C'est exactement le défaut signalé.
+  //
+  // On compense donc le raccourcissement en défilant d'autant, ce qui revient à
+  // clouer l'en-tête cliqué à sa place. Le reste de la carte bouge autour de
+  // lui, lui ne bouge pas.
+  //
+  // La compensation SUIT l'animation de dépliage au lieu d'être calculée une
+  // fois : la hauteur du panneau s'interpole sur 280 ms, une mesure unique prise
+  // au moment du commit porterait sur une géométrie encore périmée — c'était
+  // précisément le bug. Une image sur ~420 ms, une lecture de rect et au plus un
+  // scrollBy par image : c'est en dessous du budget d'une frame, y compris sur
+  // téléphone.
+  useEffect(() => {
+    const a = anchor.current;
+    anchor.current = null;
+    if (!a) return undefined;
+    const el = stepRefs.current[a.n];
+    if (!el || typeof requestAnimationFrame === 'undefined') return undefined;
+
+    let raf = 0;
+    const start = performance.now();
+    const keep = () => {
+      const drift = el.getBoundingClientRect().top - a.top;
+      // Le demi-pixel évite d'osciller sur les arrondis de scrollY.
+      if (Math.abs(drift) > 0.5) window.scrollBy(0, drift);
+      if (performance.now() - start < 420) raf = requestAnimationFrame(keep);
+    };
+    keep();
+    return () => cancelAnimationFrame(raf);
+    // Clé dérivée : l'effet doit rejouer dès qu'un bloc s'ouvre ou se replie,
+    // et `openSteps` est un objet recréé à chaque changement.
+  }, [openKey]);
+
+  // Le SEUL moyen d'ouvrir ou de replier un bloc : le client clique son en-tête.
+  // Rien ne s'ouvre ni ne se referme derrière son dos — choisir une base ne
+  // referme pas l'étape 1 et n'ouvre pas la 2. Il peut donc revenir sur un choix
+  // sans que la carte se réorganise pendant qu'il lit.
+  // Cliquer un en-tête n'agit QUE sur ce bloc : les autres ne bougent pas.
+  const toggleStep = (n) => {
+    if (stepLocked[n]) return;
+    // Relevé AVANT le changement d'état : c'est la position que l'en-tête doit
+    // conserver. Au dépliage rien ne bouge au-dessus de lui et l'ancre est sans
+    // effet, ce qui est le bon résultat.
+    anchorOn(n);
+    const ouvert = isOpen(n);
+    if (ouvert) leaveStep(n);
+    setOpenSteps(prev => ({ ...prev, [n]: !ouvert }));
+  };
+
+  // ENCHAÎNEMENT, ET REPLI DIFFÉRÉ DE DEUX ÉTAPES.
+  //
+  // Un choix dans l'étape N fait exactement trois choses :
+  //   · l'étape N+1 s'ouvre — le client n'a pas à chercher où aller ensuite ;
+  //   · l'étape N reste ouverte — il peut se raviser sans rien rouvrir ;
+  //   · l'étape N-2 se replie, si elle est réglée.
+  //
+  // Deux étapes restent donc dépliées derrière lui : celle où il vient de
+  // choisir et la précédente, pour qu'il garde sous les yeux ce qu'il a décidé
+  // juste avant. C'est l'avant-avant-dernière qui s'efface, quand elle a cessé
+  // d'être d'actualité.
+  //
+  //   base choisie      → légumes s'ouvrent  · N-2 = -1, rien ne se replie
+  //   légume coché      → garniture s'ouvre  · N-2 =  0, rien ne se replie
+  //   garniture choisie → extras s'ouvrent   · N-2 =  1, la base se replie
+  //   extra coché       → plus de suivante   · N-2 =  2, les légumes se replient
+  //
+  // Rien de tout cela n'enferme le client : il peut rouvrir ou replier
+  // n'importe quel bloc à la main, et un bloc replié garde son résumé.
+  const selectIn = (n) => {
+    const suivant = n < 4 ? n + 1 : null;
+    const cible = n - 2;
+
+    // Le seul verrou qui se lève DU FAIT de cette sélection est celui des
+    // extras, quand on choisit une garniture — et `option` n'est pas encore à
+    // jour dans cette closure, `stepLocked[4]` y vaut donc encore true. On ne
+    // peut pas se fier au verrou tel qu'il est, seulement à ce qu'il devient.
+    const verrouSeLeve = n === 3;
+    const ouvre = suivant !== null
+      && !openSteps[suivant]
+      && (verrouSeLeve || !stepLocked[suivant]);
+
+    // `stepDone` garde une étape à moitié réglée ouverte : la replier
+    // reviendrait à cacher au client une décision qu'il n'a pas encore prise.
+    const replie = cible >= 1 && stepDone[cible] && isOpen(cible);
+
+    // Ancre posée UNIQUEMENT si la mise en page va réellement bouger. Sinon
+    // elle resterait en attente et se déclencherait, périmée, au clic suivant.
+    if (!ouvre && !replie) return;
+    anchorOn(n);
+
+    setOpenSteps(prev => {
+      const next = { ...prev };
+      if (ouvre) next[suivant] = true;
+      if (replie) next[cible] = false;
+      return next;
+    });
+    if (replie) leaveStep(cible);
+  };
+
+
+  // Résumé d'une étape repliée. Les légumes et les extras peuvent légitimement
+  // être vides : « Aucun » est un choix affiché, pas un trou.
+  const stepPick = {
+    1: base?.name || '',
+    2: legumes.length ? legumes.map(l => l.name).join(', ') : (seen[2] ? 'Aucun' : ''),
+    3: option?.name || '',
+    // Les deux extras sont cumulables : le résumé les liste tous les deux.
+    4: (() => {
+      const pris = [...(supPortion ? [supLabel] : []), ...(supXL ? [XL_LABEL] : [])];
+      if (pris.length) return pris.join(', ');
+      return seen[4] ? 'Aucun' : '';
+    })(),
+  };
+  const stepPickEmpty = {
+    1: !base,
+    2: legumes.length === 0,
+    3: !option,
+    4: !supPortion && !supXL,
+  };
 
   const baseOut = base ? outOfStockFor(base) : false;
   const optionOut = base && option ? isOptionOut(stockList, base.id, option.id) : false;
@@ -1653,11 +2271,41 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
     return () => clearTimeout(t);
   }, [total]);
 
-  // Les 4 bases partagent aujourd'hui la même grille de garnitures, mais le
-  // composeur ne le présuppose pas : on conserve la garniture si son id existe
-  // encore sur la nouvelle base, sinon on repart de zéro.
+  const cardRef = useRef(null);
+
+  // La barre est-elle en train d'occuper le bas de l'écran ? On n'observe pas
+  // la barre elle-même — un élément `sticky` reste, pour l'observateur, à sa
+  // place dans le flux — mais la CARTE, à travers un viewport réduit à sa bande
+  // inférieure (`rootMargin: -72%`). La carte croise cette bande exactement
+  // quand la barre y est épinglée, et la quitte quand la barre se repose au bas
+  // de la carte. Un seul observateur, aucun écouteur de scroll, aucune lecture
+  // de géométrie par image : c'est ce qui garde le défilement fluide sur
+  // téléphone.
+  useEffect(() => {
+    if (!onBarPinned) return undefined;
+    const el = cardRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined;
+    const io = new IntersectionObserver(
+      ([entry]) => onBarPinned(entry.isIntersecting),
+      { rootMargin: '-72% 0px 0px 0px', threshold: 0 },
+    );
+    io.observe(el);
+    // Au démontage (passage au checkout, par exemple) la barre disparaît :
+    // sans ce rappel, le mini-panier resterait escamoté pour toujours.
+    return () => { io.disconnect(); onBarPinned(false); };
+  }, [onBarPinned]);
+
+  // Confirmation visuelle de l'ajout : le bouton accuse réception. Le vol de la
+  // pastille vers le mini-panier, lui, ne vit plus ici — il est déclenché par
+  // `add()` dans KaiKaiApp pour TOUS les chemins d'ajout (voir
+  // src/lib/flyToCart.js). Ce composant n'a plus à le connaître.
+  const [added, setAdded] = useState(false);
+  const addedTimer = useRef(null);
+  useEffect(() => () => clearTimeout(addedTimer.current), []);
+
   const selectBase = (id) => {
     setBaseId(id);
+    selectIn(1);
     const next = bases.find(b => b.id === id);
     if (!next) return;
     if (!getItemOptions(next).some(o => o.id === optionId)) setOptionId(null);
@@ -1666,11 +2314,17 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
   // Multi-sélection : tout est décochable, zéro légume est un choix valide.
   const toggleLegume = (id) => {
     setLegumeIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    selectIn(2);
   };
 
   const handleAdd = () => {
     if (!canAdd) return;
+    // L'ajout d'abord, l'habillage ensuite : si `add` lève, rien n'a été promis
+    // au client.
     add(base.id, variant);
+    setAdded(true);
+    clearTimeout(addedTimer.current);
+    addedTimer.current = setTimeout(() => setAdded(false), 900);
   };
 
   // On ne sort que s'il n'y a AUCUNE base à proposer. Sortir parce qu'aucune
@@ -1681,13 +2335,27 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
   // encore. Réutiliser celle d'un plat chaud existant afficherait un Chao Men
   // sous le libellé « Nouilles sautées » — mieux vaut rien qu'une image fausse.
   return (
-    <div className="col-span-full overflow-hidden rounded-3xl border border-white/10 bg-white/5">
+    // ⚠ `overflow-x-clip` et surtout PAS `overflow-hidden` : `hidden` fabrique
+    //   un conteneur de défilement, et un conteneur de défilement neutralise
+    //   `position: sticky` chez tous ses descendants — la barre récap ci-dessous
+    //   ne se collerait jamais. `clip` rogne pareil sur l'axe horizontal sans
+    //   créer de scrollport. C'est exactement le piège documenté dans
+    //   refonte.css pour le hero scrubbé.
+    <div ref={cardRef} className="col-span-full overflow-x-clip rounded-3xl border border-white/10 bg-white/5">
       <div className="p-5">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="wok-steps">
           {/* Étape 1 — la base. AUCUN prix : une base seule ne se vend pas,
               c'est la garniture qui fait le montant. */}
-          <fieldset style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
-            <WokLegend step="1" title="Votre base" />
+          <WokStep
+            n={1}
+            title="Votre base"
+            pick={stepPick[1]}
+            pickEmpty={stepPickEmpty[1]}
+            open={isOpen(1)}
+            done={stepDone[1]}
+            onToggle={() => toggleStep(1)}
+            innerRef={(el) => { stepRefs.current[1] = el; }}
+          >
             {bases.map((b) => (
               <WokOption
                 key={b.id}
@@ -1697,13 +2365,22 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
                 onClick={() => selectBase(b.id)}
               />
             ))}
-          </fieldset>
+          </WokStep>
 
-          {/* Étape 2 — les légumes, multi-sélection et facultative */}
-          <fieldset style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
-            {/* Le tarif est annoncé UNE fois, ici. Le répéter sur chaque ligne
-                laisserait croire que chaque légume coûte 1.50. */}
-            <WokLegend step="2" title="Vos légumes" note={`1 inclus · +${format(1.5)} par légume en plus`} />
+          {/* Étape 2 — les légumes, multi-sélection et facultative. */}
+          <WokStep
+            n={2}
+            title="Vos légumes"
+            /* Le tarif est annoncé UNE fois, ici. Le répéter sur chaque ligne
+               laisserait croire que chaque légume coûte 1.50. */
+            note={`1 inclus · +${tarif('leg:choux')} par légume en plus`}
+            pick={stepPick[2]}
+            pickEmpty={stepPickEmpty[2]}
+            open={isOpen(2)}
+            done={stepDone[2]}
+            onToggle={() => toggleStep(2)}
+            innerRef={(el) => { stepRefs.current[2] = el; }}
+          >
             {LEGUME_OPTS.map((l) => (
               <WokOption
                 key={l.id}
@@ -1714,17 +2391,23 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
                 onClick={() => toggleLegume(l.id)}
               />
             ))}
-          </fieldset>
+          </WokStep>
 
           {/* Étape 3 — la garniture. C'est elle qui fait le prix, mais aucun
               montant n'apparaît ici : le prix ne vit que dans le total, qui
               s'ajuste à chaque sélection. */}
-          <fieldset style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
-            <WokLegend
-              step="3"
-              title="Votre garniture"
-              note={base ? `Portion en plus · +${format(1.5)}` : 'Choisissez d\'abord une base'}
-            />
+          <WokStep
+            n={3}
+            title="Votre garniture"
+            pick={stepPick[3]}
+            pickEmpty={stepPickEmpty[3]}
+            open={isOpen(3)}
+            done={stepDone[3]}
+            locked={stepLocked[3]}
+            lockedHint="Choisissez d'abord une base"
+            onToggle={() => toggleStep(3)}
+            innerRef={(el) => { stepRefs.current[3] = el; }}
+          >
             {options.map((o) => (
               <WokOption
                 key={o.id}
@@ -1732,67 +2415,130 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
                 halal={o.halal}
                 out={isOptionOut(stockList, base.id, o.id)}
                 active={option?.id === o.id}
-                onClick={() => setOptionId(o.id)}
+                onClick={() => { setOptionId(o.id); selectIn(3); }}
               />
             ))}
+          </WokStep>
 
-            {/* Portion supplémentaire — n'apparaît qu'une fois la garniture
-                choisie : hors de ce contexte elle ne désigne rien, et son
-                libellé dépend justement de la garniture. Aucun montant sur la
-                tuile : comme pour les légumes, le tarif est annoncé une seule
-                fois dans la légende, et seul le total bouge. */}
+          {/* Étape 4 — les extras : la portion supplémentaire et le format XL,
+              cumulables. La portion y a déménagé depuis l'étape 3 : elle n'est
+              ni une garniture ni un légume, et la ranger avec les garnitures
+              laissait croire qu'il fallait choisir entre les deux.
+
+              Verrouillée tant qu'aucune garniture n'est choisie : hors de ce
+              contexte la portion ne désigne rien, et son libellé dépend
+              justement de la garniture (omelette ou viande, cf. supLabel).
+
+              Facultative de bout en bout : le wok est complet sans elle, et rien
+              ici ne conditionne `canAdd`. */}
+          <WokStep
+            n={4}
+            title="Vos extras"
+            /* Deux extras à deux tarifs différents : la règle « aucun montant
+               sur la tuile, le tarif annoncé une seule fois dans la note » ne
+               tient plus, elle obligerait le client à apparier deux prix et deux
+               tuiles. Chaque extra porte donc le sien, et la note de l'étape ne
+               dit plus que ce qui vaut pour les deux. */
+            note="Cumulables" 
+            pick={stepPick[4]}
+            pickEmpty={stepPickEmpty[4]}
+            open={isOpen(4)}
+            done={stepDone[4]}
+            locked={stepLocked[4]}
+            lockedHint="Choisissez d'abord une garniture"
+            onToggle={() => toggleStep(4)}
+            innerRef={(el) => { stepRefs.current[4] = el; }}
+          >
             {option && (
               <WokOption
                 emoji="➕"
                 label={supLabel}
+                note={`+${tarif('sup:portion')}`}
                 active={supPortion}
-                onClick={() => setSupPortion(v => !v)}
+                onClick={() => { setSupPortion(v => !v); selectIn(4); }}
               />
             )}
-          </fieldset>
+            {/* Format XL — même mécanique que la portion : un interrupteur, pas
+                un compteur, et les deux se cumulent. Le forfait ne dépend ni de
+                la garniture ni des légumes, il ne multiplie donc rien.
+                La contenance est dite sur la tuile et pas seulement « XL » :
+                c'est le seul chiffre qui permet au client de juger s'il en a
+                besoin. */}
+            {option && (
+              <WokOption
+                emoji="🥣"
+                label={XL_LABEL}
+                note={`Bol 1400 ml au lieu de 750 ml · +${tarif('sup:xl')}`}
+                active={supXL}
+                onClick={() => { setSupXL(v => !v); selectIn(4); }}
+              />
+            )}
+          </WokStep>
         </div>
 
-        {/* Récap + total en direct */}
-        <div className="mt-5 flex flex-wrap items-end justify-between gap-4 border-t border-white/10 pt-5">
-          <div className="min-w-0 flex-1">
+        {/* Cette ligne passe AVANT la barre : la barre étant collée en bas de
+            l'écran, tout ce qui la suit se retrouverait caché dessous. */}
+        {base && cart[base.id] > 0 && (
+          <p className="mt-4 text-xs text-white/45" style={{ maxWidth: 620, marginInline: 'auto' }}>
+            {cart[base.id]} × {base.name} déjà au panier
+          </p>
+        )}
+
+        {/* Récap + total en direct, collés en bas de l'écran tant que la carte
+            défile. Sur téléphone les trois étapes s'empilent sur près de deux
+            écrans : sans cette barre, le client choisit à l'aveugle et doit
+            redescendre pour voir ce qu'il a composé et ce que ça coûte.
+            Géométrie et collage : classe `.wok-bar` dans globalStyles. */}
+        <div className="wok-bar">
+         <div className="wok-bar__inner flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <div className="min-w-0 flex-1" style={{ flexBasis: 150 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', letterSpacing: '0.09em', textTransform: 'uppercase' }}>
               Votre wok
             </div>
-            <div className="mt-1 text-[15px] text-white">
-              {/* Trois états, jamais un prix trompeur : rien de choisi, base
-                  seule (donc pas encore de montant), puis base + garniture. */}
+            {/* Trois états, jamais un prix trompeur : rien de choisi, base seule
+                (donc pas encore de montant), puis la composition complète.
+
+                Une fois complète, elle se lit en jetons séparés par des points
+                médians — garniture, base, puis ce qui s'ajoute — et les noms
+                restent ENTIERS : « Choux » au lieu de « Choux-carottes
+                fondants » ferait douter le client d'avoir coché la bonne ligne.
+                Deux lignes au maximum, le reste en infobulle : la barre ne doit
+                pas grandir au point de manger la carte sur un petit écran. */}
+            <div
+              className="mt-1 text-[15px] leading-snug text-white"
+              title={resumeComplet || undefined}
+              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+            >
               {!base ? (
                 <span className="text-white/40">Choisissez votre base</span>
-              ) : (
+              ) : !option ? (
                 <>
                   {base.name}
-                  {option
-                    ? <> <span className="text-white/40">+</span> {option.name}</>
-                    : <span className="text-white/40"> — choisissez une garniture</span>}
+                  <span className="text-white/40"> — choisissez une garniture</span>
                 </>
-              )}
-              {legumes.length > 0 && (
-                <span className="text-white/55"> · {legumes.map(l => l.name).join(', ')}</span>
-              )}
-              {supPortion && option && (
-                <span className="text-white/55"> · {supLabel.toLowerCase()}</span>
+              ) : (
+                <>
+                  {`${option.name} · ${base.name}`}
+                  {extras.length > 0 && <span className="text-white/55">{` · ${extras.join(' · ')}`}</span>}
+                </>
               )}
             </div>
             {/* Ligne de détail : elle ne s'affiche que s'il y a réellement un
                 supplément à justifier, et elle dit d'où vient chaque franc.
                 Sans elle, le total monterait sans explication. */}
-            {(nbSupplements > 0 || (supPortion && option)) && (
-              <div className="mt-1 text-[11.5px] text-white/45">
+            {(nbSupplements > 0 || ((supPortion || supXL) && option)) && (
+              <div className="mt-0.5 text-[11.5px] text-white/45">
                 {[
                   nbSupplements > 0
-                    && `${LEGUMES_INCLUS} légume inclus · ${nbSupplements} supplément${nbSupplements > 1 ? 's' : ''} à ${format(1.5)}`,
-                  supPortion && option && `portion en plus à ${format(1.5)}`,
+                    && `${LEGUMES_INCLUS} légume inclus · ${nbSupplements} supplément${nbSupplements > 1 ? 's' : ''} à ${tarif('leg:choux')}`,
+                  supPortion && option && `portion en plus à ${tarif('sup:portion')}`,
+                  supXL && option && `format XL à ${tarif('sup:xl')}`,
                 ].filter(Boolean).join(' · ')}
               </div>
             )}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-none items-center gap-3">
             <div
               className={`text-2xl font-bold text-white ${pop ? 'wok-price-pop' : ''}`}
               style={{ fontVariantNumeric: 'tabular-nums', display: 'inline-block' }}
@@ -1800,28 +2546,27 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor }) {
             >
               {total == null ? '—' : format(total)}
             </div>
+            {/* Le bouton reste cliquable après un ajout : on peut vouloir le
+                même wok deux fois. Seul son habillage change, le temps de dire
+                que c'est pris. */}
             <button
               type="button"
               onClick={handleAdd}
               disabled={!canAdd}
               title={canAdd ? 'Ajouter au panier' : (base ? 'Choisissez une garniture' : 'Choisissez votre base')}
-              className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 font-medium transition-all ${
+              className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 font-medium transition-all ${added ? 'wok-add-pulse' : ''} ${
                 canAdd
                   ? 'bg-white text-black hover:bg-white/90 active:scale-95'
                   : 'border border-white/20 text-white/50 cursor-not-allowed'
               }`}
             >
-              <Plus className="h-4 w-4" />
-              Ajouter
+              {added
+                ? <><Check className="h-4 w-4" strokeWidth={3} />Ajouté</>
+                : <><Plus className="h-4 w-4" />Ajouter</>}
             </button>
           </div>
+         </div>
         </div>
-
-        {base && cart[base.id] > 0 && (
-          <p className="mt-3 text-xs text-white/45">
-            {cart[base.id]} × {base.name} déjà au panier
-          </p>
-        )}
       </div>
     </div>
   );
@@ -2373,7 +3118,7 @@ function VariantModal({ item, stockList = [], onSelect, onClose }) {
 // Photos des parfums, clé « <id de plat>:<id de parfum> ».
 //
 // La clé porte l'id du PLAT parce que deux gammes de jus coexistent : les jus
-// exotiques (19) n'ont pas de visuel par parfum, les jus maison (25) en ont
+// exotiques (19) n'ont pas de visuel par parfum, les boissons maison (25) en ont
 // un chacun. Une clé par parfum seul les confondrait — « fraise-framboise »
 // existe des deux côtés, avec deux recettes et deux prix.
 //
@@ -2983,7 +3728,12 @@ function FormuleModal({ item, stockList = [], onConfirm, onClose }) {
 }
 
 // ─── MINI PANIER FLOTTANT ────────────────────────────────────────────────────
-function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, restaurantOpen = true, manualClosure = false, openStatusLabel = '', skin = 'legacy' }) {
+// `hidden` escamote le mini-panier sans le démonter : il redirait, au même
+// endroit et au même moment, ce que dit déjà la barre récap du composeur de
+// woks — un total et un bouton —, et le recouvrait. On l'efface plutôt que de
+// le retirer de l'arbre, pour qu'il revienne en fondu et non par l'animation
+// d'apparition d'un nouveau venu.
+function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, restaurantOpen = true, manualClosure = false, openStatusLabel = '', skin = 'legacy', hidden = false }) {
   const totalQty = Object.values(cart).reduce((s, q) => s + q, 0);
 
   // Habillage refonte : le carré blanc du site historique jure sur le fond
@@ -3039,6 +3789,14 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
     <div
       onClick={onOpen}
       className={rf ? 'rf-minicart' : undefined}
+      // Point d'arrivée de la pastille lancée à chaque ajout (voir
+      // src/lib/flyToCart.js). Attribut nu : aucun effet sur le rendu, et son
+      // absence désactive simplement l'atterrissage sur cible.
+      {...{ [CART_TARGET_ATTR]: '' }}
+      // `aria-hidden` sert deux fois : il retire le mini-panier escamoté des
+      // lecteurs d'écran, et il dit au vol de viser l'emplacement plutôt que
+      // l'élément — invisible, il n'a rien à faire tressaillir.
+      aria-hidden={hidden || undefined}
       style={{
         position: 'fixed',
         bottom: 24,
@@ -3054,9 +3812,11 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
         boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
         cursor: 'pointer',
         maxWidth: 280,
-        opacity: restaurantOpen ? 1 : 0.65,
+        opacity: hidden ? 0 : (restaurantOpen ? 1 : 0.65),
+        transform: hidden ? 'translateY(16px) scale(0.92)' : 'none',
+        pointerEvents: hidden ? 'none' : 'auto',
         animation: 'tileIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both',
-        transition: 'transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease',
+        transition: 'transform 0.22s ease, box-shadow 0.15s ease, opacity 0.22s ease',
       }}
       title={closedHint || undefined}
       onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.55)'; }}
@@ -3548,6 +4308,19 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
                             {Array.isArray(v.legumes) && v.legumes.length > 0 && (
                               <span className="text-white/45">
                                 {v.name ? ' · ' : ''}{v.legumes.map(l => l?.name).filter(Boolean).join(', ')}
+                              </span>
+                            )}
+                            {/* Extras facturés. Sans eux, un wok à 23.40 s'affiche
+                                « Poulet · Choux » et rien n'explique les 4.50 de
+                                plus que la fiche — c'est un appel au restaurant.
+                                Même condition stricte que le calcul du prix. */}
+                            {(v.supPortion === true || v.supXL === true) && (
+                              <span className="text-white/45">
+                                {' · '}
+                                {[
+                                  v.supPortion === true && (v.id === 'veggie' ? "portion d'omelette en plus" : 'portion de viande en plus'),
+                                  v.supXL === true && 'format XL',
+                                ].filter(Boolean).join(' · ')}
                               </span>
                             )}
                             {/* Prix rappelé par exemplaire quand les options du
