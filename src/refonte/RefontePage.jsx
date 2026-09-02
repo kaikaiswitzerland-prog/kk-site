@@ -29,7 +29,10 @@ const SECTION_META = [
     note: 'Servis avec riz et salade.' },
   { key: 'formules', id: 'rf-formules', kicker: 'À partager',     title: 'Formules' },
   { key: 'desserts', id: 'rf-desserts', kicker: 'Pour finir',     title: 'Desserts' },
-  { key: 'jusMaison', id: 'rf-jus-maison', kicker: 'Pressés maison', title: 'Jus maison' },
+  // Le kicker ne dit plus « Pressés » : la gamme ne se limite plus à des jus
+  // pressés. L'ancre `rf-jus-maison` ne bouge pas, elle sert de cible de
+  // navigation et peut avoir été partagée.
+  { key: 'jusMaison', id: 'rf-jus-maison', kicker: 'À la fraîche', title: 'Boissons fraîches maison' },
   { key: 'boissons', id: 'rf-boissons', kicker: 'À côté',         title: 'Boissons' },
 ];
 

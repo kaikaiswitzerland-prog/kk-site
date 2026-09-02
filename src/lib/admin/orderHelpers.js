@@ -158,7 +158,7 @@ export const ITEM_CATEGORY_MAP = {
   '17': 'desserts',  // Po'e Banane
   '18': 'desserts',  // Cheesecake
   '19': 'boissons',  // Jus exotiques
-  '25': 'boissons',  // Jus maison KaïKaï
+  '25': 'boissons',  // Boissons fraîches maison
   '20': 'boissons',  // Eau plate/gazeuse
   // Bases du composeur de woks. Sans elles, getItemCategoryLabel rendrait « ? »
   // sur chaque wok composé dans l'admin et la compta.
@@ -223,6 +223,26 @@ export const isAdminVisible = (order) => order.status !== 'pending_payment';
 //     - Dessert (+ coulis si applicable)
 //
 // Graceful fallback : ignore tout champ null/undefined, ne lance jamais.
+// Libellés des extras facturés, tels qu'ils partent à l'imprimante et à
+// l'écran admin. Exportés parce que le rendu du ticket doit pouvoir les
+// RECONNAÎTRE pour les mettre en vedette — un test sur le contenu exact, pas
+// une heuristique de préfixe qui se briserait au premier changement de mot.
+//
+// ⚠ Sans accent et sans caractère typographique : ils traversent toAscii()
+// avant l'imprimante, autant qu'ils y soient déjà.
+export const EXTRA_LINE_XL = 'FORMAT XL - BOL 1400ML';
+export const EXTRA_LINE_PORTION_VIANDE = 'PORTION DE VIANDE EN PLUS';
+export const EXTRA_LINE_PORTION_OMELETTE = "PORTION D'OMELETTE EN PLUS";
+
+const EXTRA_LINES = new Set([
+  EXTRA_LINE_XL,
+  EXTRA_LINE_PORTION_VIANDE,
+  EXTRA_LINE_PORTION_OMELETTE,
+]);
+
+// Cette sous-ligne change-t-elle ce que la cuisine doit mettre dans le bol ?
+export const isExtraLine = (l) => typeof l === 'string' && EXTRA_LINES.has(l);
+
 export function renderVariantLines(variants) {
   if (!variants || !variants.length) return [];
   const lines = [];
@@ -308,16 +328,26 @@ export function renderVariantLines(variants) {
         .filter(Boolean);
       if (noms.length) lines.push(`Légumes : ${noms.join(', ')}`);
     }
-    // 4ter. Portion de garniture supplémentaire. Elle est FACTURÉE (+1.50) :
-    // sans cette ligne la cuisine servirait une portion simple et le client
-    // aurait payé pour rien. Elle doit donc apparaître partout où les lignes
-    // de variante sont rendues — ticket, carte de commande, modale admin.
+    // 4ter. Les EXTRAS FACTURÉS du composeur de woks.
     //
-    // Le mot dépend de la garniture, comme dans le composeur : le veggie est
-    // une omelette, pas de la viande.
+    // Ce sont les lignes les plus coûteuses à rater du ticket : un XL manqué,
+    // c'est un bol de 750 ml servi sur une commande qui a facturé 3.00 de plus,
+    // et le client s'en aperçoit en ouvrant le sac. D'où les capitales, et
+    // d'où `isExtraLine` : le ticket s'en sert pour leur donner un bandeau à
+    // part au lieu de les noyer parmi les sous-lignes.
+    //
+    // La condition est `=== true` strictement, EXACTEMENT celle qui facture
+    // (unitPrice côté client, getServerUnitPrice côté serveur). Un variant qui
+    // ne serait pas facturé ne doit pas non plus être servi.
+    //
+    // Le mot de la portion dépend de la garniture, comme dans le composeur :
+    // le veggie est une omelette, pas de la viande.
     if (v?.supPortion === true) {
       const veggie = typeof v?.id === 'string' && v.id === 'veggie';
-      lines.push(`+ Portion ${veggie ? "d'omelette" : 'de viande'} en plus`);
+      lines.push(veggie ? EXTRA_LINE_PORTION_OMELETTE : EXTRA_LINE_PORTION_VIANDE);
+    }
+    if (v?.supXL === true) {
+      lines.push(EXTRA_LINE_XL);
     }
     } catch (err) {
       // Variant au format inattendu : on log côté console et on pousse une

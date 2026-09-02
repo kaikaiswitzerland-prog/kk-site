@@ -131,7 +131,7 @@ export const PRODUCT_META = {
   '19': { png: `${PNG_DIR}/boisson-jus-exotiques.png`,    jpg: '/boisson-jus.jpg',         badge: null,        short: '4 parfums au choix' },
   '20': { png: `${PNG_DIR}/boisson-eau.png`,              jpg: '/boisson-eau.jpg',         badge: null },
 
-  // ── Jus maison (section à part : gamme distincte des jus exotiques) ──────
+  // ── Boissons fraîches maison (gamme distincte des jus exotiques) ─────────
   //    Pas de PNG détouré : la photo EST un packshot, gobelet sur fond net.
   //    `jpgPos` haut (30 %) parce que la photo est verticale et que le sujet
   //    occupe le haut du cadre — un centrage montrerait surtout le sol.

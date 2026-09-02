@@ -35,6 +35,7 @@ import {
   orderNumber,
   PAYMENT_LABELS,
   renderVariantLines,
+  isExtraLine,
 } from './admin/orderHelpers.js';
 
 // ─── Style ─────────────────────────────────────────────────────────────
@@ -82,6 +83,11 @@ const S = {
   rule:      { font: 'font_a' },                       // 48 col, référence unique
   itemName:  { font: 'font_a', em: true },             // 48 col
   itemPrice: { font: 'font_a' },                       // 48 col, non gras
+  // Extras facturés : bandeau en vidéo inverse (fond noir, texte blanc), la
+  // seule chose sur un ticket thermique qui se repère sans lire. Font A pleine
+  // largeur pour que le bandeau soit plein — un reverse sur une ligne courte
+  // ne fait qu'une étiquette au milieu du vide, on le pade donc à 48 colonnes.
+  extra:     { font: 'font_a', em: true, reverse: true },
   total:     { font: 'font_a', height: 2, em: true },  // width=1 → 48 col
   thanks:    { font: 'font_a', em: true, align: 'center' },
   footer:    { font: 'font_b', align: 'center' },
@@ -304,6 +310,14 @@ function buildItemBlock(item) {
 
   const subCols = colsFor(S.body) - 5; // 3 d'indentation + "> "
   renderVariantLines(safeIt.variants).forEach((v) => {
+    // Un extra facturé sort du lot : bandeau pleine largeur, pas une
+    // sous-ligne indentée de plus. C'est ce qui coûte le plus cher à rater.
+    if (isExtraLine(v)) {
+      const txt = toAscii(v);
+      const pad = Math.max(0, RULE_COLS - txt.length - 4);
+      out.push(line(`  ${txt}${' '.repeat(pad)}  `, S.extra));
+      return;
+    }
     wrapText(toAscii(v), subCols).forEach((l, i) => {
       out.push(line(`   ${i === 0 ? '> ' : '  '}${l}`, S.body));
     });
