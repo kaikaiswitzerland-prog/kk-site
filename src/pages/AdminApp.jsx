@@ -17,6 +17,7 @@ import LoadingScreen from './admin/LoadingScreen.jsx';
 import LoginScreen from './admin/LoginScreen.jsx';
 import Sidebar from './admin/Sidebar.jsx';
 import TopBar from './admin/TopBar.jsx';
+import SoundGate from './admin/SoundGate.jsx';
 import OrdersView from './admin/OrdersView.jsx';
 import OrderModal from './admin/OrderModal.jsx';
 import RefundModal from './admin/RefundModal.jsx';
@@ -52,6 +53,9 @@ export default function AdminApp() {
     deleteOrders,
     soundEnabled,
     setSoundEnabled,
+    audioState,
+    unlockAudio,
+    alarmActive,
   } = useOrders({ enabled: !!user });
 
   const [page, setPage] = useState('orders');
@@ -220,6 +224,16 @@ export default function AdminApp() {
           title={PAGE_TITLES[page]}
           soundEnabled={soundEnabled}
           onToggleSound={toggleSound}
+        />
+
+        {/* Placé SOUS la barre du haut et au-dessus de tout le reste : la
+            question « est-ce que ça va sonner ? » doit se régler avant le
+            service, pas se découvrir pendant. */}
+        <SoundGate
+          audioState={audioState}
+          soundEnabled={soundEnabled}
+          onUnlock={unlockAudio}
+          alarmActive={alarmActive}
         />
 
         {page === 'orders' && (

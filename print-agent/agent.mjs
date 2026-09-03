@@ -24,6 +24,8 @@ globalThis.localStorage ??= {
   removeItem: () => {},
 };
 
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,6 +41,56 @@ const STATE_PATH = path.join(__dirname, '.state.json');
 const DEFAULT_PRINTER_URL =
   'http://192.168.1.103/cgi-bin/epos/service.cgi?devid=local_printer&timeout=10000';
 const DEFAULT_POLL_MS = 5000;
+
+// ─── Version du code exécuté ───────────────────────────────────────────
+//
+// ⚠ CE GARDE-FOU EXISTE À CAUSE D'UN INCIDENT RÉEL.
+//
+// L'agent tourne sur le poste de la cuisine depuis un clone du dépôt, lancé
+// à la main. Rien ne le met à jour, et Node met les modules en cache AU
+// DÉMARRAGE : un démon lancé il y a des semaines continue d'exécuter son
+// vieux code même après un `git pull`. Il faut les DEUX — pull ET
+// redémarrage.
+//
+// Le 03/09/2026, un wok facturé 26.40 (3 légumes + portion + format XL) est
+// sorti imprimé « Poulet », sans aucune option : le démon exécutait un code
+// antérieur au composeur. Rien ne l'indiquait — le ticket avait l'air normal.
+//
+// L'agent annonce donc maintenant sa version, et crie quand il est en retard.
+const execFileAsync = promisify(execFile);
+
+async function git(...args) {
+  try {
+    const { stdout } = await execFileAsync('git', args, { cwd: __dirname, timeout: 8000 });
+    return stdout.trim();
+  } catch {
+    return null;
+  }
+}
+
+// { court, date, retard } — `retard` vaut null si la comparaison au dépôt
+// distant n'a pas pu se faire (pas de réseau, pas de remote). On ne bloque
+// jamais là-dessus : en plein service, un ticket incomplet vaut mieux que pas
+// de ticket du tout.
+export async function versionDuCode() {
+  const court = await git('rev-parse', '--short', 'HEAD');
+  const date  = await git('log', '-1', '--format=%cI');
+  let retard = null;
+  if (court) {
+    await git('fetch', '--quiet', 'origin', 'main');
+    const n = await git('rev-list', '--count', 'HEAD..origin/main');
+    if (n !== null && /^\d+$/.test(n)) retard = Number(n);
+  }
+  return { court, date, retard };
+}
+
+// Bandeau imprimé EN TÊTE de chaque ticket tant que l'agent est périmé : le
+// personnel de cuisine ne lit pas les logs d'un terminal, il lit les tickets.
+export function alerteVersion({ court, retard }) {
+  if (!retard) return null;
+  return `AGENT PERIME (${retard} commit${retard > 1 ? 's' : ''} de retard, ${court || '?'}) `
+       + `- OPTIONS POSSIBLEMENT MANQUANTES - git pull PUIS redemarrer l agent`;
+}
 
 // Statuts qui déclenchent l'auto-impression : à partir du clic "Accepter"
 // dans l'admin (status='accepted') et tous les statuts positifs ultérieurs.
@@ -131,6 +183,7 @@ export async function runTick({
   windowHours,
   logger,
   printFn,
+  warning,
 }) {
   const log         = logger        || console;
   const doPrint     = printFn       || printOrderTicket;
@@ -164,7 +217,7 @@ export async function runTick({
         `(${order.payment_method || '?'}, ${order.status}) — impression…`
       );
       try {
-        await doPrint(order, printerUrl);
+        await doPrint(order, printerUrl, { warning });
         state.printedIds.add(order.id);
         printed += 1;
         log.log(`[print-agent] ✓ Ticket imprimé pour #${shortId(order.id)}`);
@@ -196,7 +249,7 @@ export async function runTick({
         `${order.customer_name || 'client'} — impression…`
       );
       try {
-        await doPrint(order, printerUrl);
+        await doPrint(order, printerUrl, { warning });
         // Marque imprimé AVANT de clear le flag : si l'étape A redécouvre
         // la commande au prochain tour (statut désormais 'accepted', flag
         // vidé), printedIds l'empêchera d'être ré-imprimée en auto.
@@ -254,7 +307,26 @@ async function main() {
 
   const state = await loadState(STATE_PATH);
 
+  const version = await versionDuCode();
+  const alerte = alerteVersion(version);
+
   console.log(`[print-agent] En attente de commandes confirmées…`);
+  console.log(`[print-agent] Version du code : ${version.court || 'inconnue'}`
+    + `${version.date ? ` (${version.date.slice(0, 10)})` : ''}`);
+  if (alerte) {
+    console.log('');
+    console.log('  ┌────────────────────────────────────────────────────────────┐');
+    console.log(`  │ ⚠  AGENT PÉRIMÉ : ${String(version.retard).padEnd(3)} commit(s) de retard sur origin/main │`);
+    console.log('  │    Les tickets peuvent OMETTRE des options facturées.      │');
+    console.log('  │    Corriger : git pull PUIS redémarrer cet agent.          │');
+    console.log('  │    (un pull seul ne suffit pas : Node cache les modules)   │');
+    console.log('  └────────────────────────────────────────────────────────────┘');
+    console.log('');
+  } else if (version.retard === 0) {
+    console.log(`[print-agent] Code à jour     : oui`);
+  } else {
+    console.log(`[print-agent] Code à jour     : non vérifié (dépôt distant injoignable)`);
+  }
   console.log(`[print-agent] Imprimante      : ${PRINTER_URL}`);
   console.log(`[print-agent] Polling         : toutes les ${POLL_MS} ms`);
   console.log(`[print-agent] Statuts imprimés: ${PRINT_STATUSES.join(', ')}`);
@@ -279,6 +351,7 @@ async function main() {
         printerUrl: PRINTER_URL,
         printStatuses: PRINT_STATUSES,
         windowHours: PRINT_WINDOW_HOURS,
+        warning: alerte,
       });
       if (result.printed > 0 || result.failed > 0) {
         await saveState(STATE_PATH, state);

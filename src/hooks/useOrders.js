@@ -33,12 +33,25 @@ export function useOrders({ enabled }) {
   // AudioContext réutilisé entre les bips : les navigateurs plafonnent le
   // nombre de contextes simultanés, en créer un par commande finit par échouer.
   const audioCtx = useRef(null);
+  // État RÉEL du moteur audio, distinct de la préférence `soundEnabled`.
+  //
+  // ⚠ C'est la leçon du bug : le bouton affichait « Son ON » — l'intention —
+  // pendant que le contexte était suspendu et que rien ne sortait. Un
+  // indicateur qui montre ce qu'on a demandé plutôt que ce qui se passe est
+  // pire que pas d'indicateur : il fait taire la question.
+  //   'running'     → un bip sortira (sauf iPad en mode silencieux, cf. plus bas)
+  //   'suspended'   → rien ne sortira, il faut un geste
+  //   'unsupported' → pas de Web Audio du tout
+  const [audioState, setAudioState] = useState('suspended');
   // Ids des commandes arrivées en temps réel et pas encore prises en charge.
   // Uniquement alimenté par les events Realtime — jamais par le fetch initial,
   // pour qu'un rechargement de l'admin ne déclenche pas l'alarme sur des
   // commandes déjà à l'écran.
   const alarmIds = useRef(new Set());
   const alarmTimer = useRef(null);
+  // Miroir en state de `alarmIds.size` : un ref ne redéclenche aucun rendu, et
+  // le repli visuel a besoin de savoir, À L'ÉCRAN, qu'une commande attend.
+  const [alarmActive, setAlarmActive] = useState(false);
 
   const triggerToast = useCallback((order) => {
     setToast(order);
@@ -67,16 +80,35 @@ export function useOrders({ enabled }) {
     const Ctx =
       typeof window !== 'undefined' &&
       (window.AudioContext || window.webkitAudioContext);
-    if (!Ctx) return null;
+    if (!Ctx) { setAudioState('unsupported'); return null; }
     try {
       if (!audioCtx.current || audioCtx.current.state === 'closed') {
         audioCtx.current = new Ctx();
+        // iOS : sans ça, le commutateur silencieux de l'iPad MUTE la Web Audio
+        // API. Le contexte est « running », les oscillateurs tournent, et
+        // aucun son ne sort — la panne parfaitement silencieuse, au sens
+        // propre. `playback` demande à Safari de traiter ce son comme du média
+        // et de passer outre le silencieux. Safari 16.4+ ; ailleurs, ignoré.
+        try {
+          if (navigator.audioSession) navigator.audioSession.type = 'playback';
+        } catch { /* pas supporté : on continue */ }
+        // L'état peut changer sans nous (veille, arrière-plan, appel entrant).
+        audioCtx.current.onstatechange = () => {
+          setAudioState(audioCtx.current?.state || 'suspended');
+        };
       }
       if (audioCtx.current.state === 'suspended') {
-        audioCtx.current.resume().catch(() => { /* geste requis : réessayé plus tard */ });
+        // ⚠ Hors geste utilisateur, ce resume() est REFUSÉ par iOS et échoue en
+        // silence. C'est pour ça qu'il faut un vrai bouton, et un indicateur
+        // qui dit la vérité quand le déblocage n'a pas eu lieu.
+        audioCtx.current.resume()
+          .then(() => setAudioState(audioCtx.current?.state || 'suspended'))
+          .catch(() => setAudioState('suspended'));
       }
+      setAudioState(audioCtx.current.state);
       return audioCtx.current;
     } catch {
+      setAudioState('unsupported');
       return null;
     }
   }, []);
@@ -93,9 +125,27 @@ export function useOrders({ enabled }) {
     };
     window.addEventListener('click', unlock, { once: true });
     window.addEventListener('touchstart', unlock, { once: true });
+
+    // L'iPad de cuisine passe son temps en veille. Au réveil, iOS a resuspendu
+    // le contexte ; on remet l'état à jour pour que l'indicateur dise vrai, et
+    // on tente un resume — qui réussira si le retour au premier plan compte
+    // comme geste, et sinon laissera l'indicateur au rouge, ce qui est
+    // exactement l'information utile.
+    const revoir = () => {
+      if (document.visibilityState !== 'visible') return;
+      const ctx = audioCtx.current;
+      if (!ctx) return;
+      setAudioState(ctx.state);
+      if (ctx.state === 'suspended') ensureAudioCtx();
+    };
+    document.addEventListener('visibilitychange', revoir);
+    window.addEventListener('focus', revoir);
+
     return () => {
       window.removeEventListener('click', unlock);
       window.removeEventListener('touchstart', unlock);
+      document.removeEventListener('visibilitychange', revoir);
+      window.removeEventListener('focus', revoir);
     };
   }, [ensureAudioCtx]);
 
@@ -151,6 +201,7 @@ export function useOrders({ enabled }) {
     // remettre sur ON relancerait l'alarme toute seule.
     if (!soundEnabled.current) return;
     alarmIds.current.add(id);
+    setAlarmActive(true);
     playNotificationSound(); // première sonnerie immédiate
     if (alarmTimer.current) return; // timer déjà en route
     alarmTimer.current = setInterval(playNotificationSound, ALARM_REPEAT_MS);
@@ -176,6 +227,7 @@ export function useOrders({ enabled }) {
       }
     }
     if (alarmIds.current.size === 0) stopAlarm();
+    setAlarmActive(alarmIds.current.size > 0);
   }, [orders, stopAlarm]);
 
   // Filet de sécurité : pas de timer fantôme si le hook est démonté alors que
@@ -412,6 +464,29 @@ export function useOrders({ enabled }) {
     triggerToast({ message: `${n} commande${n > 1 ? 's' : ''} supprimée${n > 1 ? 's' : ''} définitivement` });
   }, [triggerToast]);
 
+  // Déblocage EXPLICITE, à appeler depuis un vrai geste (bouton « Activer le
+  // son »). Joue un bip court : c'est la seule façon de savoir que le son
+  // fonctionne vraiment. Un contexte « running » ne prouve rien sur un iPad en
+  // mode silencieux — seule une oreille tranche.
+  const unlockAudio = useCallback(() => {
+    const ctx = ensureAudioCtx();
+    if (!ctx) return false;
+    try {
+      const t = ctx.currentTime + 0.02;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1200, t);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.7, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.2);
+    } catch { /* le bip de test a échoué : l'indicateur le dira */ }
+    return ctx.state === 'running';
+  }, [ensureAudioCtx]);
+
   const setSoundEnabled = useCallback((on) => {
     soundEnabled.current = on;
     if (on) {
@@ -424,6 +499,7 @@ export function useOrders({ enabled }) {
       // une nouvelle commande pourra la redéclencher.
       stopAlarm();
       alarmIds.current.clear();
+      setAlarmActive(false);
     }
     try { localStorage.setItem('kkAdminSound', on ? '1' : '0'); } catch { /* */ }
   }, [ensureAudioCtx, stopAlarm]);
@@ -443,5 +519,12 @@ export function useOrders({ enabled }) {
     deleteOrders,
     soundEnabled: soundEnabled.current,
     setSoundEnabled,
+    // État réel du moteur audio, et déblocage explicite. L'admin s'en sert pour
+    // afficher la vérité plutôt que la préférence, et pour réclamer un tap.
+    audioState,
+    unlockAudio,
+    // Une commande attend-elle, alarme en cours ? Sert au repli visuel : si le
+    // son ne peut pas jouer, il faut que l'écran, lui, soit impossible à rater.
+    alarmActive,
   };
 }
