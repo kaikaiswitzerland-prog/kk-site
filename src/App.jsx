@@ -4,7 +4,7 @@
 //   - Suppression de PalmLeaves (composant désactivé qui retourne null)
 // Tout le reste est identique à la version précédente.
 
-import React, { useMemo, useState, useEffect, useRef, useId, Suspense, lazy } from "react";
+import React, { useMemo, useState, useEffect, useLayoutEffect, useRef, useId, Suspense, lazy } from "react";
 import { ShoppingCart, Minus, Plus, X, MapPin, Bike, Check, Phone, Instagram, Facebook, Clock, Info, AlertCircle, ChevronRight, ChevronDown } from "lucide-react";
 import IslandModeToggle from "./components/IslandModeToggle.jsx";
 import HeroSliderV2 from "./components/HeroSliderV2.jsx";
@@ -273,9 +273,27 @@ const globalStyles = `
   .wok-step__panel {
     display: grid;
     grid-template-rows: 0fr;
+  }
+  /* ⚠ SEULE L'OUVERTURE EST ANIMÉE : la transition n'est déclarée que sur
+     l'état ouvert, elle joue donc en entrant et pas en sortant. Un repli est
+     instantané, par choix.
+
+     C'est ce qui rend le repli sûr. Un panneau qui se referme raccourcit la
+     page AU-DESSUS du doigt et il faut compenser au défilement ; tant que cette
+     hauteur s'animait, la compensation devait suivre image par image — or
+     requestAnimationFrame passe AVANT le recalcul de style et de mise en page
+     du frame courant, elle corrigeait donc toujours avec un cran de retard.
+     Sur Safari cela se voyait : la page partait et revenait, avec un
+     rétrécissement fugace quand le défilement dépassait brièvement le bas d'un
+     document en train de raccourcir.
+     Hauteur instantanée + compensation unique avant peinture : plus aucun état
+     intermédiaire ne peut être affiché. L'ouverture, elle, pousse vers le bas
+     SOUS le point cliqué — elle ne déplace jamais rien, elle garde donc son
+     animation. */
+  .wok-step--open .wok-step__panel {
+    grid-template-rows: 1fr;
     transition: grid-template-rows 0.28s cubic-bezier(0.32, 0.72, 0, 1);
   }
-  .wok-step--open .wok-step__panel { grid-template-rows: 1fr; }
   .wok-step__panelin { overflow: hidden; }
   .wok-step__body { padding: 2px 14px 6px; }
 
@@ -1164,13 +1182,13 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   const holdTimer = useRef(null);
   useEffect(() => () => clearTimeout(holdTimer.current), []);
 
-  // La barre récap du composeur de woks occupe-t-elle le bas de l'écran ?
-  // Tant qu'elle y est, le mini-panier flottant s'escamote : ils se posent au
-  // même endroit et disent la même chose, et l'empilement recouvrait le bouton
-  // « Ajouter » — celui-là même qu'on veut rendre évident.
-  // `setWokBarPinned` est passé tel quel au composeur : une référence stable,
-  // donc son observateur ne se reconstruit pas à chaque rendu de la page.
-  const [wokBarPinned, setWokBarPinned] = useState(false);
+  // La barre récap du composeur de woks recouvre-t-elle l'emplacement du
+  // mini-panier flottant ? Tant que oui, le mini-panier s'escamote : ils se
+  // posent au même endroit et disent la même chose, et l'empilement recouvrait
+  // le bouton « Ajouter » — celui-là même qu'on veut rendre évident.
+  // `setWokBarCoversCart` est passé tel quel au composeur : une référence
+  // stable, donc sa mesure ne se réarme pas à chaque rendu de la page.
+  const [wokBarCoversCart, setWokBarCoversCart] = useState(false);
   // TODO réactiver -10% quand le Mode Île (programme membre) revient.
   // Garder le couponApplied pour que la logique discount/MiniCart/Checkout
   // continue de fonctionner sans changement quand on remettra à true.
@@ -1597,7 +1615,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
                 add={add}
                 stockList={outOfStockItems}
                 outOfStockFor={(it) => isMenuItemUnavailable(outOfStockItems, it)}
-                onBarPinned={setWokBarPinned}
+                onCoversMiniCart={setWokBarCoversCart}
               />
             }
             cart={cart}
@@ -1662,7 +1680,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
                 add={add}
                 stockList={outOfStockItems}
                 outOfStockFor={(it) => isMenuItemUnavailable(outOfStockItems, it)}
-                onBarPinned={setWokBarPinned}
+                onCoversMiniCart={setWokBarCoversCart}
               />
 
               <h3 id="section-chaud" className="col-span-full mt-8 text-2xl font-semibold tracking-wide text-white/60">🔥 Plat Chaud</h3>
@@ -1753,7 +1771,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
 
       {step === "menu" && Object.values(cart).reduce((s, q) => s + q, 0) > 0 && !miniCartHold && (
         <MiniCart
-          hidden={wokBarPinned}
+          hidden={wokBarCoversCart}
           cart={cart}
           items={items}
           total={total}
@@ -1967,12 +1985,24 @@ function WokStep({
   );
 }
 
-// `onBarPinned` est prévenu quand la barre récap occupe le bas de l'écran.
-// KaiKaiApp s'en sert pour escamoter le mini-panier flottant le temps de la
-// traversée : les deux vivent au même endroit et disent la même chose (un
-// total, un bouton), les empiler mangeait le bouton « Ajouter ».
+// La compensation de défilement DOIT s'appliquer avant la peinture, sinon le
+// frame intermédiaire — celui où la page a raccourci mais pas encore défilé —
+// est affiché. `useLayoutEffect` n'existe pas au rendu serveur ; on retombe sur
+// `useEffect` là-bas, où il n'y a de toute façon ni peinture ni défilement.
+const useAvantPeinture = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
+// `onCoversMiniCart` est prévenu quand la barre récap recouvre l'emplacement du
+// mini-panier flottant. KaiKaiApp s'en sert pour l'escamoter : les deux se
+// posent au même endroit et disent la même chose (un total, un bouton), et
+// l'empilement mangeait le bouton « Ajouter » — celui-là même qu'on veut rendre
+// évident.
+//
+// Le nom dit CE QUI EST MESURÉ, et pas « la barre est épinglée » : une barre
+// épinglée sous le pli ne recouvre rien, et c'est précisément la confusion qui
+// escamotait le mini-panier trop tôt.
+//
 // Prop FACULTATIVE : sans elle le composeur se comporte exactement comme avant.
-export function WokComposer({ bases, cart, add, stockList, outOfStockFor, onBarPinned }) {
+export function WokComposer({ bases, cart, add, stockList, outOfStockFor, onCoversMiniCart }) {
   // Aucune base pré-cochée : le composeur s'ouvre vierge et c'est le client qui
   // choisit. `base` peut donc valoir null tout au long du rendu — chaque lecture
   // en aval le suppose, y compris le récap et le total.
@@ -2139,29 +2169,31 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor, onBarP
   // clouer l'en-tête cliqué à sa place. Le reste de la carte bouge autour de
   // lui, lui ne bouge pas.
   //
-  // La compensation SUIT l'animation de dépliage au lieu d'être calculée une
-  // fois : la hauteur du panneau s'interpole sur 280 ms, une mesure unique prise
-  // au moment du commit porterait sur une géométrie encore périmée — c'était
-  // précisément le bug. Une image sur ~420 ms, une lecture de rect et au plus un
-  // scrollBy par image : c'est en dessous du budget d'une frame, y compris sur
-  // téléphone.
-  useEffect(() => {
+  // UNE seule correction, dans le même frame que le changement de hauteur et
+  // AVANT la peinture. Plus de boucle qui poursuit une animation : le repli est
+  // désormais instantané (voir .wok-step__panel dans globalStyles), la géométrie
+  // est donc déjà définitive ici et il n'existe aucun état intermédiaire à
+  // rattraper.
+  //
+  // C'est la correction du défaut vu sur Safari. Une compensation étalée sur
+  // ~420 ms d'animation laissait voir le trajet : requestAnimationFrame
+  // s'exécute AVANT le recalcul de style et de mise en page du frame courant,
+  // elle corrigeait donc toujours avec la géométrie du frame précédent — un
+  // cran de retard, invisible sur Chromium, visible sur Safari. Et le
+  // défilement appliqué pendant que le document raccourcissait dépassait
+  // brièvement son bas, d'où le rétrécissement fugace.
+  //
+  // L'ouverture, elle, garde son animation sans risque : elle pousse vers le
+  // bas, SOUS le point cliqué, et ne déplace jamais l'ancre.
+  useAvantPeinture(() => {
     const a = anchor.current;
     anchor.current = null;
-    if (!a) return undefined;
+    if (!a) return;
     const el = stepRefs.current[a.n];
-    if (!el || typeof requestAnimationFrame === 'undefined') return undefined;
-
-    let raf = 0;
-    const start = performance.now();
-    const keep = () => {
-      const drift = el.getBoundingClientRect().top - a.top;
-      // Le demi-pixel évite d'osciller sur les arrondis de scrollY.
-      if (Math.abs(drift) > 0.5) window.scrollBy(0, drift);
-      if (performance.now() - start < 420) raf = requestAnimationFrame(keep);
-    };
-    keep();
-    return () => cancelAnimationFrame(raf);
+    if (!el) return;
+    const drift = el.getBoundingClientRect().top - a.top;
+    // Le demi-pixel évite de bouger pour un simple arrondi de scrollY.
+    if (Math.abs(drift) > 0.5) window.scrollBy(0, drift);
     // Clé dérivée : l'effet doit rejouer dès qu'un bloc s'ouvre ou se replie,
     // et `openSteps` est un objet recréé à chaque changement.
   }, [openKey]);
@@ -2272,28 +2304,79 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor, onBarP
   }, [total]);
 
   const cardRef = useRef(null);
+  const barRef = useRef(null);
 
-  // La barre est-elle en train d'occuper le bas de l'écran ? On n'observe pas
-  // la barre elle-même — un élément `sticky` reste, pour l'observateur, à sa
-  // place dans le flux — mais la CARTE, à travers un viewport réduit à sa bande
-  // inférieure (`rootMargin: -72%`). La carte croise cette bande exactement
-  // quand la barre y est épinglée, et la quitte quand la barre se repose au bas
-  // de la carte. Un seul observateur, aucun écouteur de scroll, aucune lecture
-  // de géométrie par image : c'est ce qui garde le défilement fluide sur
-  // téléphone.
+  // La barre récap recouvre-t-elle l'emplacement du mini-panier flottant ?
+  //
+  // On MESURE le chevauchement, on ne le devine plus. La version précédente
+  // observait la CARTE à travers un viewport réduit à sa bande inférieure
+  // (`rootMargin: -72%`) et en déduisait l'épinglage. Deux défauts :
+  //
+  //   · elle ne mesurait pas la bonne chose. Carte croisant la bande basse
+  //     n'égale pas barre recouvrant le mini-panier : le mini-panier
+  //     s'escamotait déjà alors que la barre était encore sous l'écran ;
+  //   · un rootMargin en POURCENTAGE dépend de la hauteur du viewport, qui
+  //     bouge sous iOS au fil de la barre d'URL. Le seuil n'était donc pas le
+  //     même selon qu'elle était déployée ou rétractée, et l'observateur ne se
+  //     réévalue pas de lui-même à ce changement-là.
+  //
+  // La question posée est maintenant exactement celle du bug : le bas de la
+  // barre descend-il dans la bande où flotte le mini-panier ? Un rect par image
+  // de défilement, sur un seul élément — c'est en dessous du budget d'une
+  // frame, et c'est le prix de la justesse.
   useEffect(() => {
-    if (!onBarPinned) return undefined;
-    const el = cardRef.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return undefined;
-    const io = new IntersectionObserver(
-      ([entry]) => onBarPinned(entry.isIntersecting),
-      { rootMargin: '-72% 0px 0px 0px', threshold: 0 },
-    );
-    io.observe(el);
-    // Au démontage (passage au checkout, par exemple) la barre disparaît :
-    // sans ce rappel, le mini-panier resterait escamoté pour toujours.
-    return () => { io.disconnect(); onBarPinned(false); };
-  }, [onBarPinned]);
+    if (!onCoversMiniCart) return undefined;
+    const el = barRef.current;
+    if (!el) return undefined;
+
+    let raf = 0;
+    let dernier = null;
+
+    const mesure = () => {
+      raf = 0;
+      const r = el.getBoundingClientRect();
+      // `innerHeight` et non `visualViewport.height` : le mini-panier est en
+      // `position: fixed` et la barre en `position: sticky`, tous deux calés
+      // sur le viewport de MISE EN PAGE. C'est la même référence que celle des
+      // coordonnées rendues par getBoundingClientRect, donc la comparaison est
+      // exacte quel que soit l'état de la barre d'URL. visualViewport ne sert
+      // qu'à savoir QUAND remesurer.
+      const vh = window.innerHeight || 0;
+      // Bande occupée par le mini-panier : bottom 24, ~64 de haut, plus une
+      // marge. Voir la géométrie recopiée dans src/lib/flyToCart.js.
+      const couvre = r.bottom > vh - 96 && r.top < vh;
+      if (couvre !== dernier) {
+        dernier = couvre;
+        onCoversMiniCart(couvre);
+      }
+    };
+
+    const planifier = () => {
+      if (raf) return;
+      raf = typeof requestAnimationFrame === 'function'
+        ? requestAnimationFrame(mesure)
+        : (mesure(), 0);
+    };
+
+    mesure();
+    window.addEventListener('scroll', planifier, { passive: true });
+    window.addEventListener('resize', planifier);
+    // iOS : la barre d'URL qui se rétracte ne produit pas toujours un `resize`
+    // de window, mais toujours un événement de visualViewport.
+    window.visualViewport?.addEventListener('resize', planifier);
+    window.visualViewport?.addEventListener('scroll', planifier);
+
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', planifier);
+      window.removeEventListener('resize', planifier);
+      window.visualViewport?.removeEventListener('resize', planifier);
+      window.visualViewport?.removeEventListener('scroll', planifier);
+      // Au démontage (passage au checkout, par exemple) la barre disparaît :
+      // sans ce rappel, le mini-panier resterait escamoté pour toujours.
+      onCoversMiniCart(false);
+    };
+  }, [onCoversMiniCart]);
 
   // Confirmation visuelle de l'ajout : le bouton accuse réception. Le vol de la
   // pastille vers le mini-panier, lui, ne vit plus ici — il est déclenché par
@@ -2489,7 +2572,7 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor, onBarP
             écrans : sans cette barre, le client choisit à l'aveugle et doit
             redescendre pour voir ce qu'il a composé et ce que ça coûte.
             Géométrie et collage : classe `.wok-bar` dans globalStyles. */}
-        <div className="wok-bar">
+        <div className="wok-bar" ref={barRef}>
          <div className="wok-bar__inner flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <div className="min-w-0 flex-1" style={{ flexBasis: 150 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', letterSpacing: '0.09em', textTransform: 'uppercase' }}>
@@ -3815,7 +3898,21 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
         opacity: hidden ? 0 : (restaurantOpen ? 1 : 0.65),
         transform: hidden ? 'translateY(16px) scale(0.92)' : 'none',
         pointerEvents: hidden ? 'none' : 'auto',
-        animation: 'tileIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both',
+        // ⚠ L'animation d'apparition est RETIRÉE pendant l'escamotage, et ce
+        // n'est pas une optimisation.
+        //
+        // `tileIn` finit sur `opacity: 1`, et `fill-mode: both` fige cet état
+        // final indéfiniment. Or une propriété animée par @keyframes l'emporte
+        // sur le style inline : tant que l'animation reste déclarée, le
+        // `opacity: 0` ci-dessus n'a AUCUN effet. Le mini-panier gardait donc
+        // son aria-hidden — l'état React était juste — tout en restant
+        // parfaitement visible par-dessus le bouton « Ajouter » de la barre
+        // récap. C'était le bug signalé en production.
+        //
+        // `animation: none` rend la main au style inline, et la transition
+        // ci-dessous fait le fondu. Au retour, l'animation est redéclarée et
+        // rejoue l'entrée.
+        animation: hidden ? 'none' : 'tileIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both',
         transition: 'transform 0.22s ease, box-shadow 0.15s ease, opacity 0.22s ease',
       }}
       title={closedHint || undefined}
