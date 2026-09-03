@@ -240,8 +240,32 @@ const EXTRA_LINES = new Set([
   EXTRA_LINE_PORTION_OMELETTE,
 ]);
 
+// Ligne d'alerte pour une option que ce code ne sait pas rendre. Elle porte
+// ensuite la liste des clés en cause, d'où la reconnaissance par PRÉFIXE.
+export const EXTRA_LINE_INCONNU = 'OPTION NON RECONNUE - VOIR ADMIN';
+
 // Cette sous-ligne change-t-elle ce que la cuisine doit mettre dans le bol ?
-export const isExtraLine = (l) => typeof l === 'string' && EXTRA_LINES.has(l);
+// L'alerte en fait partie : c'est même la plus importante à voir de loin.
+export const isExtraLine = (l) =>
+  typeof l === 'string' && (EXTRA_LINES.has(l) || l.startsWith(EXTRA_LINE_INCONNU));
+
+// Champs qu'un variant SIMPLE peut porter et que le rendu ci-dessous sait
+// traiter. Tout le reste déclenche une ligne d'alerte.
+//
+// ⚠ Le silence est le pire mode d'échec d'un ticket. Une commande peut être
+// FACTURÉE pour une option que cette version du code ignore — c'est exactement
+// ce qui s'est produit quand le démon d'impression tournait avec un code
+// antérieur aux légumes : le client payait 26.40, la cuisine lisait « Poulet »
+// et servait un bol simple. Le ticket paraissait normal, rien n'alertait.
+//
+// Désormais, une clé inconnue imprime un avertissement. Ajouter une option à la
+// carte demande donc d'ajouter sa clé ici — c'est voulu : l'oubli devient
+// visible sur le ticket au lieu de disparaître.
+const CLES_VARIANT_CONNUES = new Set([
+  'id', 'name', 'desc', 'halal', 'price',   // identité de l'option
+  'legumes', 'supPortion', 'supXL',         // composeur de woks
+  'type',                                   // formules, traitées plus haut
+]);
 
 export function renderVariantLines(variants) {
   if (!variants || !variants.length) return [];
@@ -348,6 +372,16 @@ export function renderVariantLines(variants) {
     }
     if (v?.supXL === true) {
       lines.push(EXTRA_LINE_XL);
+    }
+
+    // 4quater. Filet : une option facturée que ce code ne sait pas rendre ne
+    // doit JAMAIS passer sous silence. Mieux vaut un ticket qui dit « je ne
+    // sais pas » qu'un ticket qui a l'air complet et ne l'est pas.
+    if (v && typeof v === 'object' && !v.type) {
+      const inconnues = Object.keys(v).filter((k) => !CLES_VARIANT_CONNUES.has(k));
+      if (inconnues.length) {
+        lines.push(`${EXTRA_LINE_INCONNU} (${inconnues.join(', ')})`);
+      }
     }
     } catch (err) {
       // Variant au format inattendu : on log côté console et on pousse une

@@ -349,8 +349,21 @@ function buildFooter() {
   ].join('');
 }
 
-export function buildEposXml(order) {
+// Bandeau d'alerte en tête de ticket, en vidéo inverse pleine largeur. Sert
+// aujourd'hui à signaler un agent d'impression périmé : le personnel de cuisine
+// ne lit pas les logs d'un terminal, il lit les tickets. Une alerte qui n'arrive
+// pas sous les yeux de celui qui prépare le bol ne sert à rien.
+function buildWarningBlock(warning) {
+  if (!warning) return '';
+  const cols = RULE_COLS;
+  return wrapText(toAscii(String(warning)), cols - 4)
+    .map((l) => line(`  ${l.padEnd(cols - 4)}  `, S.extra))
+    .join('') + blankLine();
+}
+
+export function buildEposXml(order, options = {}) {
   const body =
+    buildWarningBlock(options.warning) +
     buildHeader(order) +
     buildOrderBlock(order) +
     buildModeBlock(order) +
@@ -400,11 +413,11 @@ function parseEposResponse(xmlText) {
 // ─── Entrée publique ───────────────────────────────────────────────────
 // Construit le XML pour `order`, l'envoie à l'imprimante, throw si l'API
 // renvoie success != true.
-export async function printOrderTicket(order, printerUrl) {
+export async function printOrderTicket(order, printerUrl, options = {}) {
   if (!order) throw new Error('Commande manquante');
 
   const url = printerUrl || resolvePrinterUrl();
-  const xml = buildEposXml(order);
+  const xml = buildEposXml(order, options);
 
   let res;
   try {
