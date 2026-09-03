@@ -63,6 +63,27 @@ const COLS = {
   font_c: { 1: 72, 2: 36, 3: 24, 4: 18 },
 };
 
+// Marge de sécurité, en colonnes, retirée de la largeur AVANT tout retour à la
+// ligne de texte libre.
+//
+// ⚠ Valeur issue d'un ticket réel, pas du manuel. La table COLS ci-dessus donne
+// la largeur théorique (Font B = 576 pts / 9 = 64 colonnes), mais sur la
+// TM-m30II du restaurant une ligne de 62 caractères déborde déjà : le dernier
+// caractère part seul à la ligne suivante — « POIVRONS SAUTE / S ». La zone
+// imprimable effective est donc plus étroite que le calcul, à cause des marges
+// papier et de l'espacement inter-caractères.
+//
+// La marge ne s'applique QU'AU texte qu'on replie soi-même. Les lignes
+// construites à largeur fixe — séparateurs, bandeaux en vidéo inverse, ligne de
+// total — restent calées sur RULE_COLS : elles s'impriment correctement à 48
+// colonnes, c'est vérifié sur ticket.
+const WRAP_SAFETY = 3;
+
+// Largeur utilisable pour replier du texte libre.
+function wrapColsFor(style = {}) {
+  return Math.max(8, colsFor(style) - WRAP_SAFETY);
+}
+
 function colsFor(style = {}) {
   const s = { ...DEFAULT_STYLE, ...style };
   const w = clampScale(s.width);
@@ -142,10 +163,32 @@ const foldTypo = (s) => {
 
 // Imprimante thermique : codepage limité → on replie la typographie, on retire
 // les diacritiques et on passe en MAJ pour rester lisible.
-const toAscii = (s) => foldTypo(s).normalize('NFD').replace(COMBINING_MARKS, '').toUpperCase();
+// Tout ce qui n'est pas de l'ASCII imprimable est RETIRÉ, pas conservé.
+//
+// L'imprimante ne connaît que son codepage : un caractère absent en sort en
+// « ? ». Les emojis des parfums de jus (« 🍓 Fraise – Framboise ») donnaient
+// donc « ?? FRAISE - FRAMBOISE » sur le ticket — deux points d'interrogation,
+// parce qu'un emoji hors BMP occupe deux unités UTF-16.
+//
+// Le filtre passe APRÈS foldTypo et la décomposition NFD : à ce stade les
+// lettres accentuées sont déjà devenues de l'ASCII et la ponctuation
+// typographique a été repliée. Il ne reste donc à retirer que ce qui est
+// réellement inimprimable.
+//
+// Les espaces laissés par un caractère supprimé sont recollés, sinon un nom
+// commençant par un emoji sortirait avec un décalage inexpliqué.
+const stripNonAscii = (s) =>
+  String(s ?? '')
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/ {2,}/g, ' ')
+    .trim();
+
+const toAscii = (s) =>
+  stripNonAscii(foldTypo(s).normalize('NFD').replace(COMBINING_MARKS, '')).toUpperCase();
 
 // Même repli, sans les majuscules (pied de ticket).
-const toAsciiMixed = (s) => foldTypo(s).normalize('NFD').replace(COMBINING_MARKS, '');
+const toAsciiMixed = (s) =>
+  stripNonAscii(foldTypo(s).normalize('NFD').replace(COMBINING_MARKS, ''));
 
 // Échappement XML strict (5 caractères réservés).
 function xmlEscape(s) {
@@ -198,6 +241,8 @@ function wrapText(s, cols) {
 // "CLIENT    Marie Dupont" avec retrait suspendu sur les lignes suivantes.
 const LABEL_W = 9;
 function labelLines(label, value, cols) {
+  // `cols` arrive déjà réduit de la marge par l'appelant ; on ne retire ici que
+  // la gouttière du libellé.
   const avail = Math.max(1, cols - LABEL_W);
   return wrapText(value, avail).map((line_, i) =>
     (i === 0 ? label.padEnd(LABEL_W) : ' '.repeat(LABEL_W)) + line_,
@@ -255,7 +300,7 @@ function buildModeBlock(order) {
   const isPickup = order.delivery_mode === 'pickup';
   const out = [line(isPickup ? 'A EMPORTER' : 'LIVRAISON', S.mode)];
   if (!isPickup && order.customer_address) {
-    out.push(linesOf(wrapText(toAscii(order.customer_address), colsFor(S.address)), S.address));
+    out.push(linesOf(wrapText(toAscii(order.customer_address), wrapColsFor(S.address)), S.address));
   }
   out.push(blankLine());
   return out.join('');
@@ -263,7 +308,7 @@ function buildModeBlock(order) {
 
 // 4. CLIENT — colonnes alignées.
 function buildCustomerBlock(order) {
-  const cols = colsFor(S.body);
+  const cols = wrapColsFor(S.body);
   const rows = [];
 
   rows.push(...labelLines('CLIENT', toAscii(order.customer_name), cols));
@@ -308,12 +353,14 @@ function buildItemBlock(item) {
     line(' '.repeat(Math.max(1, gap)) + price, S.itemPrice),
   ];
 
-  const subCols = colsFor(S.body) - 5; // 3 d'indentation + "> "
+  const subCols = wrapColsFor(S.body) - 5; // 3 d'indentation + "> "
   renderVariantLines(safeIt.variants).forEach((v) => {
     // Un extra facturé sort du lot : bandeau pleine largeur, pas une
     // sous-ligne indentée de plus. C'est ce qui coûte le plus cher à rater.
     if (isExtraLine(v)) {
-      const txt = toAscii(v);
+      // Le bandeau est en Font A pleine largeur : on tronque au besoin plutôt
+      // que de laisser l'imprimante replier, ce qui casserait le fond plein.
+      const txt = toAscii(v).slice(0, RULE_COLS - 4 - WRAP_SAFETY);
       const pad = Math.max(0, RULE_COLS - txt.length - 4);
       out.push(line(`  ${txt}${' '.repeat(pad)}  `, S.extra));
       return;
@@ -356,7 +403,7 @@ function buildFooter() {
 function buildWarningBlock(warning) {
   if (!warning) return '';
   const cols = RULE_COLS;
-  return wrapText(toAscii(String(warning)), cols - 4)
+  return wrapText(toAscii(String(warning)), cols - 4 - WRAP_SAFETY)
     .map((l) => line(`  ${l.padEnd(cols - 4)}  `, S.extra))
     .join('') + blankLine();
 }
