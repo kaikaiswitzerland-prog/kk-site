@@ -57,15 +57,11 @@ export default function DonutChart({ title, subtitle, data, formatValue = fmt, c
   const single = arcs.length === 1;
   const shown = active !== null ? arcs[active] : null;
 
-  if (total <= 0) {
-    return (
-      <section className="rounded-xl border border-line bg-bg-elev p-5">
-        <Header title={title} subtitle={subtitle} />
-        <p className="py-10 text-center font-mono text-[11px] text-ink-3">Aucune donnée sur ce mois</p>
-      </section>
-    );
-  }
-
+  // Un mois vide n'est PAS court-circuité : il traverse le rendu normal, où
+  // `arcs` est vide. Restent le rail, le centre à zéro et la mention sous le
+  // graphe. Comparer un mois creux à un mois plein demande deux anneaux de même
+  // taille au même endroit — remplacer l'un par une phrase casse la lecture en
+  // vis-à-vis, qui est toute la raison d'être de cette page.
   return (
     <section className="rounded-xl border border-line bg-bg-elev p-5">
       <Header title={title} subtitle={subtitle} />
@@ -140,6 +136,9 @@ export default function DonutChart({ title, subtitle, data, formatValue = fmt, c
       {/* Légende — libellé, montant CHF, part. Chaque ligne est un bouton :
           au doigt sur l'iPad de cuisine, viser un arc de 22 px n'est pas une
           option, viser une ligne de liste en est une. */}
+      {arcs.length === 0 ? (
+        <p className="mt-5 py-1.5 text-center font-mono text-[11px] text-ink-3">Aucune commande</p>
+      ) : (
       <ul className="mt-5 flex flex-col gap-0.5">
         {arcs.map((a, i) => (
           <li key={a.key}>
@@ -168,6 +167,7 @@ export default function DonutChart({ title, subtitle, data, formatValue = fmt, c
           </li>
         ))}
       </ul>
+      )}
     </section>
   );
 }

@@ -53,6 +53,22 @@ export default function MonthColumn({ label, value, options, onChange, data, loa
 
       {!error && loading && !data && <SkeletonColumn />}
 
+      {/* Mois sans aucune commande : on le dit une fois, en tête de colonne,
+          plutôt que de laisser déduire d'une pile de zéros s'il s'agit d'un
+          mois creux ou d'un chargement raté. Les graphes restent affichés
+          en dessous, à zéro. */}
+      {!error && data && data.stats.count === 0 && (
+        <div className="rounded-xl border border-line bg-bg-elev px-5 py-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-2">
+            Aucune commande
+          </p>
+          <p className="mt-1.5 text-[12px] leading-snug text-ink-3">
+            Aucune commande comptabilisée sur ce mois. Les graphes ci-dessous
+            sont à zéro.
+          </p>
+        </div>
+      )}
+
       {!error && data && (
         <>
           <DonutChart

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useMonthlyAnalytics } from '../../hooks/useMonthlyAnalytics.js';
-import { monthKey, recentMonths } from '../../lib/admin/analyticsHelpers.js';
+import { useFirstOrderDate, useMonthlyAnalytics } from '../../hooks/useMonthlyAnalytics.js';
+import { monthKey, monthLabel, monthsSince, parseMonthKey } from '../../lib/admin/analyticsHelpers.js';
 import MonthColumn from './analyses/MonthColumn.jsx';
 
 // ─── Onglet Analyses ────────────────────────────────────────
@@ -12,15 +12,34 @@ import MonthColumn from './analyses/MonthColumn.jsx';
 // AdminApp : celle-ci charge tout l'historique en une fois pour le temps réel,
 // alors qu'ici deux requêtes bornées au mois suffisent, et l'agrégation reste
 // juste même si un mois ancien sort un jour de ce cache.
-const MONTHS_SELECTABLE = 24;
-
 export default function AnalysesView() {
-  const months = useMemo(() => recentMonths(MONTHS_SELECTABLE), []);
+  // Le sélecteur remonte jusqu'à la première commande en base. Tant que cette
+  // date n'est pas connue, `monthsSince(null)` ne rend que le mois courant :
+  // la liste s'allonge d'un coup à l'arrivée de la borne, mais la vue reste
+  // utilisable et les deux mois par défaut sont déjà chargés entre-temps.
+  const firstOrder = useFirstOrderDate();
+  const months = useMemo(() => monthsSince(firstOrder.date), [firstOrder.date]);
 
-  // Défaut : mois courant à gauche, mois précédent à droite — recentMonths
-  // rend la liste du plus récent au plus ancien, donc [0] et [1].
-  const [leftKey, setLeftKey] = useState(() => months[0]?.key ?? currentKey());
-  const [rightKey, setRightKey] = useState(() => months[1]?.key ?? currentKey());
+  // Défaut : mois courant à gauche, mois précédent à droite. Calculés depuis la
+  // date du jour et NON depuis `months`, dont la longueur dépend d'une requête :
+  // sur une base ne contenant que le mois courant, months[1] n'existe pas et le
+  // défaut retomberait sur le même mois des deux côtés.
+  const [leftKey, setLeftKey] = useState(() => monthKeyOffset(0));
+  const [rightKey, setRightKey] = useState(() => monthKeyOffset(-1));
+
+  // Un mois choisi peut sortir de la liste (rien ici ne le fait aujourd'hui,
+  // mais un défaut antérieur à la première commande, oui). On l'y rajoute
+  // plutôt que de laisser le <select> afficher une valeur qu'il ne propose pas.
+  const options = useMemo(() => {
+    const known = new Set(months.map((m) => m.key));
+    const extra = [leftKey, rightKey]
+      .filter((k) => !known.has(k))
+      .map((k) => {
+        const { year, monthIndex } = parseMonthKey(k);
+        return { key: k, year, monthIndex, label: monthLabel(year, monthIndex) };
+      });
+    return [...extra, ...months].sort((a, b) => b.key.localeCompare(a.key));
+  }, [months, leftKey, rightKey]);
 
   const left = useMonthlyAnalytics(leftKey);
   const right = useMonthlyAnalytics(rightKey);
@@ -41,7 +60,7 @@ export default function AnalysesView() {
         <MonthColumn
           label="Mois analysé"
           value={leftKey}
-          options={months}
+          options={options}
           onChange={setLeftKey}
           data={left.data}
           loading={left.loading}
@@ -50,7 +69,7 @@ export default function AnalysesView() {
         <MonthColumn
           label="Comparé à"
           value={rightKey}
-          options={months}
+          options={options}
           onChange={setRightKey}
           data={right.data}
           loading={right.loading}
@@ -61,7 +80,10 @@ export default function AnalysesView() {
   );
 }
 
-function currentKey() {
+// Clé du mois décalé de `offset` mois par rapport à aujourd'hui.
+// Date(y, m + offset, 1) normalise seul le passage d'année (janvier − 1 = déc.).
+function monthKeyOffset(offset) {
   const now = new Date();
-  return monthKey(now.getFullYear(), now.getMonth());
+  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  return monthKey(d.getFullYear(), d.getMonth());
 }

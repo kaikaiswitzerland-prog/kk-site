@@ -25,6 +25,46 @@ const PAGE_SIZE = 1000;
 // directes uniquement » est donc tenue par construction, sans filtre à écrire.
 // Si un jour un canal externe est importé dans cette table, c'est ICI qu'il
 // faudra l'exclure.
+// Date de la toute première commande en base, qui borne le sélecteur de mois.
+//
+// Volontairement SANS filtre de statut ni de corbeille : la question posée est
+// « depuis quand y a-t-il des commandes ? », pas « depuis quand y a-t-il du
+// chiffre ? ». Si la plus ancienne ligne est un panier abandonné, son mois
+// apparaît quand même — vide, et annoncé comme tel. C'est plus honnête qu'une
+// liste qui commencerait mystérieusement un mois plus tard.
+//
+// Une seule ligne remontée (order + limit 1), donc l'index orders_created_at_idx
+// répond sans balayer la table.
+export function useFirstOrderDate({ enabled = true } = {}) {
+  const [state, setState] = useState({ date: null, loading: true, error: null });
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let cancelled = false;
+
+    (async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('created_at')
+        .order('created_at', { ascending: true })
+        .limit(1);
+
+      if (cancelled) return;
+      if (error) {
+        console.error('[KaïKaï admin] analyses — première commande introuvable', error);
+        setState({ date: null, loading: false, error: error.message });
+        return;
+      }
+      const iso = data?.[0]?.created_at || null;
+      setState({ date: iso ? new Date(iso) : null, loading: false, error: null });
+    })();
+
+    return () => { cancelled = true; };
+  }, [enabled]);
+
+  return state;
+}
+
 export function useMonthlyAnalytics(key, { enabled = true } = {}) {
   const [state, setState] = useState({ data: null, loading: true, error: null });
 

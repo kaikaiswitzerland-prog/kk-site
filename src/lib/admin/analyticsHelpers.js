@@ -108,14 +108,35 @@ export function monthRange(year, monthIndex) {
   };
 }
 
-// Mois sélectionnables : `count` mois glissants en terminant par le mois courant.
-export function recentMonths(count = 24, now = new Date()) {
-  const p = zurichParts(now);
+// Mois sélectionnables : du mois de la PREMIÈRE commande jusqu'au mois courant,
+// du plus récent au plus ancien. La liste est bornée par l'historique réel, pas
+// par une fenêtre glissante arbitraire — sinon les mois plus anciens que la
+// fenêtre deviennent injoignables alors que leurs données sont bien en base.
+//
+// `since` peut être null (base vide, ou date pas encore chargée) : on rend
+// alors le seul mois courant, ce qui laisse la vue utilisable pendant que la
+// vraie borne arrive.
+//
+// Les mois sans commande sont INCLUS. Un trou dans le service — fermeture,
+// travaux, mois de lancement à moitié vide — est une information ; le masquer
+// ferait mentir la liste par omission, et empêcherait de comparer un mois creux
+// à un mois plein.
+export function monthsSince(since, now = new Date()) {
+  const end = zurichParts(now);
+  const endAbs = end.year * 12 + (end.month - 1);
+
+  let startAbs = endAbs;
+  if (since) {
+    const first = zurichParts(since instanceof Date ? since : new Date(since));
+    if (Number.isFinite(first.year)) {
+      startAbs = Math.min(first.year * 12 + (first.month - 1), endAbs);
+    }
+  }
+
   const out = [];
-  for (let i = 0; i < count; i += 1) {
-    const d = new Date(Date.UTC(p.year, p.month - 1 - i, 1));
-    const year = d.getUTCFullYear();
-    const monthIndex = d.getUTCMonth();
+  for (let abs = endAbs; abs >= startAbs; abs -= 1) {
+    const year = Math.floor(abs / 12);
+    const monthIndex = abs % 12;
     out.push({ key: monthKey(year, monthIndex), year, monthIndex, label: monthLabel(year, monthIndex) });
   }
   return out;

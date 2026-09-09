@@ -21,11 +21,16 @@ export default function BarChart({ title, subtitle, data, formatValue = fmt }) {
     [data, max],
   );
 
-  if (total <= 0) {
+  // Comme pour les donuts, un mois vide garde son graphe : l'axe, les tranches
+  // horaires et leurs libellés restent en place, toutes les barres à zéro. Seul
+  // un tableau de données vide (jamais produit par aggregateByHourSlot, mais on
+  // ne divise pas par sa longueur sans le vérifier) justifie de sortir.
+  const empty = total <= 0;
+  if (data.length === 0) {
     return (
       <section className="rounded-xl border border-line bg-bg-elev p-5">
         <h3 className="font-mono text-[10px] uppercase tracking-[0.15em] text-ink-3">{title}</h3>
-        <p className="py-10 text-center font-mono text-[11px] text-ink-3">Aucune donnée sur ce mois</p>
+        <p className="py-10 text-center font-mono text-[11px] text-ink-3">Aucune commande</p>
       </section>
     );
   }
@@ -52,7 +57,7 @@ export default function BarChart({ title, subtitle, data, formatValue = fmt }) {
           {formatValue(active !== null ? data[active].value : peak?.value ?? 0)}
         </span>
         <span className="font-mono text-[10px] text-ink-3">
-          {active !== null ? slotCaption(data[active]) : 'au pic'}
+          {active !== null ? slotCaption(data[active]) : empty ? 'Aucune commande' : 'au pic'}
         </span>
       </div>
 
