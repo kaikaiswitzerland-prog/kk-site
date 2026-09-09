@@ -22,6 +22,7 @@ import OrdersView from './admin/OrdersView.jsx';
 import OrderModal from './admin/OrderModal.jsx';
 import RefundModal from './admin/RefundModal.jsx';
 import ComptaView from './admin/ComptaView.jsx';
+import AnalysesView from './admin/AnalysesView.jsx';
 import MenuView from './admin/MenuView.jsx';
 import RefusalModal from './admin/RefusalModal.jsx';
 import SettingsView from './admin/SettingsView.jsx';
@@ -32,6 +33,7 @@ import Toast from './admin/Toast.jsx';
 const PAGE_TITLES = {
   orders: 'Commandes',
   compta: 'Compta',
+  analyses: 'Analyses',
   menu: 'Menu',
   trash: 'Corbeille',
   settings: 'Paramètres',
@@ -258,6 +260,8 @@ export default function AdminApp() {
             onSelectOrder={setSelectedOrder}
           />
         )}
+
+        {page === 'analyses' && <AnalysesView />}
 
         {page === 'menu' && <MenuView />}
 

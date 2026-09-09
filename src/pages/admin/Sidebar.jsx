@@ -1,14 +1,22 @@
-// Sidebar : navigation entre pages (Commandes / Compta / Paramètres).
+// Sidebar : navigation entre pages (Commandes / Compta / Analyses / Menu /
+// Corbeille / Paramètres).
 // Desktop : colonne 240px sticky, full-height, avec footer utilisateur.
-// Mobile (< 768px) : barre fixe en bas, trois onglets équirépartis.
+// Mobile (< 768px) : barre fixe en bas, onglets équirépartis.
 
+// `desktopOnly` retire l'entrée de la barre du bas sur mobile. Six onglets sur
+// la largeur d'un iPhone donnent des libellés illisibles ; la Corbeille est la
+// seule à pouvoir sortir sans gêner le service — on n'y va pas en coup de feu,
+// et restaurer une commande se fait au calme, sur le poste de la caisse.
 const NAV_ITEMS = [
   { id: 'orders', label: 'Commandes', icon: '📋' },
   { id: 'compta', label: 'Compta', icon: '📊' },
+  { id: 'analyses', label: 'Analyses', icon: '📈' },
   { id: 'menu', label: 'Menu', icon: '🍽️' },
-  { id: 'trash', label: 'Corbeille', icon: '🗑️' },
+  { id: 'trash', label: 'Corbeille', icon: '🗑️', desktopOnly: true },
   { id: 'settings', label: 'Paramètres', icon: '⚙️' },
 ];
+
+const MOBILE_NAV_ITEMS = NAV_ITEMS.filter((item) => !item.desktopOnly);
 
 function userInitials(user) {
   const e = user?.email || '';
@@ -101,7 +109,7 @@ export default function Sidebar({ page, setPage, pendingCount, trashCount = 0, u
         </div>
       </aside>
 
-      {/* ── Mobile bottom nav (3 items équirépartis : Commandes / Compta / Paramètres) ── */}
+      {/* ── Mobile bottom nav (items équirépartis, hors desktopOnly) ── */}
       <nav
         className="
           fixed bottom-0 left-0 right-0 z-50 flex items-center
@@ -110,7 +118,7 @@ export default function Sidebar({ page, setPage, pendingCount, trashCount = 0, u
         "
         style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
       >
-        {NAV_ITEMS.map((item) => {
+        {MOBILE_NAV_ITEMS.map((item) => {
           const active = page === item.id;
           const count = navCount(item.id);
           return (
@@ -118,7 +126,7 @@ export default function Sidebar({ page, setPage, pendingCount, trashCount = 0, u
               key={item.id}
               onClick={() => setPage(item.id)}
               className={[
-                'flex flex-1 flex-col items-center gap-1 rounded-md py-1.5 text-[11px] transition-colors',
+                'flex flex-1 flex-col items-center gap-1 rounded-md py-1.5 text-[10px] transition-colors',
                 active ? 'text-accent' : 'text-ink-3',
               ].join(' ')}
             >

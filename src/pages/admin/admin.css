@@ -150,3 +150,56 @@ html, body {
   border-radius: 0 2px 2px 0;
 }
 
+
+/* ─── Onglet Analyses ────────────────────────────────────────
+   Les graphes sont du SVG écrit à la main (aucune lib de charts) : ce qui
+   suit couvre le peu qui n'est pas exprimable en utilitaires Tailwind —
+   transitions sur des attributs SVG, taille de police d'un <text>, squelette
+   de chargement. */
+
+/* Arcs de donut : la transition porte sur stroke-width et opacity, donc le
+   segment survolé s'épaissit au lieu de sauter. `will-change` évite le
+   repaint de tout l'anneau sur l'iPad, où six arcs animés suffisent à faire
+   tomber le survol à ~30 fps. */
+.kk-donut-arc {
+  cursor: pointer;
+  transition: stroke-width 0.18s ease, opacity 0.18s ease;
+  will-change: stroke-width, opacity;
+}
+
+.kk-bar {
+  transition: opacity 0.18s ease;
+}
+
+/* font-size sur un <text> SVG suit le viewBox, pas le px de la page : c'est
+   voulu ici, les libellés d'heures doivent rétrécir avec le graphe quand la
+   colonne passe en demi-largeur sur desktop. */
+.kk-bar-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  transition: fill 0.18s ease;
+}
+
+/* Squelette de chargement — respiration lente, pas un clignotement. */
+@keyframes kk-skeleton-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 0.85; }
+}
+.kk-skeleton {
+  animation: kk-skeleton-pulse 1.8s ease-in-out infinite;
+}
+
+/* Le <select> de mois hérite de la police display : ses <option> sont rendues
+   par l'OS et n'héritent de rien, on les force en corps de texte lisible. */
+.kk-admin select option {
+  font-family: var(--font-body);
+  font-style: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kk-donut-arc,
+  .kk-bar,
+  .kk-bar-label { transition: none; }
+  .kk-skeleton  { animation: none; }
+}
