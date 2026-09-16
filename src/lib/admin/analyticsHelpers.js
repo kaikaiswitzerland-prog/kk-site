@@ -271,6 +271,76 @@ export function aggregateByHourSlot(orders) {
   return slots;
 }
 
+// ─── CA jour par jour (calendrier) ──────────────────────────
+// Date du jour en heure murale Zurich. Sert à savoir quels jours du mois
+// courant sont encore à venir — l'horloge du navigateur ne fait pas foi :
+// l'iPad de cuisine ou un portable resté sur un autre fuseau afficheraient
+// sinon une journée de trop, ou une de moins.
+export function todayZurich(now = new Date()) {
+  const { year, month, day } = zurichParts(now);
+  return { year, month, day };
+}
+
+// Comparable numérique d'une date civile — 2026-09-12 → 20260912.
+const dateOrdinal = (year, month, day) => year * 10000 + month * 100 + day;
+
+// Ventile le CA et le nombre de commandes sur les jours du mois, et rend tout
+// ce qu'il faut pour dessiner une grille : combien de jours, sur quelle colonne
+// tombe le 1er, quelle est la meilleure journée.
+//
+// Base = order.total, comme le donut par jour de semaine et les stats : le
+// total du calendrier égale donc le CA encaissé du mois.
+export function aggregateByDay(orders, year, monthIndex, now = new Date()) {
+  if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) return null;
+
+  // Jour 0 du mois suivant = dernier jour de celui-ci. Gère les années
+  // bissextiles sans table de correspondance.
+  const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+
+  const revenue = new Array(daysInMonth + 1).fill(0);
+  const count = new Array(daysInMonth + 1).fill(0);
+
+  orders.forEach((order) => {
+    const p = zurichParts(new Date(order.created_at));
+    // La requête borne déjà au mois, mais une ligne hors plage écrirait hors du
+    // tableau et fausserait un jour au hasard. On la laisse dehors.
+    if (p.year !== year || p.month !== monthIndex + 1) return;
+    if (p.day < 1 || p.day > daysInMonth) return;
+    revenue[p.day] += Number(order.total) || 0;
+    count[p.day] += 1;
+  });
+
+  const today = todayZurich(now);
+  const todayOrd = dateOrdinal(today.year, today.month, today.day);
+
+  const cells = [];
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const c = count[day];
+    cells.push({
+      day,
+      revenue: revenue[day],
+      count: c,
+      avg: c > 0 ? revenue[day] / c : 0,
+      isFuture: dateOrdinal(year, monthIndex + 1, day) > todayOrd,
+    });
+  }
+
+  // Le jour de la semaine d'une date civile ne dépend d'aucun fuseau : le 1er
+  // septembre 2026 est un mardi à Zurich comme à Tokyo. On le lit donc en UTC,
+  // sans repasser par l'heure murale — un aller-retour de plus n'apporterait
+  // qu'une occasion de se tromper. Décalage de 6 pour une semaine lun → dim.
+  const startWeekday = (new Date(Date.UTC(year, monthIndex, 1)).getUTCDay() + 6) % 7;
+
+  return {
+    year,
+    monthIndex,
+    daysInMonth,
+    startWeekday,
+    maxRevenue: cells.reduce((m, c) => Math.max(m, c.revenue), 0),
+    cells,
+  };
+}
+
 // ─── Stats du mois ──────────────────────────────────────────
 // calcStats refiltre par isRevenue : redondant avec la requête, et voulu —
 // si un statut non comptabilisé passait un jour au travers du filtre serveur,
@@ -285,12 +355,19 @@ export function summarize(orders) {
 }
 
 // Assemble tout ce dont une colonne de mois a besoin, en une passe.
-export function buildMonthAnalytics(orders) {
+//
+// `month` est indispensable au calendrier et ne peut PAS se déduire des
+// commandes : un mois sans commande n'en contient aucune, et c'est justement
+// un mois qu'il faut savoir dessiner. Sans lui, `days` vaut null et la colonne
+// affiche ses graphes sans calendrier plutôt que d'inventer un mois.
+export function buildMonthAnalytics(orders, month = {}) {
+  const { year, monthIndex } = month;
   return {
     stats: summarize(orders),
     categories: aggregateByCategory(orders),
     products: aggregateTopProducts(orders, 10),
     weekdays: aggregateByWeekday(orders),
     hours: aggregateByHourSlot(orders),
+    days: aggregateByDay(orders, year, monthIndex),
   };
 }

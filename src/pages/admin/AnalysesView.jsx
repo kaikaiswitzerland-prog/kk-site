@@ -44,6 +44,19 @@ export default function AnalysesView() {
   const left = useMonthlyAnalytics(leftKey);
   const right = useMonthlyAnalytics(rightKey);
 
+  // Échelle de couleur COMMUNE aux deux calendriers : la meilleure journée des
+  // deux mois. C'est ce qui rend les deux grilles comparables — une case aussi
+  // verte à gauche qu'à droite vaut le même CA. Normalisé par colonne, un mois
+  // à 3 000 CHF aurait affiché le même vert éclatant qu'un mois à 9 000.
+  //
+  // Tant qu'une colonne charge encore, le maximum ne repose que sur l'autre et
+  // les teintes s'ajustent d'un cran à son arrivée. Inévitable avec une échelle
+  // partagée, et sans effet sur les chiffres.
+  const calendarScaleMax = Math.max(
+    left.data?.days?.maxRevenue ?? 0,
+    right.data?.days?.maxRevenue ?? 0,
+  );
+
   return (
     <div>
       <p className="mb-6 max-w-[70ch] text-[13px] leading-relaxed text-ink-2">
@@ -65,6 +78,7 @@ export default function AnalysesView() {
           data={left.data}
           loading={left.loading}
           error={left.error}
+          calendarScaleMax={calendarScaleMax}
         />
         <MonthColumn
           label="Comparé à"
@@ -74,6 +88,7 @@ export default function AnalysesView() {
           data={right.data}
           loading={right.loading}
           error={right.error}
+          calendarScaleMax={calendarScaleMax}
         />
       </div>
     </div>

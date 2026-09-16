@@ -100,7 +100,7 @@ export function useMonthlyAnalytics(key, { enabled = true } = {}) {
     load(signal)
       .then((rows) => {
         if (signal.cancelled || rows === null) return;
-        setState({ data: buildMonthAnalytics(rows), loading: false, error: null });
+        setState({ data: buildMonthAnalytics(rows, parseMonthKey(key)), loading: false, error: null });
       })
       .catch((err) => {
         if (signal.cancelled) return;

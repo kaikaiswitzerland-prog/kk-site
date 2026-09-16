@@ -1,13 +1,14 @@
 import { fmt } from '../../../lib/admin/orderHelpers.js';
 import DonutChart from './DonutChart.jsx';
 import BarChart from './BarChart.jsx';
+import SalesCalendar from './SalesCalendar.jsx';
 
 // Une colonne = un mois. Sélecteur en tête, quatre graphes, puis les stats.
 //
 // Le sélecteur vit DANS la colonne plutôt que dans une barre d'outils commune :
 // une fois les colonnes empilées sur mobile, un sélecteur resté en haut de page
 // serait à deux écrans de scroll du graphe qu'il pilote.
-export default function MonthColumn({ label, value, options, onChange, data, loading, error }) {
+export default function MonthColumn({ label, value, options, onChange, data, loading, error, calendarScaleMax }) {
   return (
     <div className="flex min-w-0 flex-col gap-3.5">
       <header className="flex items-end justify-between gap-3 border-b border-line pb-3">
@@ -98,6 +99,18 @@ export default function MonthColumn({ label, value, options, onChange, data, loa
             data={data.hours}
           />
 
+          {/* Calendrier des ventes. Même base que le donut par jour de semaine
+              et que les stats — order.total — donc la somme des cases égale le
+              CA encaissé du mois. L'échelle de couleur vient de la vue et
+              couvre LES DEUX mois : sans ça, chaque calendrier se normaliserait
+              sur lui-même et un mois creux paraîtrait aussi vert qu'un mois
+              plein, ce qui ruinerait la lecture en vis-à-vis. */}
+          <SalesCalendar
+            subtitle="Commandes entières — frais de livraison compris"
+            days={data.days}
+            scaleMax={calendarScaleMax}
+          />
+
           {/* Stats du mois, sous les graphiques. Base = order.total, la même
               que l'onglet Compta : les deux écrans doivent donner le même
               chiffre pour le même mois, sinon aucun des deux n'est croyable. */}
@@ -128,7 +141,7 @@ function Stat({ label, value }) {
 function SkeletonColumn() {
   return (
     <div className="flex flex-col gap-3.5" aria-hidden="true">
-      {[0, 1, 2, 3].map((i) => (
+      {[0, 1, 2, 3, 4].map((i) => (
         <div key={i} className="kk-skeleton h-[300px] rounded-xl border border-line bg-bg-elev" />
       ))}
     </div>

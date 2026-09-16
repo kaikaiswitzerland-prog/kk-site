@@ -197,9 +197,29 @@ html, body {
   font-style: normal;
 }
 
+/* Cases du calendrier des ventes. Le fond est posé en style inline (il dépend
+   du CA du jour), la transition et le relief au survol vivent ici. */
+.kk-cal-cell {
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+.kk-cal-cell:hover,
+.kk-cal-cell:focus-visible {
+  transform: scale(1.06);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  outline: none;
+  /* Le survol agrandit la case : elle doit passer AU-DESSUS de ses voisines,
+     sinon la grille la rogne sur deux côtés. */
+  position: relative;
+  z-index: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kk-donut-arc,
   .kk-bar,
-  .kk-bar-label { transition: none; }
+  .kk-bar-label,
+  .kk-cal-cell { transition: none; }
+  .kk-cal-cell:hover,
+  .kk-cal-cell:focus-visible { transform: none; }
   .kk-skeleton  { animation: none; }
 }
