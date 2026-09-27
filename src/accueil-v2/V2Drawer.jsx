@@ -8,9 +8,9 @@
 // (livraison / à emporter) et le NPA sont ceux du Checkout partagé, élevés
 // dans KaiKaiApp — ce que le client règle ici, il le retrouve au paiement.
 //
-// Le bouton « Commander » ouvre le Checkout partagé (paiement carte SumUp,
-// espèces au retrait), qui remplace les liens WhatsApp / kaikaifood.com du
-// HTML fourni.
+// Le bouton « Commander » ouvre le Checkout partagé, où se choisit le mode de
+// paiement : carte en ligne (SumUp), ou espèces au retrait pour l'emporter —
+// exactement comme sur /classique.
 
 import { useEffect, useMemo } from 'react';
 import { getZoneByNpa } from '../lib/deliveryZones.js';
@@ -184,9 +184,9 @@ export function V2Drawer({
             </div>
 
             <button type="button" className="btn primary" onClick={() => { onClose(); onOpenCheckout(); }}>
-              Commander · payer en ligne
+              Commander
             </button>
-            <p className="note">Paiement par carte en ligne, ou en espèces au retrait pour l'emporter. Vos plats et votre code postal sont repris tels quels à l'étape suivante.</p>
+            <p className="note">Le mode de paiement se choisit à l'étape suivante : carte en ligne, ou espèces au retrait pour l'emporter. Vos plats et votre code postal sont repris tels quels.</p>
             <button type="button" className="clear" onClick={onClear}>Vider le panier</button>
           </>
         )}
