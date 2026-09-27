@@ -130,7 +130,11 @@
 /* Titre limité à 2 lignes et description à 3 lignes (…), hauteurs RÉSERVÉES :
    dans une rangée, prix et bouton tombent sur la même ligne du bas quelle que
    soit la longueur des textes. */
-.v2-root .card h3 { margin: 0; font-weight: 700; font-size: 16.5px; line-height: 1.3; color: var(--green); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
+/* Deux lignes RÉSERVÉES, une troisième tolérée : à quatre colonnes (1280 px),
+   « Tartare de thon rouge mangue-ananas — « Hawaï » » a besoin de trois lignes
+   et perdait son nom. Le pied de carte reste ancré en bas (margin-top auto),
+   prix et boutons restent alignés. */
+.v2-root .card h3 { margin: 0; font-weight: 700; font-size: 16.5px; line-height: 1.3; color: var(--green); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
 .v2-root .card p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 4.5em; flex: none; }
 .v2-root .card .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 12px; min-height: 60px; }
 .v2-root .price { white-space: nowrap; font-weight: 800; font-size: 16px; color: var(--ink); }
@@ -284,7 +288,11 @@
   .v2-root .actions .btn { min-height: 44px; padding: 0 16px; font-size: 12.5px; flex: 1; white-space: nowrap; }
   .v2-root .cards, .v2-root .cards.n2, .v2-root .cards.n3 { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .v2-root .card .body { padding: 12px 13px 14px; }
-  .v2-root .card h3 { font-size: 14.5px; }
+  /* Sur téléphone (cartes de ~170 px), deux lignes ne suffisent pas aux
+     quatre tartares « Tartare de thon rouge … — « Tahiti » » : le nom
+     distinctif était coupé. Trois lignes réservées, une quatrième tolérée
+     (« mangue-ananas — « Hawaï » »), l'alignement du pied tient. */
+  .v2-root .card h3 { font-size: 14.5px; -webkit-line-clamp: 4; min-height: 3.9em; }
   .v2-root .card p { font-size: 12px; line-height: 1.45; min-height: 4.35em; }
   .v2-root .card .foot { flex-direction: column; align-items: stretch; gap: 8px; }
   .v2-root .add { height: 36px; justify-content: center; font-size: 11.5px; }
@@ -316,8 +324,14 @@
 @media (max-width: 480px) {
   .v2-root .wok-slot .wok-bar__inner { row-gap: 10px; }
   .v2-root .wok-slot .wok-bar .flex-none { flex: 1 1 100%; justify-content: space-between; min-width: 0; }
-  .v2-root .wok-slot .wok-bar .text-2xl { font-size: 22px; }
-  .v2-root .wok-slot .wok-bar button { padding: 0 22px; min-height: 46px; font-size: 13px; }
+  .v2-root .wok-slot .wok-bar .text-2xl { font-size: 22px; white-space: nowrap; }
+  .v2-root .wok-slot .wok-bar button { padding: 0 18px; min-height: 46px; font-size: 12.5px; flex: none; }
+}
+/* ≤ 400 px : le prix et le bouton ne tiennent plus côte à côte (prix ~110 px,
+   bouton ~135 px, 254 px disponibles à 390 px) : ils s'empilent. */
+@media (max-width: 400px) {
+  .v2-root .wok-slot .wok-bar .flex-none { flex-direction: column; align-items: stretch; gap: 8px; }
+  .v2-root .wok-slot .wok-bar .text-2xl { text-align: center; }
 }
 /* Cartes très étroites (≤ 360 px) : marges et bouton plus compacts. */
 @media (max-width: 360px) {
