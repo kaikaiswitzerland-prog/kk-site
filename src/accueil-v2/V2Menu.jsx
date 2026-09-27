@@ -8,18 +8,49 @@
 // `sections`, `catalog` et `isUnavailable` (menuCatalog dans App.jsx). Les
 // zones de livraison viennent de src/lib/deliveryZones.js, source de vérité.
 
-import { Fragment } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { DELIVERY_ZONES } from '../lib/deliveryZones.js';
+// Photos, cadrage et descriptions courtes : les MÊMES que la peau refonte (/),
+// lus dans src/refonte/productMeta.js — rien n'est recopié ici.
+import { getProductMeta } from '../refonte/productMeta.js';
 import { chf, SECTIONS, WOK_ANCHOR, CHIPS, SIGNATURE_IDS } from './v2Helpers.js';
 import { scrollToId } from './useScrollSpy.js';
 
-function Card({ item, qty, out, photo, photoPos, onAdd, onRemove }) {
+// Cascade d'images identique à ProductCard.jsx (refonte) : PNG détouré → JPG
+// actuel → rien. Tant que les PNG ne sont pas livrés, ce sont les JPG.
+function useImageFallback(meta) {
+  const chain = [
+    meta.png ? { src: meta.png, kind: 'png' } : null,
+    meta.jpg ? { src: meta.jpg, kind: 'jpg' } : null,
+  ].filter(Boolean);
+  const [step, setStep] = useState(0);
+  useEffect(() => { setStep(0); }, [meta.png, meta.jpg]);
+  return { current: chain[step] || null, onError: () => setStep((s) => s + 1) };
+}
+
+function Card({ item, qty, out, onAdd, onRemove }) {
+  const meta = getProductMeta(item.id);
+  const { current, onError } = useImageFallback(meta);
+  // Même règle à trois cas que ProductCard.jsx : `short` absent → description
+  // officielle du plat (App.jsx) ; `short: ''` → aucune ligne.
+  const desc = meta.short != null ? meta.short : (item.desc || '');
   const add = (e) => { e.preventDefault(); if (!out) onAdd(item); };
   return (
     <article className={`card${out ? ' out' : ''}`}>
       <a className="pic" href="#" onClick={add} aria-hidden="true" tabIndex={-1}>
-        {photo && (
-          <img src={photo} alt="" loading="lazy" decoding="async" style={{ objectPosition: photoPos || 'center' }} />
+        {current && (
+          <img
+            key={current.src}
+            src={current.src}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onError={onError}
+            className={`pic-img pic-img--${current.kind}`}
+            /* Recadrage du JPG quand le sujet n'est pas au centre (jpgPos de
+               productMeta.js) — exactement comme sur /. */
+            style={current.kind === 'jpg' && meta.jpgPos ? { objectPosition: meta.jpgPos } : undefined}
+          />
         )}
         {/* Le badge vit sur la photo : dans le corps, il décalait le titre des
             trois cartes qui le portent et cassait l'alignement de la grille. */}
@@ -27,7 +58,7 @@ function Card({ item, qty, out, photo, photoPos, onAdd, onRemove }) {
       </a>
       <div className="body">
         <h3>{item.name}</h3>
-        <p>{item.desc}</p>
+        {desc && <p title={desc}>{desc}</p>}
         <div className="foot">
           <span className="price">{chf(item.price)}</span>
           {qty > 0 ? (
@@ -61,8 +92,6 @@ function Section({ id, title, items, cart, isUnavailable, catalog, onAdd, onRemo
               item={item}
               qty={cart[item.id] || 0}
               out={isUnavailable(item)}
-              photo={catalog.getPhoto(item.id)}
-              photoPos={catalog.getPhotoPos(item.id)}
               onAdd={onAdd}
               onRemove={onRemove}
             />
