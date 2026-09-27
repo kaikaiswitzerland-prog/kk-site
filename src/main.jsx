@@ -10,6 +10,8 @@ import { IslandModeProvider } from './context/IslandModeContext.jsx'
 //   /admin…      → PWA admin
 //   pages légales → LegalRouter
 //   /classique…  → ANCIEN site (peau historique), conservé accessible
+//   /v2          → TEST de la nouvelle page d'accueil (peau v2, branche
+//                  test/accueil-v2) — même panier, même paiement
 //   tout le reste → NOUVEAU site (peau refonte), y compris / et /refonte
 //
 // C'est ici que se joue la bascule : la peau refonte est désormais la peau
@@ -24,6 +26,7 @@ const pathname = window.location.pathname;
 const isAdminRoute = pathname.startsWith('/admin');
 const isLegal = isLegalRoute(pathname);
 const isClassicRoute = pathname.startsWith('/classique');
+const isV2Route = pathname === '/v2' || pathname.startsWith('/v2/');
 
 // Enregistrement du service worker (PWA)
 if ('serviceWorker' in navigator) {
@@ -43,6 +46,10 @@ createRoot(document.getElementById('root')).render(
     ) : isClassicRoute ? (
       <IslandModeProvider>
         <App />
+      </IslandModeProvider>
+    ) : isV2Route ? (
+      <IslandModeProvider>
+        <App skin="v2" />
       </IslandModeProvider>
     ) : (
       <IslandModeProvider>

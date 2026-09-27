@@ -15,6 +15,9 @@ import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
 //   - l'import dynamique casse le cycle App.jsx ↔ src/refonte/, qui n'importe
 //     jamais App.jsx en retour (tout lui est passé en props).
 const RefonteShell = lazy(() => import("./refonte/RefonteShell.jsx"));
+// Peau « v2 » (route /v2, test de la nouvelle page d'accueil). Même règle que
+// la refonte : lazy, rien dans src/accueil-v2/ n'importe App.jsx.
+const AccueilV2Shell = lazy(() => import("./accueil-v2/AccueilV2Shell.jsx"));
 import { supabase } from "./lib/supabase.js";
 import { useRestaurantOpen } from "./hooks/useRestaurantOpen.js";
 import { useOutOfStock } from "./hooks/useOutOfStock.js";
@@ -76,6 +79,10 @@ const sanitizeNote = (s, max) => String(s || '').trim().slice(0, max);
 // TTL panier : 24h. Au-delà, on jette (le client a peut-être oublié, ou les
 // prix/menu ont pu bouger entre-temps).
 const CART_TTL_MS = 24 * 60 * 60 * 1000;
+// Minimum de commande pour la livraison (CHF). Au niveau module pour être
+// partagé par Checkout et par la passerelle menuCatalog (peau v2) sans le
+// recopier. Le serveur applique la même règle (api/create-checkout.js).
+const MINIMUM_DELIVERY = 20.00;
 
 // MODIFICATION 1: Logo PNG au lieu du SVG
 // ⚠ LOGO PROVISOIRE, À REMPLACER : public/logo_kaikai.png est fabriqué à partir
@@ -834,6 +841,14 @@ export const menuCatalog = {
     jusMaison: SEC_JUS_MAISON,
   },
   isUnavailable: isMenuItemUnavailable,
+  // Ajouts pour la peau v2 : photos des fiches (les mêmes JPG de public/ que
+  // le site historique), prix d'un exemplaire garniture/légumes/extras
+  // compris, et minimum de livraison. Toujours une seule source.
+  getPhoto,
+  getPhotoPos,
+  unitPrice,
+  lineSubtotal,
+  minimumDelivery: MINIMUM_DELIVERY,
 };
 
 
@@ -1152,6 +1167,10 @@ function useActiveCategory() {
 // qu'une seule implémentation de la commande, ici.
 export default function KaiKaiApp({ skin = 'legacy' }) {
   const isRefonte = skin === 'refonte';
+  const isV2 = skin === 'v2';
+  // Peau historique : ni refonte, ni v2. Les blocs du site actuel (header,
+  // menu, confirmation, footer) ne sont montés que pour elle.
+  const isLegacy = !isRefonte && !isV2;
   const { isOpen: restaurantOpen, manualClosure, statusLabel: openStatusLabel, status: openStatus } = useRestaurantOpen();
   const { items: outOfStockItems } = useOutOfStock();
 
@@ -1554,7 +1573,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
       <style>{globalStyles}</style>
       <div className="min-h-screen bg-black text-white">
       {/* Header — peau historique */}
-      {!isRefonte && (
+      {isLegacy && (
       <header className="sticky top-0 z-49 border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
@@ -1648,8 +1667,61 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         </Suspense>
       )}
 
+      {/* Peau v2 (test /v2) — même logique de commande, présentation du HTML
+          fourni. Le mini-panier est rendu PAR le shell (celui du HTML), le
+          Checkout et les modaux d'options restent ceux partagés ci-dessous. */}
+      {isV2 && (
+        <Suspense fallback={<div style={{ minHeight: '100vh', background: '#F5F5F1' }} />}>
+          <AccueilV2Shell
+            showContent={step === "menu"}
+            sections={menuCatalog.sections}
+            catalog={menuCatalog}
+            wokComposer={
+              <WokComposer
+                bases={SEC_WOK}
+                cart={cart}
+                add={add}
+                stockList={outOfStockItems}
+                outOfStockFor={(it) => isMenuItemUnavailable(outOfStockItems, it)}
+                onCoversMiniCart={setWokBarCoversCart}
+              />
+            }
+            cart={cart}
+            cartVariants={cartVariants}
+            items={items}
+            cartCount={cartCount}
+            subtotal={subtotal}
+            deliveryFee={deliveryFee}
+            total={total}
+            onAdd={(it) => requestAdd(it, isMenuItemUnavailable(outOfStockItems, it))}
+            onRemove={(it) => remove(it.id)}
+            onRemoveAt={removeOne}
+            onClear={clear}
+            isUnavailable={(it) => isMenuItemUnavailable(outOfStockItems, it)}
+            onOpenCheckout={() => setStep("checkout")}
+            mode={mode}
+            setMode={setMode}
+            deliveryNpa={deliveryNpa}
+            setDeliveryNpa={setDeliveryNpa}
+            restaurantOpen={restaurantOpen}
+            manualClosure={manualClosure}
+            openStatusLabel={openStatusLabel}
+            miniVisible={cartCount > 0 && !miniCartHold}
+            miniHidden={wokBarCoversCart}
+            restaurant={RESTAURANT_INFO}
+          >
+            {step === "success" && (
+              <OrderSuccessPage
+                initialOrderId={successOrderId}
+                onBackToMenu={backToMenuFromSuccess}
+              />
+            )}
+          </AccueilV2Shell>
+        </Suspense>
+      )}
+
       {/* Menu principal — peau historique */}
-      {step === "menu" && !isRefonte && (
+      {step === "menu" && isLegacy && (
         <>
           <CategoryNav activeCategory={activeCategory} />
           <HeroSliderV2 />
@@ -1767,14 +1839,14 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
           confirmation et aucun conteneur intermédiaire ne réserve une hauteur
           d'écran, donc le rendu en frère y est sans danger. La refonte, elle,
           rend la confirmation DANS son shell (voir plus haut). */}
-      {step === "success" && !isRefonte && (
+      {step === "success" && isLegacy && (
         <OrderSuccessPage
           initialOrderId={successOrderId}
           onBackToMenu={backToMenuFromSuccess}
         />
       )}
 
-      {step === "menu" && Object.values(cart).reduce((s, q) => s + q, 0) > 0 && !miniCartHold && (
+      {step === "menu" && Object.values(cart).reduce((s, q) => s + q, 0) > 0 && !miniCartHold && !isV2 && (
         <MiniCart
           hidden={wokBarCoversCart}
           cart={cart}
@@ -1790,7 +1862,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         />
       )}
 
-      {!isRefonte && (
+      {isLegacy && (
       <>
       {/* Mode Île — pastille membres */}
       <div style={{ display: 'flex', justifyContent: 'center', margin: '40px auto' }}>
@@ -4247,7 +4319,6 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState(null);
 
-  const MINIMUM_DELIVERY = 20.00;
   const canDelivery = subtotal >= MINIMUM_DELIVERY;
 
   const hasItems = items.some(i => i.qty > 0);
