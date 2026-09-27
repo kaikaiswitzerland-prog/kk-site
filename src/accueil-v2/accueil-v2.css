@@ -282,3 +282,116 @@
   .v2-root .hero > img { opacity: 1; transform: none; animation: none; }
   .v2-root .drawer-bg, .v2-root .drawer { animation: none; }
 }
+
+/* ─── THÈME CLAIR DES COMPOSANTS PARTAGÉS (peau v2 uniquement) ───────────────
+ *
+ * Les modales d'options (BottomSheet, OptionTile, SubSheet, FormuleModal), le
+ * Checkout et la modale des zones sont rendus par KaiKaiApp, HORS de
+ * `.v2-root`. Ils lisent la peau sur le conteneur racine (`data-skin`).
+ *
+ *   · Les modales portent leurs couleurs en jetons `--kk-*` (App.jsx) avec la
+ *     valeur sombre du site actuel en repli : sans ce bloc, rien ne change.
+ *   · Le Checkout et les zones sont en classes Tailwind : on redéfinit ici,
+ *     sous `.kk-checkout` / `.kk-zones`, chaque utilitaire de couleur sombre
+ *     par son équivalent clair. Les utilitaires vivent dans @layer utilities,
+ *     ces règles non « layerées » l'emportent donc toujours.
+ *
+ * Même composant, mêmes classes, mêmes mesures : seules les couleurs changent
+ * (palette officielle). / , /refonte et /classique n'ont pas data-skin="v2".
+ */
+[data-skin="v2"] {
+  --kk-backdrop: rgba(6,20,17,.55);
+  --kk-backdrop-sub: rgba(6,20,17,.45);
+  --kk-sheet-bg: #ffffff;
+  --kk-sheet-bg-sub: #ffffff;
+  --kk-sheet-border: #e3e9dd;
+  --kk-grab: #e3e9dd;
+  --kk-photo-fade: rgba(255,255,255,.96);
+  --kk-title: #0D3B36;
+  --kk-title-on-photo: #0D3B36;
+  --kk-title-shadow: none;
+  --kk-subtitle-on-photo: #5d6a62;
+  --kk-muted: #5d6a62;
+  --kk-faint: #7d8a82;
+  --kk-divider: #e3e9dd;
+  --kk-close-bg: #f3f6ef;
+  --kk-close-border: #e3e9dd;
+  --kk-close-ink: #0D3B36;
+  --kk-close-photo-bg: rgba(255,255,255,.88);
+  --kk-close-photo-border: #e3e9dd;
+  --kk-close-photo-ink: #0D3B36;
+  --kk-tile-bg: #f3f6ef;
+  --kk-tile-bg-on: #eef5db;
+  --kk-tile-border: #e3e9dd;
+  --kk-tile-border-on: #B7D94C;
+  --kk-tile-emoji-bg: #ffffff;
+  --kk-chevron: #b5c0b9;
+  --kk-check-bg: #B7D94C;
+  --kk-check-ink: #0D3B36;
+  --kk-halal-bg: rgba(63,125,107,.12);
+  --kk-halal-ink: #3F7D6B;
+  --kk-halal-border: rgba(63,125,107,.30);
+  --kk-badge-bg: rgba(166,58,42,.10);
+  --kk-badge-ink: #a63a2a;
+  --kk-badge-border: rgba(166,58,42,.25);
+  --kk-cta-bg: #B7D94C;
+  --kk-cta-ink: #0D3B36;
+  --kk-cta-bg-off: #e3e9dd;
+  --kk-cta-ink-off: #9aa59f;
+  --kk-progress-on: #B7D94C;
+  --kk-progress-off: #e3e9dd;
+  --kk-list-bg: #f3f6ef;
+  --kk-list-border: #cfd8d1;
+  --kk-list-item-bg: #ffffff;
+  --kk-list-ink: #14211c;
+  --kk-list-detail: #5d6a62;
+  --kk-list-remove-bg: #e3e9dd;
+  --kk-list-remove-ink: #0D3B36;
+}
+/* Survol des tuiles : la règle globale (App.jsx) est en !important, on la
+   surclasse par la spécificité, en !important aussi. */
+[data-skin="v2"] .modal-backdrop .modal-tile:hover { background: #eef5db !important; border-color: #B7D94C !important; }
+[data-skin="v2"] .modal-backdrop .modal-tile:disabled:hover { background: var(--kk-tile-bg) !important; border-color: var(--kk-tile-border) !important; }
+[data-skin="v2"] .modal-sheet { color: #14211c; }
+
+/* Checkout et zones : correspondance utilitaire sombre → couleur claire. */
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) { color: #14211c; }
+[data-skin="v2"] .kk-checkout.bg-black\/60, [data-skin="v2"] .kk-zones.bg-black\/80 { background: rgba(6,20,17,.5); }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) .bg-black { background: #ffffff; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) :is(.border-white\/10, .border-white\/15, .border-white\/20) { border-color: #e3e9dd; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) :is(.text-white, .text-white\/90) { color: #14211c; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) .text-white\/80 { color: #2c3a33; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) :is(.text-white\/70, .text-white\/60) { color: #5d6a62; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) :is(.text-white\/50, .text-white\/45) { color: #7d8a82; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) .text-white\/40 { color: #8f9a94; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) .text-white\/30 { color: #b5c0b9; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) .bg-white\/5 { background: #f3f6ef; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) .bg-white\/10 { background: #eef1ea; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) .hover\:bg-white\/10:hover { background: #f3f6ef; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) .hover\:text-white:hover { color: #0D3B36; }
+[data-skin="v2"] .kk-checkout .focus\:border-white\/40:focus { border-color: #3F7D6B; }
+[data-skin="v2"] .kk-checkout :is(input, textarea)::placeholder { color: #8f9a94; }
+/* Boutons pleins (mode choisi, Commander) : blanc/noir → Nature/Évasion, survol Douceur. */
+[data-skin="v2"] .kk-checkout .bg-white { background: #B7D94C; }
+[data-skin="v2"] .kk-checkout .text-black { color: #0D3B36; }
+[data-skin="v2"] .kk-checkout .hover\:bg-white\/90:hover { background: #3F7D6B; color: #ffffff; }
+/* Bandeaux d'information (livraison estimée, à emporter, paiement choisi) : Douceur / Nature. */
+[data-skin="v2"] .kk-checkout :is(.border-blue-500\/30, .border-\[\#C9A96E\]\/30) { border-color: rgba(63,125,107,.30); }
+[data-skin="v2"] .kk-checkout :is(.bg-blue-500\/10, .bg-\[\#C9A96E\]\/10) { background: rgba(63,125,107,.10); }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones) :is(.text-blue-400, .text-\[\#C9A96E\]) { color: #3F7D6B; }
+[data-skin="v2"] .kk-checkout .border-\[\#C9A96E\] { border-color: #0D3B36; }
+[data-skin="v2"] .kk-checkout .bg-\[\#C9A96E\]\/15 { background: rgba(183,217,76,.22); }
+/* Alertes : mêmes teintes, encres foncées lisibles sur blanc. */
+[data-skin="v2"] .kk-checkout :is(.text-red-400, .text-red-300) { color: #a63a2a; }
+[data-skin="v2"] .kk-checkout :is(.hover\:text-red-300:hover, .hover\:text-red-400:hover) { color: #7f2b1f; }
+[data-skin="v2"] .kk-checkout :is(.border-red-500\/30, .border-red-500\/50, .hover\:border-red-500\/30:hover) { border-color: rgba(166,58,42,.40); }
+[data-skin="v2"] .kk-checkout :is(.bg-red-500\/10, .hover\:bg-red-500\/15:hover) { background: rgba(166,58,42,.08); }
+[data-skin="v2"] .kk-checkout .text-amber-300 { color: #8a5a00; }
+[data-skin="v2"] .kk-checkout .border-amber-500\/30 { border-color: rgba(138,90,0,.35); }
+[data-skin="v2"] .kk-checkout .bg-amber-500\/10 { background: rgba(138,90,0,.08); }
+[data-skin="v2"] .kk-checkout .text-orange-400 { color: #a05a00; }
+[data-skin="v2"] .kk-checkout .border-orange-500\/30 { border-color: rgba(160,90,0,.35); }
+[data-skin="v2"] .kk-checkout .bg-orange-500\/10 { background: rgba(160,90,0,.08); }
+[data-skin="v2"] .kk-checkout .text-green-400 { color: #3F7D6B; }
+[data-skin="v2"] .kk-checkout :is(.border-green-500\/30, .border-green-500\/40) { border-color: rgba(63,125,107,.40); }
+[data-skin="v2"] .kk-checkout .bg-green-500\/10 { background: rgba(63,125,107,.10); }

@@ -1571,7 +1571,10 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   return (
     <>
       <style>{globalStyles}</style>
-      <div className="min-h-screen bg-black text-white">
+      {/* `data-skin` : les composants partagés (modales d'options, Checkout,
+          zones) lisent la peau en CSS. Seule la peau v2 pose des jetons de
+          couleur (src/accueil-v2/accueil-v2.css) ; les autres n'en voient rien. */}
+      <div className="min-h-screen bg-black text-white" data-skin={skin}>
       {/* Header — peau historique */}
       {isLegacy && (
       <header className="sticky top-0 z-49 border-b border-white/10 bg-black/80 backdrop-blur">
@@ -3006,15 +3009,18 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
   return (
     <div
       className="modal-backdrop fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)' }}
+      style={{ background: 'var(--kk-backdrop, rgba(0,0,0,0.82))', backdropFilter: 'blur(10px)' }}
       onClick={onClose}
     >
       <div
         className="modal-sheet w-full max-w-lg flex flex-col"
         style={{
-          background: 'linear-gradient(180deg, #0d0d0d 0%, #111 100%)',
+          // Couleurs en jetons `--kk-*` : la valeur de repli est celle du site
+          // actuel, la peau v2 (accueil-v2.css) pose les siennes. Même
+          // composant, seules les couleurs changent — cf. MiniCart.
+          background: 'var(--kk-sheet-bg, linear-gradient(180deg, #0d0d0d 0%, #111 100%))',
           borderRadius: '28px 28px 0 0',
-          border: '1px solid rgba(255,255,255,0.09)',
+          border: '1px solid var(--kk-sheet-border, rgba(255,255,255,0.09))',
           borderBottom: 'none',
           maxHeight: '91vh',
           overflow: 'hidden',
@@ -3022,7 +3028,7 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
-          <div style={{ width: 38, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
+          <div style={{ width: 38, height: 4, borderRadius: 2, background: 'var(--kk-grab, rgba(255,255,255,0.18))' }} />
         </div>
 
         {photoOk && (
@@ -3032,14 +3038,14 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
               style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoPos || 'center' }}
               onError={() => setPhotoKo(true)}
             />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(13,13,13,0.92) 100%)' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, var(--kk-photo-fade, rgba(13,13,13,0.92)) 100%)' }} />
             <div style={{ position: 'absolute', bottom: 14, left: 16, right: 52 }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'white', textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{title}</div>
-              {subtitle && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{subtitle}</div>}
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--kk-title-on-photo, white)', textShadow: 'var(--kk-title-shadow, 0 1px 8px rgba(0,0,0,0.8))' }}>{title}</div>
+              {subtitle && <div style={{ fontSize: 13, color: 'var(--kk-subtitle-on-photo, rgba(255,255,255,0.55))', marginTop: 2 }}>{subtitle}</div>}
             </div>
             <button
               onClick={onClose}
-              style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}
+              style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: '50%', background: 'var(--kk-close-photo-bg, rgba(0,0,0,0.55))', border: '1px solid var(--kk-close-photo-border, rgba(255,255,255,0.15))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--kk-close-photo-ink, white)' }}
             ><X size={15} /></button>
           </div>
         )}
@@ -3047,23 +3053,23 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
         {!photoOk && (
           <div style={{ padding: '6px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
             <div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'white' }}>{title}</div>
-              {subtitle && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>{subtitle}</div>}
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--kk-title, white)' }}>{title}</div>
+              {subtitle && <div style={{ fontSize: 13, color: 'var(--kk-muted, rgba(255,255,255,0.45))', marginTop: 3 }}>{subtitle}</div>}
             </div>
-            <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0, marginTop: 2 }}>
+            <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--kk-close-bg, rgba(255,255,255,0.07))', border: '1px solid var(--kk-close-border, rgba(255,255,255,0.12))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--kk-close-ink, white)', flexShrink: 0, marginTop: 2 }}>
               <X size={15} />
             </button>
           </div>
         )}
 
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '14px 0 0', flexShrink: 0 }} />
+        <div style={{ height: 1, background: 'var(--kk-divider, rgba(255,255,255,0.06))', margin: '14px 0 0', flexShrink: 0 }} />
 
         <div style={{ overflowY: 'auto', flex: 1, padding: '10px 16px 16px' }}>
           {children}
         </div>
 
         {footerContent && (
-          <div style={{ padding: '12px 16px 32px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+          <div style={{ padding: '12px 16px 32px', borderTop: '1px solid var(--kk-divider, rgba(255,255,255,0.06))', flexShrink: 0 }}>
             {footerContent}
           </div>
         )}
@@ -3087,8 +3093,8 @@ function OptionTile({ emoji, photo, name, desc, isSelected, onClick, index, badg
       style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: 12,
         padding: '13px 14px', marginBottom: 8,
-        background: isSelected ? 'rgba(255,255,255,0.11)' : 'rgba(255,255,255,0.03)',
-        border: isSelected ? '1px solid rgba(255,255,255,0.28)' : '1px solid rgba(255,255,255,0.08)',
+        background: isSelected ? 'var(--kk-tile-bg-on, rgba(255,255,255,0.11))' : 'var(--kk-tile-bg, rgba(255,255,255,0.03))',
+        border: isSelected ? '1px solid var(--kk-tile-border-on, rgba(255,255,255,0.28))' : '1px solid var(--kk-tile-border, rgba(255,255,255,0.08))',
         borderRadius: 16,
         cursor: disabled ? 'not-allowed' : 'pointer',
         textAlign: 'left',
@@ -3096,7 +3102,7 @@ function OptionTile({ emoji, photo, name, desc, isSelected, onClick, index, badg
       }}
     >
       {(emoji || vignette) && (
-        <span style={{ fontSize: 26, width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 13, flexShrink: 0, overflow: 'hidden' }}>
+        <span style={{ fontSize: 26, width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--kk-tile-emoji-bg, rgba(255,255,255,0.05))', borderRadius: 13, flexShrink: 0, overflow: 'hidden' }}>
           {vignette ? (
             <img
               src={photo}
@@ -3110,20 +3116,20 @@ function OptionTile({ emoji, photo, name, desc, isSelected, onClick, index, badg
         </span>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--kk-title, white)', display: 'flex', alignItems: 'center', gap: 6 }}>
           {name}
           {/* Mention halal — même géométrie que la pastille `badge` ci-dessous,
               en vert pour ne pas se confondre avec l'ambre des ruptures. Elle
               reste affichée sur une option en rupture : c'est une information
               diététique, pas une accroche, et la ligne est déjà grisée. */}
-          {halal && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'rgba(80,220,140,0.13)', color: 'rgba(110,235,170,0.90)', border: '1px solid rgba(80,220,140,0.22)' }}>HALAL</span>}
-          {badge && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'rgba(255,180,0,0.15)', color: 'rgba(255,180,0,0.85)', border: '1px solid rgba(255,180,0,0.2)' }}>{badge}</span>}
+          {halal && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'var(--kk-halal-bg, rgba(80,220,140,0.13))', color: 'var(--kk-halal-ink, rgba(110,235,170,0.90))', border: '1px solid var(--kk-halal-border, rgba(80,220,140,0.22))' }}>HALAL</span>}
+          {badge && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'var(--kk-badge-bg, rgba(255,180,0,0.15))', color: 'var(--kk-badge-ink, rgba(255,180,0,0.85))', border: '1px solid var(--kk-badge-border, rgba(255,180,0,0.2))' }}>{badge}</span>}
         </div>
-        {desc && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</div>}
+        {desc && <div style={{ fontSize: 12, color: 'var(--kk-muted, rgba(255,255,255,0.40))', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</div>}
       </div>
       {isSelected
-        ? <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Check size={13} color="black" strokeWidth={3} /></div>
-        : <ChevronRight size={15} style={{ color: 'rgba(255,255,255,0.20)', flexShrink: 0 }} />
+        ? <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--kk-check-bg, white)', color: 'var(--kk-check-ink, black)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Check size={13} strokeWidth={3} /></div>
+        : <ChevronRight size={15} style={{ color: 'var(--kk-chevron, rgba(255,255,255,0.20))', flexShrink: 0 }} />
       }
     </button>
   );
@@ -3131,7 +3137,7 @@ function OptionTile({ emoji, photo, name, desc, isSelected, onClick, index, badg
 
 function SectionLabel({ children }) {
   return (
-    <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', letterSpacing: '0.09em', textTransform: 'uppercase', padding: '14px 2px 10px' }}>
+    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--kk-faint, rgba(255,255,255,0.30))', letterSpacing: '0.09em', textTransform: 'uppercase', padding: '14px 2px 10px' }}>
       {children}
     </div>
   );
@@ -3143,14 +3149,14 @@ function SelectionList({ label, items, onRemove }) {
       marginTop: 4,
       marginBottom: 4,
       padding: 10,
-      background: 'rgba(255,255,255,0.03)',
+      background: 'var(--kk-list-bg, rgba(255,255,255,0.03))',
       borderRadius: 14,
-      border: '1px dashed rgba(255,255,255,0.12)',
+      border: '1px dashed var(--kk-list-border, rgba(255,255,255,0.12))',
     }}>
       <div style={{
         fontSize: 9,
         fontWeight: 700,
-        color: 'rgba(255,255,255,0.50)',
+        color: 'var(--kk-faint, rgba(255,255,255,0.50))',
         letterSpacing: '0.1em',
         textTransform: 'uppercase',
         marginBottom: 8,
@@ -3164,15 +3170,15 @@ function SelectionList({ label, items, onRemove }) {
           alignItems: 'center',
           gap: 10,
           padding: '7px 10px',
-          background: 'rgba(255,255,255,0.05)',
+          background: 'var(--kk-list-item-bg, rgba(255,255,255,0.05))',
           borderRadius: 10,
           marginBottom: 4,
         }}>
           {it.emoji && <span style={{ fontSize: 18, flexShrink: 0 }}>{it.emoji}</span>}
-          <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: 'var(--kk-list-ink, white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {it.name}
             {it.detail && (
-              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginLeft: 6 }}>
+              <span style={{ color: 'var(--kk-list-detail, rgba(255,255,255,0.55))', fontSize: 11, marginLeft: 6 }}>
                 · {it.detail}
               </span>
             )}
@@ -3182,8 +3188,8 @@ function SelectionList({ label, items, onRemove }) {
             aria-label="Retirer"
             style={{
               width: 26, height: 26, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.08)',
-              border: 'none', color: 'rgba(255,255,255,0.65)',
+              background: 'var(--kk-list-remove-bg, rgba(255,255,255,0.08))',
+              border: 'none', color: 'var(--kk-list-remove-ink, rgba(255,255,255,0.65))',
               fontSize: 13, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
@@ -3204,15 +3210,15 @@ function SubSheet({ title, subtitle, options, outIds = [], onSelect, onClose }) 
   return (
     <div
       className="modal-backdrop fixed inset-0 z-[100] flex items-end justify-center"
-      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }}
+      style={{ background: 'var(--kk-backdrop-sub, rgba(0,0,0,0.65))', backdropFilter: 'blur(6px)' }}
       onClick={onClose}
     >
       <div
         className="modal-sheet w-full max-w-lg"
         style={{
-          background: '#181818',
+          background: 'var(--kk-sheet-bg-sub, #181818)',
           borderRadius: '24px 24px 0 0',
-          border: '1px solid rgba(255,255,255,0.09)',
+          border: '1px solid var(--kk-sheet-border, rgba(255,255,255,0.09))',
           borderBottom: 'none',
           maxHeight: '65vh',
           overflow: 'hidden',
@@ -3221,18 +3227,18 @@ function SubSheet({ title, subtitle, options, outIds = [], onSelect, onClose }) 
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
-          <div style={{ width: 34, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
+          <div style={{ width: 34, height: 4, borderRadius: 2, background: 'var(--kk-grab, rgba(255,255,255,0.15))' }} />
         </div>
         <div style={{ padding: '10px 20px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'white' }}>{title}</div>
-            {subtitle && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 2 }}>{subtitle}</div>}
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--kk-title, white)' }}>{title}</div>
+            {subtitle && <div style={{ fontSize: 12, color: 'var(--kk-muted, rgba(255,255,255,0.40))', marginTop: 2 }}>{subtitle}</div>}
           </div>
-          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--kk-close-bg, rgba(255,255,255,0.07))', border: '1px solid var(--kk-close-border, rgba(255,255,255,0.10))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--kk-close-ink, white)' }}>
             <X size={14} />
           </button>
         </div>
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+        <div style={{ height: 1, background: 'var(--kk-divider, rgba(255,255,255,0.06))', flexShrink: 0 }} />
         <div style={{ overflowY: 'auto', flex: 1, padding: '8px 16px 28px' }}>
           {options.map((opt, i) => {
             const out = outSet.has(opt.id);
@@ -3678,8 +3684,8 @@ function FormuleModal({ item, stockList = [], onConfirm, onClose }) {
       disabled={!canConfirm()}
       style={{
         width: '100%', padding: '15px 20px', borderRadius: 18,
-        background: canConfirm() ? 'white' : 'rgba(255,255,255,0.10)',
-        color: canConfirm() ? 'black' : 'rgba(255,255,255,0.28)',
+        background: canConfirm() ? 'var(--kk-cta-bg, white)' : 'var(--kk-cta-bg-off, rgba(255,255,255,0.10))',
+        color: canConfirm() ? 'var(--kk-cta-ink, black)' : 'var(--kk-cta-ink-off, rgba(255,255,255,0.28))',
         border: 'none', fontSize: 15, fontWeight: 700,
         cursor: canConfirm() ? 'pointer' : 'not-allowed',
         transition: 'all 0.2s ease',
@@ -3703,9 +3709,9 @@ function FormuleModal({ item, stockList = [], onConfirm, onClose }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 2px 0', marginBottom: 2 }}>
           {[...Array(prog.total)].map((_, i) => (
-            <div key={i} style={{ height: 3, flex: 1, borderRadius: 2, background: i < prog.done ? 'white' : 'rgba(255,255,255,0.14)', transition: 'background 0.3s ease' }} />
+            <div key={i} style={{ height: 3, flex: 1, borderRadius: 2, background: i < prog.done ? 'var(--kk-progress-on, white)' : 'var(--kk-progress-off, rgba(255,255,255,0.14))', transition: 'background 0.3s ease' }} />
           ))}
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginLeft: 4, whiteSpace: 'nowrap' }}>{prog.done}/{prog.total}</span>
+          <span style={{ fontSize: 11, color: 'var(--kk-faint, rgba(255,255,255,0.35))', marginLeft: 4, whiteSpace: 'nowrap' }}>{prog.done}/{prog.total}</span>
         </div>
 
         <SectionLabel>{isVoyage ? 'Choisissez vos 2 plats' : 'Votre plat'}</SectionLabel>
@@ -4046,7 +4052,7 @@ function ZonesModal({ onClose }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="kk-zones fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
       <div
         className="bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -4367,7 +4373,9 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
   }, [mode, paymentMethod]);
 
   return (
-    <section className="fixed inset-0 z-50 flex items-start justify-end bg-black/60 backdrop-blur-sm">
+    // `kk-checkout` : accroche du thème clair de la peau v2 (accueil-v2.css,
+    // [data-skin="v2"] .kk-checkout …). Aucune classe utilitaire ne change ici.
+    <section className="kk-checkout fixed inset-0 z-50 flex items-start justify-end bg-black/60 backdrop-blur-sm">
       <div className="h-full w-full max-w-xl overflow-auto border-l border-white/10 bg-black p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Commande</h2>
