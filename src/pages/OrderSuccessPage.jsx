@@ -30,8 +30,11 @@ const SUCCESS_STATUSES = ['pending', 'paid', 'accepted', 'ready', 'delivered'];
 // JAMAIS /api/get-order-status : elle affiche directement la confirmation
 // simulée. Toute la branche est gardée par `import.meta.env.DEV`, donc absente
 // du build de production.
-export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null, simulated = null }) {
+// `formatPrice` : formateur de prix de la peau courante (KaiKaiApp) ; sans
+// lui, Intl fr-CH comme aujourd'hui.
+export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null, simulated = null, formatPrice = null }) {
   const isSimulated = import.meta.env.DEV && !!simulated;
+  const fmt = formatPrice || fmtCHF;
   // Source de vérité de l'order_id, dans l'ordre :
   //  1. La prop initialOrderId passée par le parent (Cash/Twint juste
   //     après l'INSERT — le plus fiable, pas de dépendance au timing
@@ -186,6 +189,7 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null, 
           total={simulated.total}
           modeLabel={isPickup ? 'À emporter' : 'Livraison'}
           email={simulated.customer_email}
+          fmt={fmt}
         />
         <EtaBadge text={isPickup ? `À emporter dans ~${etaMinutes} min` : `Livraison dans ~${etaMinutes} min`} />
         <BackButton onClick={onBackToMenu} />
@@ -225,6 +229,7 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null, 
           total={order.total}
           modeLabel={modeLabel}
           email={order.customer_email}
+          fmt={fmt}
         />
         <EtaBadge text={etaText} />
         <BackButton onClick={onBackToMenu} />
@@ -387,12 +392,12 @@ function EtaBadge({ text }) {
   );
 }
 
-function Recap({ orderShortId, total, modeLabel, email }) {
+function Recap({ orderShortId, total, modeLabel, email, fmt = fmtCHF }) {
   return (
     <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-sm">
       <Row label="Numéro" value={`#${orderShortId}`} />
       <Row label="Mode" value={modeLabel} />
-      <Row label="Total" value={fmtCHF(total)} bold />
+      <Row label="Total" value={fmt(total)} bold />
       {email && (
         <Row
           label="Confirmation"

@@ -995,7 +995,13 @@ const BOISSON_PHOTO_POS = {
   "25": "center",
 };
 
+// Style d'affichage des prix : « 24.90 CHF » (Intl fr-CH) sur le site actuel
+// et la refonte, « CHF 24,90 » sur la peau v2 (format du HTML fourni, partout :
+// fiches, composeur, tiroir, Checkout, confirmation). Réglé par KaiKaiApp au
+// rendu — une seule instance, donc une variable de module suffit.
+let priceStyle = 'legacy';
 function format(price) {
+  if (priceStyle === 'v2') return 'CHF ' + Number(price || 0).toFixed(2).replace('.', ',');
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
 }
 
@@ -1183,6 +1189,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   // Peau historique : ni refonte, ni v2. Les blocs du site actuel (header,
   // menu, confirmation, footer) ne sont montés que pour elle.
   const isLegacy = !isRefonte && !isV2;
+  priceStyle = isV2 ? 'v2' : 'legacy';
   const { isOpen: restaurantOpen, manualClosure, statusLabel: openStatusLabel, status: openStatus } = useRestaurantOpen();
   const { items: outOfStockItems } = useOutOfStock();
 
@@ -1720,6 +1727,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
               <OrderSuccessPage
                 initialOrderId={successOrderId}
                 simulated={successSimulated}
+                formatPrice={format}
                 onBackToMenu={backToMenuFromSuccess}
               />
             )}
@@ -1744,6 +1752,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
                 stockList={outOfStockItems}
                 outOfStockFor={(it) => isMenuItemUnavailable(outOfStockItems, it)}
                 onCoversMiniCart={setWokBarCoversCart}
+                ctaLabel="Commander"
               />
             }
             cart={cart}
@@ -1776,6 +1785,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
               <OrderSuccessPage
                 initialOrderId={successOrderId}
                 simulated={successSimulated}
+                formatPrice={format}
                 onBackToMenu={backToMenuFromSuccess}
               />
             )}
@@ -1906,6 +1916,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         <OrderSuccessPage
           initialOrderId={successOrderId}
           simulated={successSimulated}
+          formatPrice={format}
           onBackToMenu={backToMenuFromSuccess}
         />
       )}
@@ -2143,7 +2154,9 @@ const useAvantPeinture = typeof window !== 'undefined' ? useLayoutEffect : useEf
 // escamotait le mini-panier trop tôt.
 //
 // Prop FACULTATIVE : sans elle le composeur se comporte exactement comme avant.
-export function WokComposer({ bases, cart, add, stockList, outOfStockFor, onCoversMiniCart }) {
+// `ctaLabel` : libellé du bouton d'ajout (« Commander » sur la peau v2) ; sans
+// lui, « + Ajouter » comme aujourd'hui. L'état « Ajouté ✓ » ne change pas.
+export function WokComposer({ bases, cart, add, stockList, outOfStockFor, onCoversMiniCart, ctaLabel = null }) {
   // Aucune base pré-cochée : le composeur s'ouvre vierge et c'est le client qui
   // choisit. `base` peut donc valoir null tout au long du rendu — chaque lecture
   // en aval le suppose, y compris le récap et le total.
@@ -2786,7 +2799,9 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor, onCove
             >
               {added
                 ? <><Check className="h-4 w-4" strokeWidth={3} />Ajouté</>
-                : <><Plus className="h-4 w-4" />Ajouter</>}
+                : ctaLabel
+                  ? ctaLabel
+                  : <><Plus className="h-4 w-4" />Ajouter</>}
             </button>
           </div>
          </div>

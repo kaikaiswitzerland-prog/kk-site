@@ -79,8 +79,12 @@ export default function AccueilV2Shell({
   const statusTone = restaurantOpen ? '' : ' closed';
   const statusText = !restaurantOpen && manualClosure ? 'Fermé temporairement' : openStatusLabel;
 
+  // Le mini-panier flottant ne doit rien masquer : quand il est visible, le
+  // pied de page réserve sa hauteur (voir .v2-root--mini dans accueil-v2.css).
+  const miniShown = showContent && miniVisible && !drawerOpen;
+
   return (
-    <div className="v2-root">
+    <div className={`v2-root${miniShown ? ' v2-root--mini' : ''}`}>
       <a className="skip" href="#menu" onClick={(e) => { e.preventDefault(); scrollToId('menu'); }}>Aller au menu</a>
 
       <V2Header

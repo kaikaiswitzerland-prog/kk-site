@@ -264,6 +264,8 @@
 .v2-root footer a { color: #fff; font-weight: 600; }
 .v2-root footer a:hover { color: var(--lime); }
 .v2-root footer .legal { grid-column: 1 / -1; margin-top: 20px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.14); font-size: 12.5px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+/* Mini-panier visible : le pied de page réserve sa hauteur (≈ 64 px + marge). */
+.v2-root--mini footer { padding-bottom: calc(40px + 96px + env(safe-area-inset-bottom, 0px)); }
 
 @media (max-width: 1100px) { .v2-root .cards { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 820px) {
@@ -397,6 +399,8 @@
 /* Checkout, zones et page de confirmation (OrderSuccessPage, `kk-success`) :
    correspondance utilitaire sombre → couleur claire. */
 [data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success) { color: #14211c; }
+/* Email du récapitulatif : coupure aux points de rupture, pas au milieu d'un mot. */
+[data-skin="v2"] .kk-success .break-all { word-break: normal; overflow-wrap: anywhere; }
 [data-skin="v2"] .kk-checkout.bg-black\/60, [data-skin="v2"] .kk-zones.bg-black\/80 { background: rgba(6,20,17,.5); }
 [data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success) .bg-black { background: #ffffff; }
 [data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success) :is(.border-white\/10, .border-white\/15, .border-white\/20) { border-color: #e3e9dd; }
