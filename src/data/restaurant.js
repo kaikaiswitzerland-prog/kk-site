@@ -18,14 +18,13 @@ export const RESTAURANT_INFO = {
   // garder une URL embed-friendly (?output=embed).
   google_page: "https://maps.app.goo.gl/P1rmU4VNfXNxLWQi9?g_st=ic",
   
-  // Display uniquement (footer + AboutModal) — heures de SERVICE affichées
-  // aux clients. Source de vérité numérique des plages de pré-commande :
-  // src/lib/restaurantHours.js (LUNCH/DINNER, dinner.open=17:30 pour la
-  // pré-commande). Ici on affiche 18h-22h (service réel) et on mentionne
-  // "pré-commande dès 17h30" séparément dans le copy footer/AboutModal.
+  // Display uniquement — heures de SERVICE affichées aux clients. Source de
+  // vérité numérique : src/lib/restaurantHours.js (SERVICE_DEFAULT /
+  // SERVICE_SATURDAY). Service continu, sept jours sur sept ; le samedi
+  // n'ouvre qu'à 18h. Mis à jour le 27.09.2026 (branche test/accueil-v2).
   hours: {
-    lunch: { start: "12:00", end: "14:00" },
-    dinner: { start: "18:00", end: "22:00" }
+    daily:    { start: "11:30", end: "22:00" },   // dimanche → vendredi
+    saturday: { start: "18:00", end: "22:00" },
   },
   
   // Liste des NPA et frais : voir src/lib/deliveryZones.js (source de vérité).

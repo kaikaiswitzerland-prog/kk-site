@@ -3,29 +3,39 @@
 // Utilisable côté front (React via useRestaurantOpen) ET côté serveur (Vercel
 // Functions via api/_lib/restaurantHours.js — copie miroir, voir note bas).
 //
-// Modèle :
-//   - Mardi → Dimanche : deux services (lunch 11h-14h, dinner 17h30-22h)
-//   - Lundi : fermé toute la journée
-//   - Les commandes (pré-commande) sont possibles dès l'ouverture d'un service.
+// Modèle (depuis le 27.09.2026 — branche test/accueil-v2) :
+//   - Service CONTINU, sept jours sur sept.
+//   - Dimanche → Vendredi : 11h30 – 22h00
+//   - Samedi : 18h00 – 22h00
+//   - Aucun jour de fermeture hebdomadaire.
+//   - Les commandes sont possibles dès l'ouverture du service.
 //
 // Fuseau : TOUS les calculs (jour, heure, minute) sont faits en Europe/Zurich
 // via Intl.DateTimeFormat. Ça neutralise le fuseau du runtime (UTC sur Vercel)
 // et celui du device client, et gère nativement le passage CET/CEST.
 
-// Date.getDay() : 0=dim, 1=lun, 2=mar, ..., 6=sam. Lundi=1.
-export const DAYS_OFF = [1];
+// Date.getDay() : 0=dim, 1=lun, 2=mar, ..., 6=sam.
+// Plus aucun jour fermé — la liste reste pour qu'une fermeture hebdomadaire
+// puisse revenir sans toucher au calcul.
+export const DAYS_OFF = [];
 
-// Service midi : ouvert pour pré-commande dès 11h00, ferme à 14h00.
-export const LUNCH = {
-  open:  { h: 11, m: 0 },
-  close: { h: 14, m: 0 },
-};
-
-// Service soir : ouvert pour pré-commande dès 17h30, ferme à 22h00.
-export const DINNER = {
-  open:  { h: 17, m: 30 },
+// Service continu du dimanche au vendredi : 11h30 – 22h00.
+export const SERVICE_DEFAULT = {
+  open:  { h: 11, m: 30 },
   close: { h: 22, m: 0 },
 };
+
+// Samedi : ouverture à 18h00 seulement, fermeture à 22h00.
+export const SERVICE_SATURDAY = {
+  open:  { h: 18, m: 0 },
+  close: { h: 22, m: 0 },
+};
+
+// Plages de service d'un jour de semaine donné (0=dim … 6=sam). Un tableau,
+// pour qu'une journée à deux services redevienne possible sans rien réécrire.
+export function servicesForWeekday(weekday) {
+  return weekday === 6 ? [SERVICE_SATURDAY] : [SERVICE_DEFAULT];
+}
 
 // Helpers internes ───────────────────────────────────────────────────────────
 
@@ -92,8 +102,9 @@ function findNextOpenAt(now) {
   // 1) D'abord, regarde si on peut encore ouvrir aujourd'hui même.
   if (!isDayOff(p)) {
     const cur = p.hour * 60 + p.minute;
-    if (cur < toMinutes(LUNCH.open))  return dateAtZurich(p, LUNCH.open);
-    if (cur < toMinutes(DINNER.open)) return dateAtZurich(p, DINNER.open);
+    for (const svc of servicesForWeekday(p.weekday)) {
+      if (cur < toMinutes(svc.open)) return dateAtZurich(p, svc.open);
+    }
   }
   // 2) Sinon, on cherche le prochain jour d'ouverture, à partir de demain.
   //    On itère sur le calendrier Zurich en construisant des "midi UTC" qui
@@ -101,7 +112,7 @@ function findNextOpenAt(now) {
   for (let i = 1; i <= 8; i++) {
     const probe = new Date(Date.UTC(p.year, p.month - 1, p.day + i, 12, 0));
     const pp = zurichParts(probe);
-    if (!isDayOff(pp)) return dateAtZurich(pp, LUNCH.open);
+    if (!isDayOff(pp)) return dateAtZurich(pp, servicesForWeekday(pp.weekday)[0].open);
   }
   return null;
 }
@@ -115,7 +126,7 @@ function findNextOpenAt(now) {
  * @returns {{
  *   isOpen: boolean,
  *   reason: 'open' | 'closed_day' | 'closed_hours',
- *   currentService: 'lunch' | 'dinner' | null,
+ *   currentService: 'continuous' | null,
  *   nextOpenAt: Date | null,
  *   nextCloseAt: Date | null,
  * }}
@@ -134,28 +145,16 @@ export function getRestaurantStatus(now = new Date()) {
   }
 
   const cur = p.hour * 60 + p.minute;
-  const lunchOpen  = toMinutes(LUNCH.open);
-  const lunchClose = toMinutes(LUNCH.close);
-  const dinnerOpen  = toMinutes(DINNER.open);
-  const dinnerClose = toMinutes(DINNER.close);
-
-  if (cur >= lunchOpen && cur < lunchClose) {
-    return {
-      isOpen: true,
-      reason: 'open',
-      currentService: 'lunch',
-      nextOpenAt: null,
-      nextCloseAt: dateAtZurich(p, LUNCH.close),
-    };
-  }
-  if (cur >= dinnerOpen && cur < dinnerClose) {
-    return {
-      isOpen: true,
-      reason: 'open',
-      currentService: 'dinner',
-      nextOpenAt: null,
-      nextCloseAt: dateAtZurich(p, DINNER.close),
-    };
+  for (const svc of servicesForWeekday(p.weekday)) {
+    if (cur >= toMinutes(svc.open) && cur < toMinutes(svc.close)) {
+      return {
+        isOpen: true,
+        reason: 'open',
+        currentService: 'continuous',
+        nextOpenAt: null,
+        nextCloseAt: dateAtZurich(p, svc.close),
+      };
+    }
   }
   return {
     isOpen: false,
@@ -191,7 +190,7 @@ export function formatStatusLabel(status) {
   }
   if (status.reason === 'closed_day' && status.nextOpenAt) {
     const dayName = WEEKDAYS_NAME[zurichParts(status.nextOpenAt).weekday];
-    return `Fermé le lundi · ouvre ${dayName} ${formatHourFromDate(status.nextOpenAt)}`;
+    return `Fermé aujourd'hui · ouvre ${dayName} ${formatHourFromDate(status.nextOpenAt)}`;
   }
   if (status.reason === 'closed_hours' && status.nextOpenAt) {
     const today = zurichParts(new Date());
@@ -210,8 +209,8 @@ export function formatStatusLabel(status) {
 }
 
 // Format "HH:MM" — utilisé pour synchroniser l'affichage display
-// (RESTAURANT_INFO.hours dans App.jsx, footer, AboutModal) avec la source
-// de vérité. Évite la duplication de magic strings type "11:30-14:00".
+// (RESTAURANT_INFO.hours dans src/data/restaurant.js, footer, AboutModal) avec
+// la source de vérité. Évite la duplication de magic strings type "11:30-22:00".
 export function formatServiceHHMM(svc) {
   const pad = (n) => String(n).padStart(2, '0');
   return `${pad(svc.h)}:${pad(svc.m)}`;

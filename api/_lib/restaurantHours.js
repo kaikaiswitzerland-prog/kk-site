@@ -8,18 +8,26 @@
 //
 // Fuseau : tous les calculs sont faits en Europe/Zurich via Intl. Ça neutralise
 // le runtime Vercel (UTC par défaut) et gère CET/CEST automatiquement.
+//
+// Modèle (depuis le 27.09.2026) : service CONTINU, sept jours sur sept.
+//   - Dimanche → Vendredi : 11h30 – 22h00
+//   - Samedi : 18h00 – 22h00
 
-export const DAYS_OFF = [1];
+export const DAYS_OFF = [];
 
-export const LUNCH = {
-  open:  { h: 11, m: 0 },
-  close: { h: 14, m: 0 },
-};
-
-export const DINNER = {
-  open:  { h: 17, m: 30 },
+export const SERVICE_DEFAULT = {
+  open:  { h: 11, m: 30 },
   close: { h: 22, m: 0 },
 };
+
+export const SERVICE_SATURDAY = {
+  open:  { h: 18, m: 0 },
+  close: { h: 22, m: 0 },
+};
+
+export function servicesForWeekday(weekday) {
+  return weekday === 6 ? [SERVICE_SATURDAY] : [SERVICE_DEFAULT];
+}
 
 const TZ = 'Europe/Zurich';
 
@@ -71,13 +79,14 @@ function findNextOpenAt(now) {
   const p = zurichParts(now);
   if (!isDayOff(p)) {
     const cur = p.hour * 60 + p.minute;
-    if (cur < toMinutes(LUNCH.open))  return dateAtZurich(p, LUNCH.open);
-    if (cur < toMinutes(DINNER.open)) return dateAtZurich(p, DINNER.open);
+    for (const svc of servicesForWeekday(p.weekday)) {
+      if (cur < toMinutes(svc.open)) return dateAtZurich(p, svc.open);
+    }
   }
   for (let i = 1; i <= 8; i++) {
     const probe = new Date(Date.UTC(p.year, p.month - 1, p.day + i, 12, 0));
     const pp = zurichParts(probe);
-    if (!isDayOff(pp)) return dateAtZurich(pp, LUNCH.open);
+    if (!isDayOff(pp)) return dateAtZurich(pp, servicesForWeekday(pp.weekday)[0].open);
   }
   return null;
 }
@@ -96,28 +105,16 @@ export function getRestaurantStatus(now = new Date()) {
   }
 
   const cur = p.hour * 60 + p.minute;
-  const lunchOpen  = toMinutes(LUNCH.open);
-  const lunchClose = toMinutes(LUNCH.close);
-  const dinnerOpen  = toMinutes(DINNER.open);
-  const dinnerClose = toMinutes(DINNER.close);
-
-  if (cur >= lunchOpen && cur < lunchClose) {
-    return {
-      isOpen: true,
-      reason: 'open',
-      currentService: 'lunch',
-      nextOpenAt: null,
-      nextCloseAt: dateAtZurich(p, LUNCH.close),
-    };
-  }
-  if (cur >= dinnerOpen && cur < dinnerClose) {
-    return {
-      isOpen: true,
-      reason: 'open',
-      currentService: 'dinner',
-      nextOpenAt: null,
-      nextCloseAt: dateAtZurich(p, DINNER.close),
-    };
+  for (const svc of servicesForWeekday(p.weekday)) {
+    if (cur >= toMinutes(svc.open) && cur < toMinutes(svc.close)) {
+      return {
+        isOpen: true,
+        reason: 'open',
+        currentService: 'continuous',
+        nextOpenAt: null,
+        nextCloseAt: dateAtZurich(p, svc.close),
+      };
+    }
   }
   return {
     isOpen: false,
@@ -147,7 +144,7 @@ export function formatStatusLabel(status) {
   }
   if (status.reason === 'closed_day' && status.nextOpenAt) {
     const dayName = WEEKDAYS_NAME[zurichParts(status.nextOpenAt).weekday];
-    return `Fermé le lundi · ouvre ${dayName} ${formatHourFromDate(status.nextOpenAt)}`;
+    return `Fermé aujourd'hui · ouvre ${dayName} ${formatHourFromDate(status.nextOpenAt)}`;
   }
   if (status.reason === 'closed_hours' && status.nextOpenAt) {
     const today = zurichParts(new Date());
