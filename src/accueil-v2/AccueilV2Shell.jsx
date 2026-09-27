@@ -47,6 +47,8 @@ export default function AccueilV2Shell({
   onAdd,
   onRemove,
   onRemoveAt,
+  onRemoveMany,
+  onAddExact,
   onClear,
   isUnavailable,
   onOpenCheckout,
@@ -163,6 +165,8 @@ export default function AccueilV2Shell({
         setDeliveryNpa={setDeliveryNpa}
         restaurant={restaurant}
         onRemoveAt={onRemoveAt}
+        onRemoveMany={onRemoveMany}
+        onAddExact={onAddExact}
         onClear={onClear}
         onOpenCheckout={onOpenCheckout}
       />

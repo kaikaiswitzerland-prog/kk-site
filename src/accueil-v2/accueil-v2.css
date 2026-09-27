@@ -134,11 +134,9 @@
 .v2-root .add { display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 999px; background: var(--lime); color: var(--green); font-weight: 700; font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase; transition: background .15s, color .15s; border: 0; cursor: pointer; font-family: inherit; }
 .v2-root .add:hover { background: var(--soft); color: #fff; }
 
-/* quantités */
-.v2-root .qty { display: flex; align-items: center; gap: 6px; }
-.v2-root .qb { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--green); background: transparent; color: var(--green); font-size: 18px; line-height: 1; cursor: pointer; display: none; align-items: center; justify-content: center; font-family: inherit; padding: 0; }
-.v2-root .qn { display: none; min-width: 18px; text-align: center; font-weight: 700; }
-.v2-root .qty.has .qb, .v2-root .qty.has .qn { display: inline-flex; }
+/* quantités (tiroir) */
+.v2-root .qb { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--green); background: transparent; color: var(--green); font-size: 16px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-family: inherit; padding: 0; flex: none; }
+.v2-root .qb:hover { background: var(--paper-2); }
 .v2-root .card.out { opacity: .5; }
 .v2-root .card.out .add { pointer-events: none; background: #ddd; color: #777; }
 
@@ -192,11 +190,16 @@
 .v2-root .drawer h2 { margin: 0; font-size: 22px; font-weight: 700; color: var(--green); }
 .v2-root .drawer .x { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper-2); cursor: pointer; font-size: 16px; color: var(--ink); font-family: inherit; }
 .v2-root .dline { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
-.v2-root .dline .n { font-weight: 700; font-size: 15px; }
-.v2-root .dline .v { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
-.v2-root .dline .r { text-align: right; flex: none; }
-.v2-root .dline .r b { display: block; margin-bottom: 6px; }
-.v2-root .dline .qb { display: inline-flex; width: 28px; height: 28px; font-size: 16px; }
+.v2-root .dline .dmain { flex: 1; min-width: 0; }
+.v2-root .dline .n { font-weight: 700; font-size: 15px; overflow-wrap: anywhere; }
+.v2-root .dline .v { font-size: 12.5px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+.v2-root .dline .dqty { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; }
+.v2-root .dline .dqty .qn { min-width: 20px; text-align: center; font-weight: 800; font-size: 14px; }
+.v2-root .dline .r { text-align: right; flex: none; display: flex; flex-direction: column; align-items: flex-end; }
+.v2-root .dline .r b { display: block; margin-bottom: 2px; }
+.v2-root .dline .r small { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 4px; }
+.v2-root .dline .r .x { margin-top: 4px; border-color: var(--line); color: var(--muted); }
+.v2-root .dline .r .x:hover { border-color: #a63a2a; color: #a63a2a; background: rgba(166,58,42,.06); }
 .v2-root .modes { display: flex; gap: 8px; margin: 18px 0 10px; }
 .v2-root .modes button { flex: 1; height: 42px; border-radius: 999px; border: 2px solid var(--green); background: transparent; color: var(--green); font: inherit; font-weight: 700; cursor: pointer; }
 .v2-root .modes button.on { background: var(--green); color: #fff; }

@@ -17,6 +17,13 @@ import { getZoneByNpa } from '../lib/deliveryZones.js';
 import { CART_TARGET_ATTR } from '../lib/flyToCart.js';
 import { chf, variantDetail } from './v2Helpers.js';
 
+// Clé stable d'une variante : mêmes options → même clé, quel que soit l'ordre
+// des champs. Deux exemplaires strictement identiques partagent une ligne.
+const variantKey = (v) => JSON.stringify(v ?? null, (k, val) =>
+  (val && typeof val === 'object' && !Array.isArray(val))
+    ? Object.keys(val).sort().reduce((o, kk) => { o[kk] = val[kk]; return o; }, {})
+    : val);
+
 export function V2Mini({ visible, hidden, cartCount, items, subtotal, onOpen }) {
   const names = useMemo(() => {
     const seen = [];
@@ -58,23 +65,36 @@ export function V2Drawer({
   setDeliveryNpa,
   restaurant,
   onRemoveAt,
+  onRemoveMany,
+  onAddExact,
   onClear,
   onOpenCheckout,
 }) {
-  // Une ligne par EXEMPLAIRE, comme dans le HTML : deux Chao Men avec deux
-  // protéines différentes font deux lignes, chacune avec son détail.
+  // Une ligne par GROUPE d'exemplaires strictement identiques (même plat,
+  // mêmes options), avec sa quantité : deux Chao Men porc font une ligne × 2,
+  // un Chao Men porc et un Chao Men poulet font deux lignes.
   const lines = useMemo(() => {
-    const out = [];
+    const groups = new Map();
     items.forEach((it) => {
       if (!it.qty) return;
       const variants = Array.isArray(cartVariants[it.id]) ? cartVariants[it.id] : [];
       for (let k = 0; k < it.qty; k++) {
         const v = variants[k] ?? null;
-        out.push({ key: `${it.id}-${k}`, item: it, index: k, variant: v, detail: variantDetail(v), price: catalog.unitPrice(it, v) });
+        const key = `${it.id}|${variantKey(v)}`;
+        if (!groups.has(key)) groups.set(key, { key, item: it, variant: v, detail: variantDetail(v), unit: catalog.unitPrice(it, v), count: 0, indices: [] });
+        const g = groups.get(key);
+        g.count += 1;
+        if (k < variants.length) g.indices.push(k);
       }
     });
-    return out;
+    return [...groups.values()];
   }, [items, cartVariants, catalog]);
+
+  // − : un exemplaire de moins (la ligne disparaît à zéro) · + : un exemplaire
+  // identique de plus, sans repasser par les options · ✕ : toute la ligne.
+  const minusOne = (g) => onRemoveAt(g.item.id, g.indices.length ? g.indices[g.indices.length - 1] : null);
+  const plusOne = (g) => onAddExact(g.item.id, g.variant);
+  const removeLine = (g) => onRemoveMany(g.item.id, g.count, g.indices);
 
   const minDelivery = catalog.minimumDelivery;
   const canDel = subtotal >= minDelivery;
@@ -105,15 +125,21 @@ export function V2Drawer({
 
         {lines.length === 0 && <p className="empty">Votre panier est vide.</p>}
 
-        {lines.map((l) => (
-          <div className="dline" key={l.key}>
-            <div>
-              <div className="n">{l.item.name}</div>
-              {l.detail && <div className="v">{l.detail}</div>}
+        {lines.map((g) => (
+          <div className="dline" key={g.key}>
+            <div className="dmain">
+              <div className="n">{g.item.name}</div>
+              {g.detail && <div className="v">{g.detail}</div>}
+              <div className="dqty" role="group" aria-label={`Quantité de ${g.item.name}`}>
+                <button type="button" className="qb" onClick={() => minusOne(g)} aria-label="Un de moins">−</button>
+                <span className="qn">{g.count}</span>
+                <button type="button" className="qb" onClick={() => plusOne(g)} aria-label="Un de plus">+</button>
+              </div>
             </div>
             <div className="r">
-              <b>{chf(l.price)}</b>
-              <button type="button" className="qb" onClick={() => onRemoveAt(l.item.id, l.index)} aria-label="Retirer">✕</button>
+              <b>{chf(g.unit * g.count)}</b>
+              {g.count > 1 && <small>{g.count} × {chf(g.unit)}</small>}
+              <button type="button" className="qb x" onClick={() => removeLine(g)} aria-label="Supprimer la ligne">✕</button>
             </div>
           </div>
         ))}

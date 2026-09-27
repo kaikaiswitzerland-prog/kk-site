@@ -1323,6 +1323,24 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
     });
   };
 
+  // Retire d'un coup `count` exemplaires d'un plat. `indices` = positions à
+  // retirer dans cartVariants[id] (vide pour un plat sans options). Sert au
+  // tiroir de la peau v2, qui regroupe les exemplaires identiques sur une
+  // ligne : son ✕ enlève toute la ligne. Lit `cart` au moment du clic pour
+  // supprimer aussi les variantes quand la quantité tombe à zéro.
+  const removeMany = (id, count, indices = []) => {
+    const drop = new Set(indices);
+    const q = (cart[id] || 0) - count;
+    setCart(c => { const n = { ...c }; if (q <= 0) delete n[id]; else n[id] = q; return n; });
+    setCartVariants(cv => {
+      const nv = { ...cv };
+      if (q <= 0 || !Array.isArray(cv[id])) { delete nv[id]; return nv; }
+      const arr = cv[id].filter((_, i) => !drop.has(i));
+      if (arr.length === 0) delete nv[id]; else nv[id] = arr;
+      return nv;
+    });
+  };
+
   const remove = (id) => setCart(c => { 
     const q = (c[id] || 0) - 1; 
     const n = { ...c }; 
@@ -1738,6 +1756,8 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
             onAdd={(it) => requestAdd(it, isMenuItemUnavailable(outOfStockItems, it))}
             onRemove={(it) => remove(it.id)}
             onRemoveAt={removeOne}
+            onRemoveMany={removeMany}
+            onAddExact={add}
             onClear={clear}
             isUnavailable={(it) => isMenuItemUnavailable(outOfStockItems, it)}
             onOpenCheckout={() => setStep("checkout")}
