@@ -30,13 +30,19 @@ function Card({ item, qty, out, photo, photoPos, onAdd, onRemove }) {
         <p>{item.desc}</p>
         <div className="foot">
           <span className="price">{chf(item.price)}</span>
-          <div className={`qty${qty > 0 ? ' has' : ''}`}>
-            <button type="button" className="qb minus" onClick={() => onRemove(item)} aria-label="Retirer">−</button>
-            <span className="qn">{qty}</span>
+          {qty > 0 ? (
+            /* Au panier : sélecteur « − n + » aux couleurs Nature, boutons ronds
+               de 44 px à taille fixe. « + » repasse par les options du plat. */
+            <div className="qtyctl" role="group" aria-label={`Quantité de ${item.name}`}>
+              <button type="button" className="qbtn" onClick={() => onRemove(item)} aria-label="Un de moins">−</button>
+              <span className="qn">{qty}</span>
+              <button type="button" className="qbtn" onClick={add} disabled={out} aria-label="Un de plus">+</button>
+            </div>
+          ) : (
             <button type="button" className="add" onClick={add} disabled={out}>
               {out ? 'En rupture' : 'Commander'}
             </button>
-          </div>
+          )}
         </div>
       </div>
     </article>
