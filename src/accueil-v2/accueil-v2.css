@@ -220,9 +220,6 @@
 .v2-root .modes button { flex: 1; height: 42px; border-radius: 999px; border: 2px solid var(--green); background: transparent; color: var(--green); font: inherit; font-weight: 700; cursor: pointer; }
 .v2-root .modes button.on { background: var(--green); color: #fff; }
 .v2-root .modes button:disabled { opacity: .4; cursor: not-allowed; }
-.v2-root .npa { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
-.v2-root .npa input { flex: 1; height: 44px; border-radius: 12px; border: 1.5px solid var(--line); padding: 0 14px; font: inherit; font-size: 15px; background: var(--paper); color: var(--ink); }
-.v2-root .npa input:focus { outline: none; border-color: var(--green); }
 .v2-root .hint { font-size: 12.5px; color: var(--muted); min-height: 1.2em; margin: 0; }
 .v2-root .hint.ok { color: var(--soft); }
 .v2-root .hint.ko { color: #a63a2a; }

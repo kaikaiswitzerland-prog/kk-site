@@ -5,9 +5,11 @@
 // Le tiroir lit le VRAI panier de KaiKaiApp (cart, cartVariants, items) et ne
 // calcule aucun prix lui-même : chaque ligne passe par catalog.unitPrice, le
 // sous-total / la réduction / la livraison / le total arrivent en props. Le
-// mode (livraison / à emporter) et le NPA sont ceux du Checkout partagé,
-// élevés dans KaiKaiApp — ce que le client règle ici, il le retrouve au
-// paiement. Le statut d'ouverture vient aussi de KaiKaiApp (useRestaurantOpen).
+// mode (livraison / à emporter) est celui du Checkout partagé, élevé dans
+// KaiKaiApp — ce que le client règle ici, il le retrouve au paiement. Le code
+// postal, lui, se saisit au Checkout, juste après : le tiroir ne le demande
+// pas, il lit seulement le NPA déjà connu pour afficher les frais s'ils le
+// sont. Le statut d'ouverture vient aussi de KaiKaiApp (useRestaurantOpen).
 //
 // Le bouton « Commander » ouvre le Checkout partagé, où se choisit le mode de
 // paiement : carte en ligne (SumUp), ou espèces au retrait pour l'emporter —
@@ -83,7 +85,6 @@ export function V2Drawer({
   mode,
   setMode,
   deliveryNpa = '',
-  setDeliveryNpa,
   restaurant,
   restaurantOpen = true,
   manualClosure = false,
@@ -188,25 +189,7 @@ export function V2Drawer({
               <p className="hint ko">Livraison dès {chf(minDelivery)} de commande (actuellement {chf(subtotal)}).</p>
             )}
             {mode === 'delivery' ? (
-              <>
-                <div className="npa">
-                  <input
-                    inputMode="numeric"
-                    maxLength={4}
-                    placeholder="Code postal (NPA)"
-                    value={deliveryNpa}
-                    onChange={(e) => setDeliveryNpa((e.target.value || '').replace(/\D/g, '').slice(0, 4))}
-                    aria-label="Code postal"
-                  />
-                </div>
-                {zone ? (
-                  <p className="hint ok">{zone.label} · {zone.name} · livraison {chf(zone.fee)} · {restaurant.deliveryTime} min</p>
-                ) : deliveryNpa.length === 4 ? (
-                  <p className="hint ko">Hors zone de livraison — choisissez À emporter.</p>
-                ) : (
-                  <p className="hint">Genève uniquement, rayon ~8 km.</p>
-                )}
-              </>
+              <p className="hint">Livré en {restaurant.deliveryTime} min · frais selon votre code postal, demandé à l'étape suivante.</p>
             ) : (
               <p className="hint">Prêt en {restaurant.prepTime} min · {restaurant.address} · carte ou espèces.</p>
             )}
@@ -217,14 +200,16 @@ export function V2Drawer({
                   (« Réduction site (-10%) ») ; sans coupon appliqué, elle
                   n'apparaît pas. */}
               {discount > 0 && <div><span>Réduction site (-10%)</span><span>- {chf(discount)}</span></div>}
-              {mode === 'delivery' && <div><span>Livraison</span><span>{zone ? chf(deliveryFee) : '—'}</span></div>}
+              {/* Frais connus seulement si un NPA en zone a déjà été saisi au
+                  Checkout (même état) ; sinon ils seront calculés là-bas. */}
+              {mode === 'delivery' && <div><span>Livraison</span><span>{zone ? chf(deliveryFee) : 'calculée à l\'étape suivante'}</span></div>}
               <div className="big"><span>Total</span><span>{chf(total)}</span></div>
             </div>
 
             <button type="button" className="btn primary" onClick={() => { onClose(); onOpenCheckout(); }}>
               Commander
             </button>
-            <p className="note">Le mode de paiement se choisit à l'étape suivante : carte en ligne, ou espèces au retrait pour l'emporter. Vos plats et votre code postal sont repris tels quels.</p>
+            <p className="note">Le mode de paiement se choisit à l'étape suivante : carte en ligne, ou espèces au retrait pour l'emporter. Vos plats sont repris tels quels.</p>
             <button type="button" className="clear" onClick={onClear}>Vider le panier</button>
           </>
         )}

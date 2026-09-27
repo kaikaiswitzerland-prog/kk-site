@@ -54,11 +54,10 @@ export default function AccueilV2Shell({
   onClear,
   isUnavailable,
   onOpenCheckout,
-  // Mode / NPA du Checkout partagé
+  // Mode du Checkout partagé, et NPA déjà connu (saisi au Checkout) — lecture seule
   mode,
   setMode,
   deliveryNpa,
-  setDeliveryNpa,
   // Ouverture / horaires
   restaurantOpen,
   manualClosure,
@@ -183,7 +182,6 @@ export default function AccueilV2Shell({
         mode={mode}
         setMode={setMode}
         deliveryNpa={deliveryNpa}
-        setDeliveryNpa={setDeliveryNpa}
         restaurant={restaurant}
         restaurantOpen={restaurantOpen}
         manualClosure={manualClosure}

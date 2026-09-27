@@ -1777,7 +1777,6 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
             mode={mode}
             setMode={setMode}
             deliveryNpa={deliveryNpa}
-            setDeliveryNpa={setDeliveryNpa}
             restaurantOpen={restaurantOpen}
             manualClosure={manualClosure}
             openStatusLabel={openStatusLabel}
