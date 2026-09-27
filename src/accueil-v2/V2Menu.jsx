@@ -83,7 +83,8 @@ export default function V2Menu({
     <main>
       <div id="menu" />
       <nav className="chips" aria-label="Catégories du menu" ref={chipsRef}>
-        <div className="wrap">
+        {/* data-scroll-x : défilement horizontal voulu (l'audit de débordement l'ignore). */}
+        <div className="wrap" data-scroll-x="">
           {CHIPS.map((c) => (
             <a
               key={c.id}

@@ -286,6 +286,32 @@
   .v2-root .drawer-bg, .v2-root .drawer { animation: none; }
 }
 
+/* ─── AUCUN DÉBORDEMENT (règle absolue, audit Playwright à 320→1440 px) ───── */
+.v2-root .btn { min-width: 0; }
+@media (max-width: 359px) {
+  .v2-root .actions { flex-wrap: wrap; }
+  .v2-root .actions .btn { flex: 1 1 100%; }
+}
+/* En-têtes d'étapes du composeur : le libellé peut se réduire et passer à la
+   ligne (la règle globale le fige en flex: none). */
+.v2-root .wok-slot .wok-step__head { min-width: 0; }
+.v2-root .wok-slot .wok-step__label { flex: 0 1 auto; min-width: 0; }
+.v2-root .wok-slot .wok-step__title, .v2-root .wok-slot .wok-step__note { white-space: normal; overflow-wrap: anywhere; }
+.v2-root .wok-slot .wok-step__pick { flex: 1 1 60px; }
+/* Barre récap du composeur sur téléphone : prix et bouton passent sur leur
+   propre ligne, pleine largeur, au lieu d'être rognés à droite. */
+@media (max-width: 480px) {
+  .v2-root .wok-slot .wok-bar__inner { row-gap: 10px; }
+  .v2-root .wok-slot .wok-bar .flex-none { flex: 1 1 100%; justify-content: space-between; min-width: 0; }
+  .v2-root .wok-slot .wok-bar .text-2xl { font-size: 22px; }
+  .v2-root .wok-slot .wok-bar button { padding: 0 22px; min-height: 46px; font-size: 13px; }
+}
+/* Cartes très étroites (≤ 360 px) : marges et bouton plus compacts. */
+@media (max-width: 360px) {
+  .v2-root .card .body { padding: 10px 10px 12px; }
+  .v2-root .add { padding: 0 10px; font-size: 11px; letter-spacing: .04em; }
+}
+
 /* ─── THÈME CLAIR DES COMPOSANTS PARTAGÉS (peau v2 uniquement) ───────────────
  *
  * Les modales d'options (BottomSheet, OptionTile, SubSheet, FormuleModal), le
