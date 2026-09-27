@@ -1249,6 +1249,10 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   const [successSimulated, setSuccessSimulated] = useState(null);
   const [logoVisible, setLogoVisible] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
+  // Détail allergènes d'une carte de la peau v2 : la carte n'a pas d'état
+  // propre (contrairement à MenuItem), c'est donc ici que vit le plat dont on
+  // ouvre la modale — la même AllergensModal, les mêmes données.
+  const [allergensItem, setAllergensItem] = useState(null);
 
   const activeCategory = useActiveCategory();
 
@@ -1780,6 +1784,10 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
             miniVisible={cartCount > 0 && !miniCartHold}
             miniHidden={wokBarCoversCart}
             restaurant={RESTAURANT_INFO}
+            discount={discount}
+            onShowAllergens={setAllergensItem}
+            onShowZones={() => setShowZonesModal(true)}
+            onShowAbout={() => setShowAbout(true)}
           >
             {step === "success" && (
               <OrderSuccessPage
@@ -1905,6 +1913,16 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
 
       {/* Modaux d'options de la grille refonte — mêmes composants que MenuItem. */}
       {optionModals}
+
+      {/* Détail allergènes d'une carte de la peau v2 : la modale que MenuItem
+          ouvre sur la peau historique, avec les mêmes données (allergens.js). */}
+      {allergensItem && (
+        <AllergensModal
+          item={allergensItem}
+          allergens={getAllergensForItem(allergensItem.id)}
+          onClose={() => setAllergensItem(null)}
+        />
+      )}
 
       {showZonesModal && <ZonesModal onClose={() => setShowZonesModal(false)} />}
 
@@ -3478,7 +3496,8 @@ function AllergensModal({ item, allergens, onClose }) {
       photoPos={getPhotoPos(item.id)}
       onClose={onClose}
     >
-      <div className="space-y-5 pb-2">
+      {/* `kk-allergens` : accroche du thème clair de la peau v2 (accueil-v2.css). */}
+      <div className="kk-allergens space-y-5 pb-2">
         {noAllergensAtAll ? (
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
             <div className="text-sm text-emerald-300">Sans allergène majeur</div>
@@ -4187,7 +4206,9 @@ function AboutModal({ onClose, onShowZones = null }) {
   const [showAllergensInfo, setShowAllergensInfo] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
+    // `kk-about` : accroche du thème clair de la peau v2 (accueil-v2.css).
+    // Aucune classe utilitaire ne change ici.
+    <div className="kk-about fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold">À propos de KaïKaï</h2>
@@ -4332,7 +4353,7 @@ function AllergensInfoModal({ onClose }) {
   const keys = Object.keys(ALLERGENS);
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4"
+      className="kk-allergens-info fixed inset-0 z-[60] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div

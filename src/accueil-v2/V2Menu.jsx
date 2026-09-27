@@ -6,10 +6,12 @@
 //
 // Composant PRÉSENTATIONNEL : les plats, prix, photos et ruptures viennent de
 // `sections`, `catalog` et `isUnavailable` (menuCatalog dans App.jsx). Les
-// zones de livraison viennent de src/lib/deliveryZones.js, source de vérité.
+// zones de livraison viennent de src/lib/deliveryZones.js, les allergènes de
+// src/data/allergens.js — sources de vérité, rien n'est recopié ici.
 
 import { Fragment, useEffect, useState } from 'react';
 import { DELIVERY_ZONES } from '../lib/deliveryZones.js';
+import { getAllergensForItem, getAllAllergens, formatAllergenNamesShort } from '../data/allergens.js';
 // Photos, cadrage et descriptions courtes : les MÊMES que la peau refonte (/),
 // lus dans src/refonte/productMeta.js — rien n'est recopié ici.
 import { getProductMeta } from '../refonte/productMeta.js';
@@ -28,7 +30,37 @@ function useImageFallback(meta) {
   return { current: chain[step] || null, onError: () => setStep((s) => s + 1) };
 }
 
-function Card({ item, qty, out, onAdd, onRemove }) {
+// Ligne allergènes d'une carte : les MÊMES trois cas que MenuItem (App.jsx,
+// peau historique) — « selon votre composition » pour les formules et les
+// plats composites, « Sans allergène majeur », ou « Contient : … » avec les
+// traces, cliquable vers le détail (AllergensModal, ouverte par KaiKaiApp).
+function AllergenLine({ item, isFormula, onShow }) {
+  const allergens = getAllergensForItem(item.id);
+  const all = getAllAllergens(allergens);
+  const none = all.length === 0 && allergens.traces.length === 0;
+  if (isFormula || allergens.isComposite) {
+    return <div className="allerg static">Allergènes : selon votre composition</div>;
+  }
+  return (
+    <button
+      type="button"
+      className={`allerg${none ? ' none' : ''}`}
+      onClick={(e) => { e.preventDefault(); if (onShow) onShow(item); }}
+      aria-label="Voir le détail des allergènes"
+    >
+      {none ? 'Sans allergène majeur' : (
+        <>
+          Contient : {formatAllergenNamesShort(all)}
+          {allergens.traces.length > 0 && all.length > 0 && (
+            <span className="traces">Traces : {formatAllergenNamesShort(allergens.traces)}</span>
+          )}
+        </>
+      )}
+    </button>
+  );
+}
+
+function Card({ item, qty, out, isFormula, onAdd, onRemove, onShowAllergens }) {
   const meta = getProductMeta(item.id);
   const { current, onError } = useImageFallback(meta);
   // Même règle à trois cas que ProductCard.jsx : `short` absent → description
@@ -59,6 +91,7 @@ function Card({ item, qty, out, onAdd, onRemove }) {
       <div className="body">
         <h3>{item.name}</h3>
         {desc && <p title={desc}>{desc}</p>}
+        <AllergenLine item={item} isFormula={isFormula} onShow={onShowAllergens} />
         <div className="foot">
           <span className="price">{chf(item.price)}</span>
           {qty > 0 ? (
@@ -80,7 +113,7 @@ function Card({ item, qty, out, onAdd, onRemove }) {
   );
 }
 
-function Section({ id, title, items, cart, isUnavailable, catalog, onAdd, onRemove, extraClass = '' }) {
+function Section({ id, title, items, cart, isUnavailable, isFormula = false, onAdd, onRemove, onShowAllergens, extraClass = '' }) {
   return (
     <section className={`cat${extraClass}`} id={id}>
       <div className="wrap">
@@ -92,8 +125,10 @@ function Section({ id, title, items, cart, isUnavailable, catalog, onAdd, onRemo
               item={item}
               qty={cart[item.id] || 0}
               out={isUnavailable(item)}
+              isFormula={isFormula}
               onAdd={onAdd}
               onRemove={onRemove}
+              onShowAllergens={onShowAllergens}
             />
           ))}
         </div>
@@ -110,6 +145,9 @@ export default function V2Menu({
   catalog,
   onAdd,
   onRemove,
+  onShowAllergens,
+  onShowZones,
+  onShowAbout,
   restaurant,
   chipsRef,
   activeChip,
@@ -143,9 +181,12 @@ export default function V2Menu({
             items={sections[s.key] || []}
             cart={cart}
             isUnavailable={isUnavailable}
-            catalog={catalog}
+            // Les formules affichent « selon votre composition », comme sur
+            // /classique (prop isFormula de MenuItem).
+            isFormula={s.key === 'formules'}
             onAdd={onAdd}
             onRemove={onRemove}
+            onShowAllergens={onShowAllergens}
           />
 
           {/* Le composeur s'intercale juste après les entrées, comme dans le
@@ -163,13 +204,19 @@ export default function V2Menu({
         </Fragment>
       ))}
 
-      <p className="note">Tous nos plats sont accompagnés de riz et de salade.</p>
+      <p className="note">Tous nos plats sont accompagnés de riz et de salade</p>
 
       <section className="about" id="apropos">
         <div className="wrap">
           <div>
             <h2>Notre histoire</h2>
             <p>KaïKaï est né de la passion pour la cuisine tahitienne authentique. Notre mission est de vous faire voyager à travers les saveurs des îles du Pacifique, en utilisant des produits frais et de qualité.</p>
+            {/* La modale « À propos » partagée (engagement halal, allergènes et
+                liste des 14, livraison et zones, plan, réseaux) — celle du
+                bouton Info de /classique. */}
+            {onShowAbout && (
+              <button type="button" className="linkbtn" onClick={onShowAbout}>À propos de KaïKaï</button>
+            )}
           </div>
         </div>
       </section>
@@ -186,6 +233,13 @@ export default function V2Menu({
               </div>
             ))}
           </div>
+          {/* Liste complète des NPA desservis : la modale des zones partagée,
+              celle du lien « voir les zones » du pied de page de /classique. */}
+          {onShowZones && (
+            <p className="zoneslink">
+              <button type="button" className="linkbtn" onClick={onShowZones}>Voir les zones desservies</button>
+            </p>
+          )}
           <div className="practical">
             <div>
               <h3>Livraison</h3>

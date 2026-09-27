@@ -10,8 +10,9 @@
 // ⚠ Rien dans src/accueil-v2/ n'importe App.jsx : c'est App.jsx qui importe
 // ce shell et lui passe tout — panier, handlers, ruptures, statut d'ouverture,
 // composeur déjà instancié, catalogue (photos, prix unitaire, minimum de
-// livraison). Sans cette règle on aurait un cycle d'imports, et la couche
-// présentation se remettrait à connaître la logique de commande.
+// livraison), ouverture des modales partagées (allergènes, zones, à propos).
+// Sans cette règle on aurait un cycle d'imports, et la couche présentation se
+// remettrait à connaître la logique de commande.
 //
 // Le paiement reste celui du Checkout partagé : le tiroir ne fait que
 // l'ouvrir.
@@ -42,6 +43,7 @@ export default function AccueilV2Shell({
   items = [],
   cartCount = 0,
   subtotal = 0,
+  discount = 0,
   deliveryFee = 0,
   total = 0,
   onAdd,
@@ -65,6 +67,10 @@ export default function AccueilV2Shell({
   // quand la barre récap du composeur le recouvre (mesuré par KaiKaiApp).
   miniVisible = false,
   miniHidden = false,
+  // Modales partagées de KaiKaiApp (les mêmes que sur /classique)
+  onShowAllergens,
+  onShowZones,
+  onShowAbout,
   // Divers
   restaurant,
 }) {
@@ -92,6 +98,7 @@ export default function AccueilV2Shell({
         scrolled={scrolled}
         activeTop={activeTop}
         cartCount={cartCount}
+        phone={restaurant?.phone}
         onOpenDrawer={openDrawer}
       />
 
@@ -133,6 +140,9 @@ export default function AccueilV2Shell({
             catalog={catalog}
             onAdd={onAdd}
             onRemove={onRemove}
+            onShowAllergens={onShowAllergens}
+            onShowZones={onShowZones}
+            onShowAbout={onShowAbout}
             restaurant={restaurant}
             chipsRef={chipsRef}
             activeChip={activeChip}
@@ -142,7 +152,7 @@ export default function AccueilV2Shell({
         children
       )}
 
-      <V2Footer restaurant={restaurant} />
+      <V2Footer restaurant={restaurant} onShowAbout={onShowAbout} onShowZones={onShowZones} />
 
       {showContent && (
         <V2Mini
@@ -150,7 +160,12 @@ export default function AccueilV2Shell({
           hidden={miniHidden}
           cartCount={cartCount}
           items={items}
-          subtotal={subtotal}
+          total={total}
+          mode={mode}
+          restaurant={restaurant}
+          restaurantOpen={restaurantOpen}
+          manualClosure={manualClosure}
+          openStatusLabel={openStatusLabel}
           onOpen={openDrawer}
         />
       )}
@@ -162,6 +177,7 @@ export default function AccueilV2Shell({
         cartVariants={cartVariants}
         catalog={catalog}
         subtotal={subtotal}
+        discount={discount}
         deliveryFee={deliveryFee}
         total={total}
         mode={mode}
@@ -169,6 +185,9 @@ export default function AccueilV2Shell({
         deliveryNpa={deliveryNpa}
         setDeliveryNpa={setDeliveryNpa}
         restaurant={restaurant}
+        restaurantOpen={restaurantOpen}
+        manualClosure={manualClosure}
+        openStatusLabel={openStatusLabel}
         onRemoveAt={onRemoveAt}
         onRemoveMany={onRemoveMany}
         onAddExact={onAddExact}

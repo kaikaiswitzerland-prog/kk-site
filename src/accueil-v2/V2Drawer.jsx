@@ -4,9 +4,10 @@
 //
 // Le tiroir lit le VRAI panier de KaiKaiApp (cart, cartVariants, items) et ne
 // calcule aucun prix lui-même : chaque ligne passe par catalog.unitPrice, le
-// sous-total / la livraison / le total arrivent en props. Le mode
-// (livraison / à emporter) et le NPA sont ceux du Checkout partagé, élevés
-// dans KaiKaiApp — ce que le client règle ici, il le retrouve au paiement.
+// sous-total / la réduction / la livraison / le total arrivent en props. Le
+// mode (livraison / à emporter) et le NPA sont ceux du Checkout partagé,
+// élevés dans KaiKaiApp — ce que le client règle ici, il le retrouve au
+// paiement. Le statut d'ouverture vient aussi de KaiKaiApp (useRestaurantOpen).
 //
 // Le bouton « Commander » ouvre le Checkout partagé, où se choisit le mode de
 // paiement : carte en ligne (SumUp), ou espèces au retrait pour l'emporter —
@@ -24,19 +25,37 @@ const variantKey = (v) => JSON.stringify(v ?? null, (k, val) =>
     ? Object.keys(val).sort().reduce((o, kk) => { o[kk] = val[kk]; return o; }, {})
     : val);
 
-export function V2Mini({ visible, hidden, cartCount, items, subtotal, onOpen }) {
+// Texte du restaurant fermé : le même que le bandeau du Checkout partagé.
+const closedText = (manualClosure, openStatusLabel) => (manualClosure
+  ? { title: 'Restaurant temporairement fermé', detail: 'La cuisine est surchargée — réessayez plus tard.' }
+  : { title: 'Restaurant fermé', detail: `${openStatusLabel}.` });
+
+export function V2Mini({
+  visible, hidden, cartCount, items, total, onOpen,
+  mode = 'delivery', restaurant = {},
+  restaurantOpen = true, manualClosure = false, openStatusLabel = '',
+}) {
   const names = useMemo(() => {
     const seen = [];
     items.forEach((it) => { if (it.qty > 0 && !seen.includes(it.name)) seen.push(it.name); });
     return seen.slice(0, 3).join(', ') + (seen.length > 3 ? '…' : '');
   }, [items]);
 
+  // Comme le mini-panier de /classique : le délai est annoncé avant le clic
+  // (mode « livraison » par défaut tant que le client n'a rien choisi), et
+  // fermé, le panier reste visible mais atténué, avec le statut en info-bulle.
+  const eta = mode === 'pickup'
+    ? `Prêt en ${restaurant.prepTime} min`
+    : `Livré en ${restaurant.deliveryTime} min`;
+  const closedHint = !restaurantOpen ? (manualClosure ? 'Fermé temporairement' : openStatusLabel) : null;
+
   return (
     <button
       type="button"
-      className={`mini${visible ? ' show' : ''}${hidden ? ' hidden' : ''}`}
+      className={`mini${visible ? ' show' : ''}${hidden ? ' hidden' : ''}${closedHint ? ' closed' : ''}`}
       aria-label="Voir le panier"
       aria-hidden={hidden || undefined}
+      title={closedHint || undefined}
       onClick={onOpen}
       // Point d'arrivée de la pastille lancée à chaque ajout (src/lib/flyToCart.js).
       {...{ [CART_TARGET_ATTR]: '' }}
@@ -44,7 +63,8 @@ export function V2Mini({ visible, hidden, cartCount, items, subtotal, onOpen }) 
       <span className="ic">{cartCount}</span>
       <span>
         <span className="mt">{names}</span>
-        <span className="mp">{chf(subtotal)}</span>
+        <span className="mp">{chf(total)}</span>
+        {restaurantOpen && <span className="me">{eta}</span>}
       </span>
     </button>
   );
@@ -57,6 +77,7 @@ export function V2Drawer({
   cartVariants = {},
   catalog,
   subtotal = 0,
+  discount = 0,
   deliveryFee = 0,
   total = 0,
   mode,
@@ -64,6 +85,9 @@ export function V2Drawer({
   deliveryNpa = '',
   setDeliveryNpa,
   restaurant,
+  restaurantOpen = true,
+  manualClosure = false,
+  openStatusLabel = '',
   onRemoveAt,
   onRemoveMany,
   onAddExact,
@@ -99,6 +123,7 @@ export function V2Drawer({
   const minDelivery = catalog.minimumDelivery;
   const canDel = subtotal >= minDelivery;
   const zone = mode === 'delivery' ? getZoneByNpa(deliveryNpa) : null;
+  const closed = !restaurantOpen ? closedText(manualClosure, openStatusLabel) : null;
 
   // Même règle que le Checkout partagé : sous le minimum, on bascule à emporter.
   useEffect(() => {
@@ -122,6 +147,15 @@ export function V2Drawer({
           <h2>Votre commande</h2>
           <button type="button" className="x" onClick={onClose} aria-label="Fermer">✕</button>
         </div>
+
+        {/* Fermé : on le dit ici comme le Checkout le dit — le client voit son
+            panier, et « Commander » ouvre un Checkout qui bloque l'envoi. */}
+        {closed && (
+          <div className={`closed-banner ${manualClosure ? 'manual' : 'hours'}`} role="status">
+            <b>{closed.title}</b>
+            {closed.detail}
+          </div>
+        )}
 
         {lines.length === 0 && <p className="empty">Votre panier est vide.</p>}
 
@@ -179,6 +213,10 @@ export function V2Drawer({
 
             <div className="tot">
               <div><span>Sous-total</span><span>{chf(subtotal)}</span></div>
+              {/* Même ligne que le Checkout et le mini-panier de /classique
+                  (« Réduction site (-10%) ») ; sans coupon appliqué, elle
+                  n'apparaît pas. */}
+              {discount > 0 && <div><span>Réduction site (-10%)</span><span>- {chf(discount)}</span></div>}
               {mode === 'delivery' && <div><span>Livraison</span><span>{zone ? chf(deliveryFee) : '—'}</span></div>}
               <div className="big"><span>Total</span><span>{chf(total)}</span></div>
             </div>
