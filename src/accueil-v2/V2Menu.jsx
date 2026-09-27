@@ -21,9 +21,11 @@ function Card({ item, qty, out, photo, photoPos, onAdd, onRemove }) {
         {photo && (
           <img src={photo} alt="" loading="lazy" decoding="async" style={{ objectPosition: photoPos || 'center' }} />
         )}
+        {/* Le badge vit sur la photo : dans le corps, il décalait le titre des
+            trois cartes qui le portent et cassait l'alignement de la grille. */}
+        {SIGNATURE_IDS.has(String(item.id)) && <span className="badge">Signature</span>}
       </a>
       <div className="body">
-        {SIGNATURE_IDS.has(String(item.id)) && <span className="badge">Signature</span>}
         <h3>{item.name}</h3>
         <p>{item.desc}</p>
         <div className="foot">
