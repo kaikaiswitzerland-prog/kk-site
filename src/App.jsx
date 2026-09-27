@@ -1006,7 +1006,7 @@ function Badge({ type }) {
 // 3 couleurs :
 //   - Vert : ouvert (statusLabel = "Ouvert · ferme à 14h")
 //   - Rouge : fermé temporairement (toggle admin "Stop commandes")
-//   - Orange : fermé automatiquement (lundi ou hors heures de service)
+//   - Orange : fermé automatiquement (hors heures de service)
 function OpenStatus({ isOpen, manualClosure, statusLabel }) {
   let palette;
   if (isOpen) {

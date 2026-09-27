@@ -1,11 +1,12 @@
 // src/hooks/useRestaurantOpen.js
 // Hook qui combine deux sources d'ouverture pour KaïKaï :
-//   1. La règle horaires automatique (mardi-dim 11h-14h / 17h30-22h, lundi fermé)
+//   1. La règle horaires automatique (service continu : dim-ven 11h30-22h,
+//      samedi 18h-22h, aucun jour fermé)
 //      → calculée localement via getRestaurantStatus(now) dans restaurantHours.js.
 //   2. Le flag manuel app_settings.kitchen_open (3 états — voir ci-dessous).
 //
 // Sémantique 3 états du flag admin (app_settings.kitchen_open) :
-//   - true  → FORCE ouvert (bypass horaires, ex: ouverture exceptionnelle lundi)
+//   - true  → FORCE ouvert (bypass horaires, ex: ouverture exceptionnelle hors plage)
 //   - false → FORCE fermé (stop commandes immédiat)
 //   - null/absent → AUTO (suit les horaires programmés)
 //
@@ -79,7 +80,7 @@ export function useRestaurantOpen() {
 
   // Label : si admin force ouvert ET schedule ouvert aussi, on garde le label
   // schedule qui contient l'heure de fermeture (utile au client). Si force
-  // ouvert hors horaires (ex: lundi exceptionnel), label simple "Ouvert".
+  // ouvert hors horaires (ex: samedi midi exceptionnel), label simple "Ouvert".
   const statusLabel =
     manualClosure ? 'Fermé temporairement'
     : manualOpening ? 'Ouvert'

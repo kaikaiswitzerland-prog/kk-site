@@ -90,7 +90,7 @@ export default async function handler(req, res) {
   try {
     // 0. Garde-fou anti-cheat : refuser le checkout si le restaurant est
     //    fermé. Sémantique 3 états de app_settings.kitchen_open :
-    //      - true  → FORCE ouvert (bypass horaires, ex: ouverture lundi)
+    //      - true  → FORCE ouvert (bypass horaires, ex: ouverture exceptionnelle hors plage)
     //      - false → FORCE fermé (stop commandes)
     //      - null/absent → AUTO (suit les horaires)
     //    Politique fail-open sur erreur DB pour ne pas bloquer la chaîne
