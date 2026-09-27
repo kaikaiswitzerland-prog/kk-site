@@ -79,6 +79,18 @@ const sanitizeNote = (s, max) => String(s || '').trim().slice(0, max);
 // TTL panier : 24h. Au-delà, on jette (le client a peut-être oublié, ou les
 // prix/menu ont pu bouger entre-temps).
 const CART_TTL_MS = 24 * 60 * 60 * 1000;
+
+// ─── MODE SIMULATION DU CHECKOUT — DEV UNIQUEMENT ───────────────────────────
+// Actif seulement si `import.meta.env.DEV` (serveur Vite) ET
+// VITE_CHECKOUT_DRY_RUN=true dans .env.local. En build de production, Vite
+// remplace `import.meta.env.DEV` par `false` : l'expression est pliée à false
+// et tout ce qui en dépend disparaît du bundle — aucun chemin du mode test
+// n'existe en prod, même si la variable fuyait sur Vercel.
+//
+// En simulation : aucun INSERT dans orders, aucun appel /api, aucun paiement,
+// donc ni notification ni ticket. Le Checkout affiche un bandeau « MODE TEST »
+// et la confirmation porte un identifiant fictif, sur les trois peaux.
+const CHECKOUT_DRY_RUN = import.meta.env.DEV && import.meta.env.VITE_CHECKOUT_DRY_RUN === 'true';
 // Minimum de commande pour la livraison (CHF). Au niveau module pour être
 // partagé par Checkout et par la passerelle menuCatalog (peau v2) sans le
 // recopier. Le serveur applique la même règle (api/create-checkout.js).
@@ -1225,6 +1237,9 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   // window.location.search au mount alors que replaceState n'a peut-être
   // pas encore été appliqué côté navigateur (ou React commit avant).
   const [successOrderId, setSuccessOrderId] = useState(null);
+  // Commande SIMULÉE (mode test, dev uniquement) : ce que la page de
+  // confirmation affiche à la place d'une lecture Supabase. null sinon.
+  const [successSimulated, setSuccessSimulated] = useState(null);
   const [logoVisible, setLogoVisible] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
 
@@ -1428,8 +1443,11 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   // Retour au menu depuis l'écran de confirmation. Partagé par les deux peaux :
   // il nettoie l'URL pour qu'un F5 ne ramène pas sur /payment-success.
   const backToMenuFromSuccess = () => {
-    try { window.history.replaceState(null, '', '/'); } catch { /* ignore */ }
+    // La peau v2 revient sur /v2 : un F5 après « Retour au menu » doit
+    // retomber sur la même peau, pas sur la refonte.
+    try { window.history.replaceState(null, '', isV2 ? '/v2' : '/'); } catch { /* ignore */ }
     setSuccessOrderId(null);
+    setSuccessSimulated(null);
     setStep('menu');
   };
 
@@ -1473,6 +1491,26 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         subtotal: lineSubtotal(it, it.qty, cartVariants[it.id]),
         variants: cartVariants[it.id] || [],
       }));
+
+    if (CHECKOUT_DRY_RUN) {
+      // MODE TEST : on s'arrête ICI, avant l'INSERT et avant tout appel /api.
+      // Même parcours visuel qu'une vraie commande (attente, confirmation),
+      // mais rien ne quitte le navigateur.
+      const fakeId = `test-${Date.now().toString(36)}`;
+      console.info("[KaïKaï] MODE TEST — commande simulée, rien n'est envoyé", { paymentMethod, mode, total, items: orderItems });
+      await new Promise((r) => setTimeout(r, 500));
+      setSuccessSimulated({
+        id: fakeId,
+        total: parseFloat(total.toFixed(2)),
+        delivery_mode: mode,
+        payment_method: paymentMethod,
+        customer_email: form.email?.trim() || null,
+      });
+      setSuccessOrderId(fakeId);
+      setStep('success');
+      clear();
+      return null;
+    }
 
     try {
       const isCard = paymentMethod === 'card';
@@ -1663,6 +1701,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
             {step === "success" && (
               <OrderSuccessPage
                 initialOrderId={successOrderId}
+                simulated={successSimulated}
                 onBackToMenu={backToMenuFromSuccess}
               />
             )}
@@ -1716,6 +1755,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
             {step === "success" && (
               <OrderSuccessPage
                 initialOrderId={successOrderId}
+                simulated={successSimulated}
                 onBackToMenu={backToMenuFromSuccess}
               />
             )}
@@ -1845,6 +1885,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
       {step === "success" && isLegacy && (
         <OrderSuccessPage
           initialOrderId={successOrderId}
+          simulated={successSimulated}
           onBackToMenu={backToMenuFromSuccess}
         />
       )}
@@ -4383,6 +4424,14 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        {/* Bandeau du mode simulation — dev uniquement, retiré du build prod. */}
+        {CHECKOUT_DRY_RUN && (
+          <div className="kk-dry-run mb-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">
+            <div className="font-semibold">🧪 MODE TEST, rien n'est envoyé</div>
+            <div className="opacity-90">Aucune commande enregistrée, aucun paiement, aucune notification ni ticket.</div>
+          </div>
+        )}
 
         {!restaurantOpen && (
           <div
