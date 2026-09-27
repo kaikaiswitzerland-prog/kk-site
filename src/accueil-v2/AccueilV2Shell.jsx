@@ -107,9 +107,9 @@ export default function AccueilV2Shell({
 
           <section className="intro">
             <h2>Votre restaurant tahitien en livraison sur Genève</h2>
-            <p className="sub">Tartares de thon rouge, chao men, kai fan et po'e banane, préparés le jour même et livrés en {restaurant?.deliveryTime || '30-45'} minutes.</p>
-            {/* Pastille branchée sur useRestaurantOpen (KaiKaiApp) : vrai statut,
-                pas un texte fixe. Les horaires affichés vivent dans le footer. */}
+            {/* Pastille juste sous le titre, branchée sur useRestaurantOpen
+                (KaiKaiApp) : vrai statut, pas un texte fixe. Les horaires
+                affichés vivent dans le footer. */}
             <div className={`status${statusTone}`} role="status">
               <i aria-hidden="true" />
               {statusText}

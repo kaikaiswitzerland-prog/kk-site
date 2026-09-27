@@ -96,8 +96,8 @@
 .v2-root .intro { padding: clamp(48px, 7vw, 96px) var(--pad) clamp(32px, 4vw, 56px); text-align: center; }
 .v2-root .intro h2 { margin: 0 auto; max-width: 20ch; font-weight: 800; font-size: clamp(26px, 3.8vw, 48px); line-height: 1.1; letter-spacing: -.01em; color: var(--green); }
 .v2-root .intro .sub { margin: 18px auto 0; max-width: 56ch; font-size: clamp(15px, 1.3vw, 18px); color: var(--muted); }
-.v2-root .intro .status { display: inline-flex; align-items: center; gap: 8px; margin-top: 22px; padding: 8px 16px; border-radius: 999px; background: var(--paper-2); font-weight: 600; font-size: 13.5px; color: var(--green); }
-.v2-root .intro .status i { width: 8px; height: 8px; border-radius: 50%; background: var(--lime); }
+.v2-root .intro .status { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; padding: 10px 18px; border-radius: 999px; background: var(--paper-2); font-weight: 600; font-size: 15px; color: var(--green); }
+.v2-root .intro .status i { width: 10px; height: 10px; border-radius: 50%; background: var(--lime); flex: none; }
 /* Statut réel (useRestaurantOpen) : fermé → point rouge, fermeture manuelle → rouge aussi. */
 .v2-root .intro .status.closed i { background: #a63a2a; }
 .v2-root .actions { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 26px; }
@@ -270,7 +270,7 @@
   .v2-root .intro { padding: 26px var(--pad) 22px; }
   .v2-root .intro h2 { font-size: 24px; max-width: none; }
   .v2-root .intro .sub { margin-top: 10px; font-size: 14px; line-height: 1.5; }
-  .v2-root .intro .status { margin-top: 14px; padding: 6px 12px; font-size: 12px; text-align: left; }
+  .v2-root .intro .status { margin-top: 14px; padding: 8px 14px; font-size: 14px; text-align: left; }
   .v2-root .actions { margin-top: 16px; gap: 10px; flex-wrap: nowrap; }
   .v2-root .actions .btn { min-height: 44px; padding: 0 16px; font-size: 12.5px; flex: 1; white-space: nowrap; }
   .v2-root .cards, .v2-root .cards.n2, .v2-root .cards.n3 { grid-template-columns: repeat(2, 1fr); gap: 12px; }
