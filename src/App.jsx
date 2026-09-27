@@ -15,7 +15,7 @@ import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
 //   - l'import dynamique casse le cycle App.jsx ↔ src/refonte/, qui n'importe
 //     jamais App.jsx en retour (tout lui est passé en props).
 const RefonteShell = lazy(() => import("./refonte/RefonteShell.jsx"));
-// Peau « v2 » (route /v2, test de la nouvelle page d'accueil). Même règle que
+// Peau « v2 » (route /, nouvelle page d'accueil — v3 du site). Même règle que
 // la refonte : lazy, rien dans src/accueil-v2/ n'importe App.jsx.
 const AccueilV2Shell = lazy(() => import("./accueil-v2/AccueilV2Shell.jsx"));
 import { supabase } from "./lib/supabase.js";
@@ -1472,9 +1472,10 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   // Retour au menu depuis l'écran de confirmation. Partagé par les deux peaux :
   // il nettoie l'URL pour qu'un F5 ne ramène pas sur /payment-success.
   const backToMenuFromSuccess = () => {
-    // La peau v2 revient sur /v2 : un F5 après « Retour au menu » doit
-    // retomber sur la même peau, pas sur la refonte.
-    try { window.history.replaceState(null, '', isV2 ? '/v2' : '/'); } catch { /* ignore */ }
+    // Chaque peau revient sur sa propre adresse, pour qu'un F5 après « Retour
+    // au menu » retombe sur la même peau : v3 (skin v2) sur /, refonte sur
+    // /refonte, historique sur /classique.
+    try { window.history.replaceState(null, '', isV2 ? '/' : isRefonte ? '/refonte' : '/classique'); } catch { /* ignore */ }
     setSuccessOrderId(null);
     setSuccessSimulated(null);
     setStep('menu');
@@ -1739,7 +1740,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         </Suspense>
       )}
 
-      {/* Peau v2 (test /v2) — même logique de commande, présentation du HTML
+      {/* Peau v2 (route /, v3 du site) — même logique de commande, présentation du HTML
           fourni. Le mini-panier est rendu PAR le shell (celui du HTML), le
           Checkout et les modaux d'options restent ceux partagés ci-dessous. */}
       {isV2 && (

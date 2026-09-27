@@ -1,6 +1,6 @@
 // src/accueil-v2/AccueilV2Shell.jsx
 //
-// Enveloppe de l'accueil v2 (route /v2) : barre de menu blanche, photo
+// Enveloppe de l'accueil v2 (route /, v3 du site) : barre de menu blanche, photo
 // monstera, accroche avec statut réel d'ouverture, carte, composeur de woks,
 // infos, pied de page, mini-panier et tiroir de commande.
 //
