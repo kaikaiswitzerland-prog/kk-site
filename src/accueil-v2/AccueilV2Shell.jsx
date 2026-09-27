@@ -118,9 +118,10 @@ export default function AccueilV2Shell({
               <i aria-hidden="true" />
               {statusText}
             </div>
+            {/* Un seul bouton : « Commander en ligne » et « Voir le menu »
+                menaient au même endroit. Style Nature, centré. */}
             <div className="actions">
-              <a className="btn primary" href="#menu" onClick={(e) => { e.preventDefault(); scrollToId('menu'); }}>Commander en ligne</a>
-              <a className="btn ghost" href="#menu" onClick={(e) => { e.preventDefault(); scrollToId('menu'); }}>Voir le menu</a>
+              <a className="btn primary" href="#menu" onClick={(e) => { e.preventDefault(); scrollToId('menu'); }}>Voir le menu</a>
             </div>
           </section>
 

@@ -285,7 +285,7 @@
   .v2-root .intro .sub { margin-top: 10px; font-size: 14px; line-height: 1.5; }
   .v2-root .intro .status { margin-top: 14px; padding: 8px 14px; font-size: 14px; text-align: left; }
   .v2-root .actions { margin-top: 16px; gap: 10px; flex-wrap: nowrap; }
-  .v2-root .actions .btn { min-height: 44px; padding: 0 16px; font-size: 12.5px; flex: 1; white-space: nowrap; }
+  .v2-root .actions .btn { min-height: 44px; padding: 0 22px; font-size: 12.5px; flex: 0 1 auto; white-space: nowrap; }
   .v2-root .cards, .v2-root .cards.n2, .v2-root .cards.n3 { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .v2-root .card .body { padding: 12px 13px 14px; }
   /* Sur téléphone (cartes de ~170 px), deux lignes ne suffisent pas aux
@@ -309,10 +309,6 @@
 
 /* ─── AUCUN DÉBORDEMENT (règle absolue, audit Playwright à 320→1440 px) ───── */
 .v2-root .btn { min-width: 0; }
-@media (max-width: 359px) {
-  .v2-root .actions { flex-wrap: wrap; }
-  .v2-root .actions .btn { flex: 1 1 100%; }
-}
 /* En-têtes d'étapes du composeur : le libellé peut se réduire et passer à la
    ligne (la règle globale le fige en flex: none). */
 .v2-root .wok-slot .wok-step__head { min-width: 0; }
