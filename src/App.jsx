@@ -78,6 +78,11 @@ const sanitizeNote = (s, max) => String(s || '').trim().slice(0, max);
 const CART_TTL_MS = 24 * 60 * 60 * 1000;
 
 // MODIFICATION 1: Logo PNG au lieu du SVG
+// ⚠ LOGO PROVISOIRE, À REMPLACER : public/logo_kaikai.png est fabriqué à partir
+// de « Logo 2 blanc détouré .png » recoloré au lime officiel #B7D94C (prélevé
+// sur « Logo Lime 2 fond vert.png »), fond transparent, recadré au plus près.
+// Le logo définitif arrive plus tard — le remplacer fichier pour fichier, sans
+// toucher à ce code. (27.09.2026, branche test/accueil-v2)
 const LOGO_SRC = "/logo_kaikai.png";
 
 // Style global pour empêcher le scroll horizontal
