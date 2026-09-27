@@ -42,3 +42,17 @@ export const RESTAURANT_INFO = {
     lng: 6.1472
   }
 };
+
+// "11:30" → "11h30", "22:00" → "22h" (format d'affichage des horaires).
+export function formatHourDisplay(hhmm) {
+  if (typeof hhmm !== 'string' || !hhmm.includes(':')) return '';
+  const [h, m] = hhmm.split(':');
+  return m === '00' ? `${Number(h)}h` : `${Number(h)}h${m}`;
+}
+
+// Phrase d'horaires affichée aux clients (footer historique, AboutModal,
+// footer refonte). UNE seule source, dérivée de RESTAURANT_INFO.hours :
+// « Tous les jours 11h30 – 22h · samedi 18h – 22h ».
+export const HOURS_DISPLAY =
+  `Tous les jours ${formatHourDisplay(RESTAURANT_INFO.hours.daily.start)} – ${formatHourDisplay(RESTAURANT_INFO.hours.daily.end)}`
+  + ` · samedi ${formatHourDisplay(RESTAURANT_INFO.hours.saturday.start)} – ${formatHourDisplay(RESTAURANT_INFO.hours.saturday.end)}`;

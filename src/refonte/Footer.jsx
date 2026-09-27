@@ -9,11 +9,11 @@
 // App.jsx — voir la note d'en-tête de RefonteShell.jsx.
 
 import { Instagram, Facebook } from 'lucide-react';
+import { HOURS_DISPLAY } from '../data/restaurant.js';
 
 export default function Footer({ onShowZones, onShowAllergens, restaurant }) {
   const year = new Date().getFullYear();
   const r = restaurant || {};
-  const hm = (h) => (h || '').replace(':', 'h');
 
   return (
     <footer className="rf-footer">
@@ -58,10 +58,7 @@ export default function Footer({ onShowZones, onShowAllergens, restaurant }) {
           <div>
             <span className="rf-footer__label">Horaires</span>
             <ul className="rf-footer__list">
-              <li>Midi · {hm(r.hours?.lunch?.start)}–{hm(r.hours?.lunch?.end)}</li>
-              <li>Soir · {hm(r.hours?.dinner?.start)}–{hm(r.hours?.dinner?.end)}</li>
-              <li>Pré-commande dès 11h / 17h30</li>
-              <li>Fermé le lundi</li>
+              <li>{HOURS_DISPLAY}</li>
             </ul>
           </div>
 

@@ -62,7 +62,7 @@ import {
   getDeliveryFee,
   getAllNpas,
 } from "./lib/deliveryZones.js";
-import { RESTAURANT_INFO } from "./data/restaurant.js";
+import { RESTAURANT_INFO, HOURS_DISPLAY } from "./data/restaurant.js";
 import { flyToCart, CART_TARGET_ATTR } from "./lib/flyToCart.js";
 
 // Clé localStorage versionnée — bump le suffixe v* si la structure change.
@@ -1809,7 +1809,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
             </a>
           </div>
           <div>KaïKaï — restaurant tahitien · {RESTAURANT_INFO.address}</div>
-          <div className="mt-1">📞 {RESTAURANT_INFO.phoneDisplay} · 🕐 12h-14h | 18h-22h (pré-commande dès 11h / 17h30)</div>
+          <div className="mt-1">📞 {RESTAURANT_INFO.phoneDisplay} · 🕐 {HOURS_DISPLAY}</div>
           <div className="mt-1">
             📍 Livraison à Genève · Centre + 1ère et 2ème couronnes ·{' '}
             <button
@@ -4112,11 +4112,7 @@ function AboutModal({ onClose, onShowZones = null }) {
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 flex-shrink-0" />
-                <span>Service midi : 12h-14h (pré-commande dès 11h)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 flex-shrink-0" />
-                <span>Service soir : 18h-22h (pré-commande dès 17h30)</span>
+                <span>{HOURS_DISPLAY}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 flex-shrink-0" />
