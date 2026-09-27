@@ -24,16 +24,20 @@ const fmtCHF = (n) =>
 // 'paid' et au-delà = paiement carte confirmé par webhook.
 const SUCCESS_STATUSES = ['pending', 'paid', 'accepted', 'ready', 'delivered'];
 
-// `simulated` : commande fictive du MODE TEST (dev uniquement, voir
+// `simulated` : commande fictive du MODE TEST (dev ou preview Vercel, voir
 // CHECKOUT_DRY_RUN dans src/App.jsx) — { id, total, delivery_mode,
 // payment_method, customer_email }. Quand elle est fournie, la page n'appelle
 // JAMAIS /api/get-order-status : elle affiche directement la confirmation
-// simulée. Toute la branche est gardée par `import.meta.env.DEV`, donc absente
-// du build de production.
+// simulée. Toute la branche est gardée par DRY_RUN_ALLOWED (`import.meta.env.DEV`
+// ou `__KK_PREVIEW_DRY_RUN__`, tous deux figés à `false` au build de
+// production), donc absente du bundle prod.
 // `formatPrice` : formateur de prix de la peau courante (KaiKaiApp) ; sans
 // lui, Intl fr-CH comme aujourd'hui.
+// Où le mode simulation a le droit d'exister : dev, ou preview Vercel.
+const DRY_RUN_ALLOWED = import.meta.env.DEV || __KK_PREVIEW_DRY_RUN__;
+
 export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null, simulated = null, formatPrice = null }) {
-  const isSimulated = import.meta.env.DEV && !!simulated;
+  const isSimulated = DRY_RUN_ALLOWED && !!simulated;
   const fmt = formatPrice || fmtCHF;
   // Source de vérité de l'order_id, dans l'ordre :
   //  1. La prop initialOrderId passée par le parent (Cash/Twint juste
@@ -83,7 +87,7 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null, 
     let cancelled = false;
 
     // MODE TEST : rien à lire, la confirmation est déjà connue.
-    if (import.meta.env.DEV && simulated) {
+    if (DRY_RUN_ALLOWED && simulated) {
       setLoading(false);
       return () => { cancelled = true; };
     }
@@ -167,9 +171,9 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null, 
     );
   }
 
-  // MODE TEST (dev uniquement) : même écran de succès, même récapitulatif,
+  // MODE TEST (dev ou preview) : même écran de succès, même récapitulatif,
   // avec le bandeau qui dit que rien n'est parti. Retiré du build prod.
-  if (import.meta.env.DEV && isSimulated) {
+  if (DRY_RUN_ALLOWED && isSimulated) {
     const isPickup = simulated.delivery_mode === 'pickup';
     const etaMinutes = isPickup ? ETA.pickup : ETA.delivery;
     return (

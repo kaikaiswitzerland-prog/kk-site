@@ -80,17 +80,21 @@ const sanitizeNote = (s, max) => String(s || '').trim().slice(0, max);
 // prix/menu ont pu bouger entre-temps).
 const CART_TTL_MS = 24 * 60 * 60 * 1000;
 
-// ─── MODE SIMULATION DU CHECKOUT — DEV UNIQUEMENT ───────────────────────────
-// Actif seulement si `import.meta.env.DEV` (serveur Vite) ET
-// VITE_CHECKOUT_DRY_RUN=true dans .env.local. En build de production, Vite
-// remplace `import.meta.env.DEV` par `false` : l'expression est pliée à false
-// et tout ce qui en dépend disparaît du bundle — aucun chemin du mode test
-// n'existe en prod, même si la variable fuyait sur Vercel.
+// ─── MODE SIMULATION DU CHECKOUT — DEV ET PREVIEW, JAMAIS EN PRODUCTION ─────
+// Actif dans deux cas :
+//   · en dev (serveur Vite) si VITE_CHECKOUT_DRY_RUN=true dans .env.local ;
+//   · sur les déploiements Preview de Vercel (__KK_PREVIEW_DRY_RUN__, figé au
+//     build depuis VERCEL_ENV — voir vite.config.js) : la preview partage la
+//     base Supabase de production, une commande y serait réelle.
+// En build de production, Vite remplace `import.meta.env.DEV` par `false` et
+// `__KK_PREVIEW_DRY_RUN__` par `false` : l'expression est pliée à false et
+// tout ce qui en dépend disparaît du bundle — aucun chemin du mode test
+// n'existe en prod, quelles que soient les variables d'environnement.
 //
 // En simulation : aucun INSERT dans orders, aucun appel /api, aucun paiement,
 // donc ni notification ni ticket. Le Checkout affiche un bandeau « MODE TEST »
 // et la confirmation porte un identifiant fictif, sur les trois peaux.
-const CHECKOUT_DRY_RUN = import.meta.env.DEV && import.meta.env.VITE_CHECKOUT_DRY_RUN === 'true';
+const CHECKOUT_DRY_RUN = (import.meta.env.DEV && import.meta.env.VITE_CHECKOUT_DRY_RUN === 'true') || __KK_PREVIEW_DRY_RUN__;
 // Minimum de commande pour la livraison (CHF). Au niveau module pour être
 // partagé par Checkout et par la passerelle menuCatalog (peau v2) sans le
 // recopier. Le serveur applique la même règle (api/create-checkout.js).
