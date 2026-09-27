@@ -116,7 +116,7 @@ export default function AccueilV2Shell({
           </div>
 
           <section className="intro">
-            <h2>Votre restaurant tahitien en livraison sur Genève</h2>
+            <h2>Votre restaurant tahitien en livraison et à emporter sur Genève</h2>
             {/* Pastille juste sous le titre, branchée sur useRestaurantOpen
                 (KaiKaiApp) : vrai statut, pas un texte fixe. Les horaires
                 affichés vivent dans le footer. */}

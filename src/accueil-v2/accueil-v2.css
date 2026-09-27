@@ -355,11 +355,15 @@
   --kk-sheet-bg-sub: #ffffff;
   --kk-sheet-border: #e3e9dd;
   --kk-grab: #e3e9dd;
-  --kk-photo-fade: rgba(255,255,255,.96);
+  /* En-tête SUR PHOTO des BottomSheet : valeurs sombres d'origine (App.jsx) —
+     titre blanc ombré et dégradé sombre sous le texte, sinon le titre en
+     Évasion se perd dans la photo. Les titres sans photo restent en Évasion
+     (--kk-title). */
+  --kk-photo-fade: rgba(13,13,13,.92);
   --kk-title: #0D3B36;
-  --kk-title-on-photo: #0D3B36;
-  --kk-title-shadow: none;
-  --kk-subtitle-on-photo: #5d6a62;
+  --kk-title-on-photo: #ffffff;
+  --kk-title-shadow: 0 1px 8px rgba(0,0,0,.8);
+  --kk-subtitle-on-photo: rgba(255,255,255,.55);
   --kk-muted: #5d6a62;
   --kk-faint: #7d8a82;
   --kk-divider: #e3e9dd;
@@ -483,6 +487,10 @@
 .v2-root .drawer .closed-banner.hours { background: rgba(138,90,0,.08); border: 1px solid rgba(138,90,0,.35); color: #8a5a00; }
 .v2-root .drawer .closed-banner b { display: block; font-weight: 700; }
 @media (max-width: 400px) { .v2-root header nav a.tel { width: 36px; height: 36px; } }
+/* En-tête ≤ 360 px : la mention « TAHITIAN FOOD » du logo passait sous le lien
+   Menu depuis l'ajout du bouton téléphone (chevauchement, pas débordement) ;
+   le K seul suffit à cette largeur. */
+@media (max-width: 360px) { .v2-root header .logo span { display: none; } }
 /* À propos, rubrique « Suivez-nous » : sur /v2 les deux boutons passent à la
    ligne sous 360 px au lieu de déborder de la modale (règle : rien ne déborde). */
 [data-skin="v2"] .kk-about .flex.gap-4 { flex-wrap: wrap; }
