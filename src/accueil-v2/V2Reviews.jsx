@@ -2,10 +2,10 @@
 //
 // Avis Google de la fiche KaïKaï, en cartes qui défilent en boucle.
 //
-// Source : /api/google-reviews (fonction serveur, cache 24 h) — le navigateur
-// ne parle jamais à Google avec une clé. Tant que la réponse n'est pas là, ou
-// si elle n'est pas un 200 avec au moins un avis, la section n'existe pas :
-// rien ne casse quand l'API n'est pas configurée.
+// Source : src/data/reviews.js — avis transcrits à la main depuis la fiche
+// Google (aucun appel réseau, aucune clé). Liste vide → la section n'existe
+// pas. La note moyenne et le nombre d'avis de l'en-tête sont ceux affichés par
+// la fiche (GOOGLE_RATING), avec la mention « Avis Google ».
 //
 // Défilement : la piste est un conteneur à défilement horizontal natif (donc
 // défilable à la main, au doigt comme à la molette) que l'on fait avancer
@@ -14,11 +14,9 @@
 // un défilement manuel ; aucun défilement automatique si « réduire les
 // animations » est activé. Sur un écran assez large pour tout afficher, pas
 // de duplication ni de mouvement.
-//
-// Attribution Google (conditions de Places) : mention « Google », nom et photo
-// de l'auteur tels que fournis, lien vers son profil, lien vers la fiche.
 
 import { useEffect, useRef, useState } from 'react';
+import { REVIEWS, GOOGLE_RATING } from '../data/reviews.js';
 
 const SPEED_PX_PER_S = 28;      // vitesse du défilement automatique
 const RESUME_DELAY_MS = 3500;   // reprise après un défilement manuel
@@ -30,21 +28,6 @@ function Stars({ value, small = false }) {
       ★★★★★
     </span>
   );
-}
-
-function useReviews() {
-  const [data, setData] = useState(null);
-  useEffect(() => {
-    const ac = new AbortController();
-    fetch('/api/google-reviews', { signal: ac.signal, headers: { Accept: 'application/json' } })
-      .then((r) => (r.status === 200 ? r.json() : null))
-      .then((d) => {
-        if (d && d.rating > 0 && Array.isArray(d.reviews) && d.reviews.length > 0) setData(d);
-      })
-      .catch(() => { /* réseau, abandon, 204… : la section reste absente */ });
-    return () => ac.abort();
-  }, []);
-  return data;
 }
 
 // Fait avancer la piste en boucle ; rend `true` quand un jeu de cartes est
@@ -97,19 +80,14 @@ function useAutoScroll(ref, enabled) {
 
 function ReviewCard({ r, hidden }) {
   const initial = (r.author || '?').trim().charAt(0).toUpperCase();
-  const author = r.authorUri
-    ? <a className="rauthor" href={r.authorUri} target="_blank" rel="noopener noreferrer">{r.author}</a>
-    : <span className="rauthor">{r.author}</span>;
   return (
     <article className="rcard" aria-hidden={hidden || undefined}>
       {/* Pas de <header> ici : la règle globale `.v2-root header` (barre de
           menu) s'y appliquerait. */}
       <div className="rtop">
-        {r.photo
-          ? <img src={r.photo} alt="" width="40" height="40" loading="lazy" decoding="async" referrerPolicy="no-referrer" />
-          : <span className="ravatar" aria-hidden="true">{initial}</span>}
+        <span className="ravatar" aria-hidden="true">{initial}</span>
         <span className="rwho">
-          {author}
+          <span className="rauthor">{r.author}</span>
           <small>{r.when}</small>
         </span>
         <Stars value={r.rating} small />
@@ -120,15 +98,16 @@ function ReviewCard({ r, hidden }) {
 }
 
 export default function V2Reviews({ restaurant }) {
-  const data = useReviews();
+  const reviews = Array.isArray(REVIEWS) ? REVIEWS.filter((r) => r && r.author && r.rating) : [];
   const trackRef = useRef(null);
-  const loops = useAutoScroll(trackRef, !!data);
-  if (!data) return null;
+  const loops = useAutoScroll(trackRef, reviews.length > 0);
+  if (reviews.length === 0) return null;
 
-  const mapsUri = data.mapsUri || restaurant?.google_page;
-  const rating = Number(data.rating).toLocaleString('fr-CH', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const { average, count } = GOOGLE_RATING || {};
+  const hasRating = Number(average) > 0 && Number(count) > 0;
+  const avg = hasRating ? Number(average).toLocaleString('fr-CH', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : null;
   // Deux jeux de cartes pour boucler ; le second n'existe que pour l'œil.
-  const sets = loops ? [data.reviews, data.reviews] : [data.reviews];
+  const sets = loops ? [reviews, reviews] : [reviews];
 
   return (
     <section className="reviews" id="avis" aria-labelledby="avis-title">
@@ -136,9 +115,14 @@ export default function V2Reviews({ restaurant }) {
         <div className="rhead">
           <h2 id="avis-title">Ce que disent nos clients</h2>
           <div className="rsum">
-            <span className="rnum">{rating}</span>
-            <Stars value={data.rating} />
-            <span className="rcount">{data.count.toLocaleString('fr-CH')} avis sur Google</span>
+            {hasRating && (
+              <>
+                <span className="rnum">{avg}</span>
+                <Stars value={average} />
+                <span className="rcount">{Number(count).toLocaleString('fr-CH')} avis</span>
+              </>
+            )}
+            <span className="rsrc">Avis Google</span>
           </div>
         </div>
         {/* data-scroll-x : défilement horizontal voulu (l'audit de débordement l'ignore). */}
@@ -152,7 +136,7 @@ export default function V2Reviews({ restaurant }) {
           {sets.map((set, k) => set.map((r) => <ReviewCard key={`${k}-${r.id}`} r={r} hidden={k > 0} />))}
         </div>
         <p className="rmore">
-          <a href={mapsUri} target="_blank" rel="noopener noreferrer">Voir tous les avis sur Google</a>
+          <a href={restaurant?.google_page} target="_blank" rel="noopener noreferrer">Voir tous nos avis sur Google</a>
         </p>
       </div>
     </section>

@@ -275,7 +275,7 @@ export default function V2Menu({
       </section>
 
       {/* Tout en bas de la page, juste avant le pied de page : les avis Google
-          (masqués tant que /api/google-reviews ne répond pas), puis « Notre
+          (src/data/reviews.js ; masqués si la liste est vide), puis « Notre
           histoire ». */}
       <V2Reviews restaurant={restaurant} />
 
