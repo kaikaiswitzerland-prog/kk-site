@@ -206,21 +206,6 @@ export default function V2Menu({
         </Fragment>
       ))}
 
-      <section className="about" id="apropos">
-        <div className="wrap">
-          <div>
-            <h2>Notre histoire</h2>
-            <p>KaïKaï est né de la passion pour la cuisine tahitienne authentique. Notre mission est de vous faire voyager à travers les saveurs des îles du Pacifique, en utilisant des produits frais et de qualité.</p>
-            {/* La modale « À propos » partagée (engagement halal, allergènes et
-                liste des 14, livraison et zones, plan, réseaux) — celle du
-                bouton Info de /classique. */}
-            {onShowAbout && (
-              <button type="button" className="linkbtn" onClick={onShowAbout}>À propos de KaïKaï</button>
-            )}
-          </div>
-        </div>
-      </section>
-
       <section className="infos" id="livraison">
         <div className="wrap">
           <h2>Livraison &amp; à emporter</h2>
@@ -278,6 +263,23 @@ export default function V2Menu({
                 <span className="maplink">Ouvrir dans Google Maps</span>
               </div>
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Tout en bas de la page, juste avant le pied de page : les avis Google
+          (point suivant) puis « Notre histoire ». */}
+      <section className="about" id="apropos">
+        <div className="wrap">
+          <div>
+            <h2>Notre histoire</h2>
+            <p>KaïKaï est né de la passion pour la cuisine tahitienne authentique. Notre mission est de vous faire voyager à travers les saveurs des îles du Pacifique, en utilisant des produits frais et de qualité.</p>
+            {/* La modale « À propos » partagée (engagement halal, allergènes et
+                liste des 14, livraison et zones, plan, réseaux) — celle du
+                bouton Info de /classique. */}
+            {onShowAbout && (
+              <button type="button" className="linkbtn" onClick={onShowAbout}>À propos de KaïKaï</button>
+            )}
           </div>
         </div>
       </section>

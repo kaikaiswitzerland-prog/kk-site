@@ -238,6 +238,7 @@
 /* Sous-titre discret d'une section (mention riz et salade sous « Plats froids »). */
 .v2-root .cat .sub { margin: -14px 0 22px; font-size: 14px; font-style: italic; color: var(--muted); }
 .v2-root .cat:last-of-type { padding-bottom: 0; }
+/* « Notre histoire » clôt la page, juste avant le pied de page. */
 .v2-root .about { padding: clamp(48px, 6vw, 88px) var(--pad); border-top: 1px solid var(--line); }
 .v2-root .about .wrap { max-width: 820px; text-align: center; }
 .v2-root .about h2 { margin: 0 0 16px; font-weight: 800; font-size: clamp(24px, 2.8vw, 36px); color: var(--green); }
