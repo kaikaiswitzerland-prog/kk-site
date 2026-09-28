@@ -160,7 +160,10 @@
 /* quantités (tiroir) */
 .v2-root .qb { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--green); background: transparent; color: var(--green); font-size: 16px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-family: inherit; padding: 0; flex: none; }
 .v2-root .qb:hover { background: var(--paper-2); }
-.v2-root .card.out { opacity: .5; }
+/* Rupture : la photo s'atténue, le texte reste lisible (contraste AA) ; le
+   bouton gris « En rupture » dit l'état. */
+.v2-root .card.out .pic { opacity: .5; }
+.v2-root .card.out h3, .v2-root .card.out .price { color: var(--muted); }
 .v2-root .card.out .add { pointer-events: none; background: #ddd; color: #777; }
 
 /* compose ton wok — bloc vert Évasion */
@@ -184,7 +187,7 @@
 .v2-root .wok-slot .wok-step__title { font-size: 15px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--lime); }
 .v2-root .wok-slot .wok-step__note { font-size: 11px; font-weight: 500; color: #cfe0c9; }
 .v2-root .wok-slot .wok-step__pick { color: rgba(255,255,255,.85); font-size: 13px; }
-.v2-root .wok-slot .wok-step__pick--empty { color: rgba(255,255,255,.45); }
+.v2-root .wok-slot .wok-step__pick--empty { color: rgba(255,255,255,.62); }
 .v2-root .wok-slot .wok-step__tick { color: var(--lime); }
 .v2-root .wok-slot .wok-step__chev { color: rgba(255,255,255,.55); }
 .v2-root .wok-slot .wok-tile { background: rgba(255,255,255,.04); border: 2px solid rgba(255,255,255,.14); border-radius: 12px; }
@@ -194,6 +197,10 @@
 .v2-root .wok-slot .wok-bar { margin: 22px -1px -1px; padding: 14px clamp(20px, 3vw, 40px) calc(14px + env(safe-area-inset-bottom, 0px)); background: rgba(9,42,38,.94); border-top: 1px solid rgba(255,255,255,.12); border-radius: 0 0 var(--radius) var(--radius); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .v2-root .wok-slot .wok-bar__inner { max-width: none; }
 .v2-root .wok-slot .wok-bar .text-2xl { font-size: 26px; font-weight: 800; color: #fff; }
+/* Contraste AA dans la barre récap : libellé « Votre wok » (style en ligne
+   dans App.jsx, d'où !important) et texte d'attente. */
+.v2-root .wok-slot .wok-bar .min-w-0 > div:first-child { color: rgba(255,255,255,.78) !important; }
+.v2-root .wok-slot .wok-bar .text-white\/40 { color: rgba(255,255,255,.72); }
 .v2-root .wok-slot .wok-bar button { background: var(--lime); color: var(--green); border: 0; border-radius: 999px; min-height: 50px; padding: 0 30px; font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; transition: background .15s, color .15s, transform .15s; }
 .v2-root .wok-slot .wok-bar button:hover:not(:disabled) { background: var(--soft); color: #fff; }
 .v2-root .wok-slot .wok-bar button:disabled { opacity: .45; cursor: not-allowed; }
@@ -272,7 +279,7 @@
 .v2-root footer { padding: 44px var(--pad) 40px; background: var(--green); color: #cfe0c9; font-size: 14px; }
 .v2-root footer .wrap { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 32px; }
 .v2-root .flogo { height: 72px; width: auto; margin-bottom: 12px; }
-.v2-root footer h4 { margin: 0 0 10px; font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--lime); }
+.v2-root footer h3 { margin: 0 0 10px; font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--lime); }
 .v2-root footer p { margin: 0 0 4px; }
 .v2-root footer a { color: #fff; font-weight: 600; }
 .v2-root footer a:hover { color: var(--lime); }
@@ -474,13 +481,15 @@
 .v2-root .card button.allerg:hover { color: var(--green); }
 .v2-root .card .allerg.none { color: var(--soft); }
 .v2-root .card .allerg.static { cursor: default; }
-.v2-root .card .allerg .traces { display: block; font-size: 10px; color: var(--faint, #7d8a82); }
+.v2-root .card .allerg .traces { display: block; font-size: 10.5px; color: var(--muted); }
 /* Téléphone dans l'en-tête, comme le bouton téléphone de /classique : rond 40 px. */
 .v2-root header nav a.tel { width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 50%; border: 1.5px solid var(--line); color: var(--green); flex: none; }
 .v2-root header nav a.tel:hover { background: var(--paper-2); color: var(--soft); }
 /* Liens-boutons vers les modales partagées : « À propos de KaïKaï »,
    « Voir les zones desservies » (page), « À propos » · « Voir les zones » (pied). */
-.v2-root .linkbtn { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--soft); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+/* Liens texte sur fond clair : Douceur légèrement assombrie (#35705F) pour
+   atteindre le contraste AA 4,5:1 sur Chaleur et sur le fond Fraîcheur. */
+.v2-root .linkbtn { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: #35705F; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .v2-root .linkbtn:hover { color: var(--green); }
 .v2-root .about .linkbtn { display: inline-block; margin-top: 18px; font-size: 15px; }
 .v2-root .infos .zoneslink { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
@@ -534,11 +543,11 @@
 .v2-root .rcard small { font-size: 12px; color: var(--muted); }
 .v2-root .rcard p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .v2-root .rcard.open p { display: block; -webkit-line-clamp: unset; overflow: visible; }
-.v2-root .rcard .rnote { font-size: 11.5px; color: var(--faint, #7d8a82); font-style: italic; }
-.v2-root .rcard .rread { margin-top: auto; align-self: flex-start; padding: 0; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 700; color: var(--soft); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.v2-root .rcard .rnote { font-size: 11.5px; color: var(--muted); font-style: italic; }
+.v2-root .rcard .rread { margin-top: auto; align-self: flex-start; padding: 0; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 700; color: #35705F; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .v2-root .rcard .rread:hover { color: var(--green); }
 .v2-root .rmore { margin: 14px 0 0; font-size: 14px; }
-.v2-root .rmore a { font-weight: 700; color: var(--soft); text-decoration: underline; text-underline-offset: 3px; }
+.v2-root .rmore a { font-weight: 700; color: #35705F; text-decoration: underline; text-underline-offset: 3px; }
 .v2-root .rmore a:hover { color: var(--green); }
 /* Sous 360 px : la date prend sa propre ligne sous le nom et les étoiles,
    jamais coupée. La colonne « qui » se dissout dans la grille (display:

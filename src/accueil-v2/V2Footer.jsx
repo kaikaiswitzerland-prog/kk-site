@@ -23,14 +23,14 @@ export default function V2Footer({ restaurant, onShowAbout, onShowZones }) {
           <p><a href="https://kaikaifood.com">kaikaifood.com</a></p>
         </div>
         <div>
-          <h4>Contact</h4>
+          <h3>Contact</h3>
           {r.phone && <p><a href={`tel:${r.phone}`}>{r.phoneDisplay || r.phone}</a></p>}
           {r.email && <p><a href={`mailto:${r.email}`}>{r.email}</a></p>}
           {r.instagram && <p><a href={r.instagram} rel="noopener noreferrer" target="_blank">Instagram @kaikaifood.ch</a></p>}
           {r.facebook && <p><a href={r.facebook} rel="noopener noreferrer" target="_blank">Facebook</a></p>}
         </div>
         <div>
-          <h4>Horaires</h4>
+          <h3>Horaires</h3>
           {daily && <p>Dimanche – vendredi : {hmm(daily.start)} – {hmm(daily.end)}</p>}
           {saturday && <p>Samedi : {hmm(saturday.start)} – {hmm(saturday.end)}</p>}
           {(onShowAbout || onShowZones) && (

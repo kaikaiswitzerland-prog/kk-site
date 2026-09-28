@@ -47,7 +47,7 @@ function AllergenLine({ item, isFormula, onShow }) {
       type="button"
       className={`allerg${none ? ' none' : ''}`}
       onClick={(e) => { e.preventDefault(); if (onShow) onShow(item); }}
-      aria-label="Voir le détail des allergènes"
+      title="Voir le détail des allergènes"
     >
       {none ? 'Sans allergène majeur' : (
         <>
@@ -249,7 +249,7 @@ export default function V2Menu({
               href={restaurant.google_page}
               rel="noopener noreferrer"
               target="_blank"
-              aria-label="Où nous trouver — ouvrir dans Google Maps"
+              title="Ouvrir dans Google Maps"
             >
               {/* Plan stylisé — teintes Fraîcheur, épingle Évasion, point Nature. */}
               <svg viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
