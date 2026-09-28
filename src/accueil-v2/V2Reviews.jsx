@@ -4,8 +4,13 @@
 //
 // Source : src/data/reviews.js — avis transcrits à la main depuis la fiche
 // Google (aucun appel réseau, aucune clé). Liste vide → la section n'existe
-// pas. La note moyenne et le nombre d'avis de l'en-tête sont ceux affichés par
-// la fiche (GOOGLE_RATING), avec la mention « Avis Google ».
+// pas. En-tête : « Avis Google », étoiles au prorata de la note moyenne
+// affichée par la fiche (GOOGLE_RATING) et « 4,6 · 8 avis Google ».
+//
+// Carte : pastille ronde avec l'initiale (palette, pas de photo), prénom +
+// initiale, badge Google éventuel (« Local Guide »), étoiles, mois et année,
+// texte limité à 5 lignes avec « Lire la suite » qui déplie la carte, mention
+// éventuelle sous l'avis (« Traduit de l'anglais par Google »).
 //
 // Défilement : la piste est un conteneur à défilement horizontal natif (donc
 // défilable à la main, au doigt comme à la molette) que l'on fait avancer
@@ -13,19 +18,24 @@
 // pour boucler sans à-coup. Pause au survol, au toucher, au focus et pendant
 // un défilement manuel ; aucun défilement automatique si « réduire les
 // animations » est activé. Sur un écran assez large pour tout afficher, pas
-// de duplication ni de mouvement.
+// de duplication ni de mouvement. Les cartes d'une même rangée ont la même
+// hauteur (flex, étirement).
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { REVIEWS, GOOGLE_RATING } from '../data/reviews.js';
 
 const SPEED_PX_PER_S = 28;      // vitesse du défilement automatique
 const RESUME_DELAY_MS = 3500;   // reprise après un défilement manuel
 
+// Cinq étoiles, chacune remplie au prorata : 4,6 → quatre pleines et une à 60 %.
 function Stars({ value, small = false }) {
   const v = Math.max(0, Math.min(5, Number(value) || 0));
   return (
-    <span className={`stars${small ? ' small' : ''}`} style={{ '--r': v }} role="img" aria-label={`${v.toLocaleString('fr-CH')} sur 5`}>
-      ★★★★★
+    <span className={`stars${small ? ' small' : ''}`} role="img" aria-label={`${v.toLocaleString('fr-CH')} sur 5`}>
+      {[0, 1, 2, 3, 4].map((i) => {
+        const fill = Math.max(0, Math.min(1, v - i));
+        return <i key={i} style={{ '--f': `${Math.round(fill * 100)}%` }} aria-hidden="true">★</i>;
+      })}
     </span>
   );
 }
@@ -80,19 +90,39 @@ function useAutoScroll(ref, enabled) {
 
 function ReviewCard({ r, hidden }) {
   const initial = (r.author || '?').trim().charAt(0).toUpperCase();
+  const [expanded, setExpanded] = useState(false);
+  const [clamped, setClamped] = useState(false); // le texte dépasse-t-il 5 lignes ?
+  const pRef = useRef(null);
+  useLayoutEffect(() => {
+    const p = pRef.current;
+    if (!p) return undefined;
+    const check = () => { if (!expanded) setClamped(p.scrollHeight > p.clientHeight + 1); };
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [expanded, r.text]);
   return (
-    <article className="rcard" aria-hidden={hidden || undefined}>
+    <article className={`rcard${expanded ? ' open' : ''}`} aria-hidden={hidden || undefined}>
       {/* Pas de <header> ici : la règle globale `.v2-root header` (barre de
           menu) s'y appliquerait. */}
       <div className="rtop">
         <span className="ravatar" aria-hidden="true">{initial}</span>
         <span className="rwho">
-          <span className="rauthor">{r.author}</span>
+          <span className="rauthor">
+            <span className="rname">{r.author}</span>
+            {r.badge && <em className="rbadge">{r.badge}</em>}
+          </span>
           <small>{r.when}</small>
         </span>
         <Stars value={r.rating} small />
       </div>
-      {r.text && <p title={r.text}>{r.text}</p>}
+      <p ref={pRef}>{r.text}</p>
+      {r.note && <small className="rnote">{r.note}</small>}
+      {(clamped || expanded) && (
+        <button type="button" className="rread" onClick={() => setExpanded((e) => !e)} aria-expanded={expanded} tabIndex={hidden ? -1 : 0}>
+          {expanded ? 'Réduire' : 'Lire la suite'}
+        </button>
+      )}
     </article>
   );
 }
@@ -113,17 +143,13 @@ export default function V2Reviews({ restaurant }) {
     <section className="reviews" id="avis" aria-labelledby="avis-title">
       <div className="wrap">
         <div className="rhead">
-          <h2 id="avis-title">Ce que disent nos clients</h2>
-          <div className="rsum">
-            {hasRating && (
-              <>
-                <span className="rnum">{avg}</span>
-                <Stars value={average} />
-                <span className="rcount">{Number(count).toLocaleString('fr-CH')} avis</span>
-              </>
-            )}
-            <span className="rsrc">Avis Google</span>
-          </div>
+          <h2 id="avis-title">Avis Google</h2>
+          {hasRating && (
+            <div className="rsum">
+              <Stars value={average} />
+              <span className="rcount">{avg} · {Number(count).toLocaleString('fr-CH')} avis Google</span>
+            </div>
+          )}
         </div>
         {/* data-scroll-x : défilement horizontal voulu (l'audit de débordement l'ignore). */}
         <div
