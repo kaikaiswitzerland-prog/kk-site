@@ -77,7 +77,7 @@
 /* barre de menu */
 .v2-root header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; height: var(--nav); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--pad); background: rgba(255,255,255,.9); backdrop-filter: saturate(1.2) blur(12px); -webkit-backdrop-filter: saturate(1.2) blur(12px); border-bottom: 1px solid transparent; transition: border-color .2s; }
 .v2-root header.scrolled { border-bottom-color: var(--line); }
-.v2-root header .logo { display: flex; align-items: center; gap: 12px; height: var(--logo); }
+.v2-root header .logo { display: flex; align-items: center; gap: 12px; height: var(--logo); flex: none; }
 .v2-root header .logo img { height: var(--logo); width: auto; }
 .v2-root header .logo b { font-weight: 800; font-size: calc(var(--logo) * .42); letter-spacing: .14em; color: var(--green); line-height: 1; }
 .v2-root header .logo small { display: block; font-weight: 700; font-size: calc(var(--logo) * .22); letter-spacing: .22em; color: var(--green); line-height: 1; }
@@ -86,6 +86,9 @@
 .v2-root header nav a:hover, .v2-root header nav a[aria-current] { color: var(--soft); }
 .v2-root header nav a.order { padding: 0 20px; height: 42px; border-radius: 999px; background: var(--lime); color: var(--green); }
 .v2-root header nav a.order:hover { background: var(--soft); color: #fff; }
+/* Pastille « n articles » du bouton panier : Évasion sur Nature. */
+.v2-root header nav a.order .n { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 8px; border-radius: 999px; background: var(--green); color: #fff; font-size: 11px; letter-spacing: 0; }
+.v2-root header nav a.order:hover .n { background: #fff; color: var(--green); }
 
 /* photo d'accueil : 576 / 1452 = 0,397 */
 .v2-root .hero { position: relative; overflow: hidden; background: #1d3a1e; width: 100%; height: min(39.7vw, 88vh); height: min(39.7vw, 88svh); }
@@ -227,7 +230,8 @@
 .v2-root .tot div { display: flex; justify-content: space-between; padding: 3px 0; }
 .v2-root .tot .big { font-weight: 800; font-size: 17px; border-top: 1px solid var(--line); margin-top: 6px; padding-top: 8px; }
 .v2-root .drawer .btn { width: 100%; margin-top: 10px; }
-.v2-root .drawer .empty { padding: 24px 0; color: var(--muted); margin: 0; }
+.v2-root .drawer .empty { padding: 24px 0 8px; color: var(--muted); margin: 0; }
+.v2-root .drawer .empty p { margin: 0 0 6px; }
 .v2-root .drawer .note { font-size: 12px; color: var(--muted); margin: 14px 0 0; line-height: 1.5; }
 .v2-root .drawer .clear { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; font-size: 13px; margin-top: 14px; }
 
@@ -275,7 +279,8 @@
   .v2-root { --nav: 68px; --logo: 38px; }
   .v2-root header nav { gap: 12px; }
   .v2-root header nav a { font-size: 11.5px; letter-spacing: .08em; }
-  .v2-root header nav a.order { padding: 0 14px; height: 36px; }
+  .v2-root header nav a.order { padding: 0 14px; height: 36px; white-space: nowrap; }
+  .v2-root header nav a.order .n { min-width: 18px; height: 18px; margin-left: 6px; font-size: 10px; }
   .v2-root header nav a.hide-m { display: none; }
   .v2-root header .logo small { font-size: 9px; letter-spacing: .18em; }
   .v2-root .hero { height: 52vw; }
@@ -487,10 +492,12 @@
 .v2-root .drawer .closed-banner.hours { background: rgba(138,90,0,.08); border: 1px solid rgba(138,90,0,.35); color: #8a5a00; }
 .v2-root .drawer .closed-banner b { display: block; font-weight: 700; }
 @media (max-width: 400px) { .v2-root header nav a.tel { width: 36px; height: 36px; } }
-/* En-tête ≤ 360 px : la mention « TAHITIAN FOOD » du logo passait sous le lien
-   Menu depuis l'ajout du bouton téléphone (chevauchement, pas débordement) ;
-   le K seul suffit à cette largeur. */
-@media (max-width: 360px) { .v2-root header .logo span { display: none; } }
+/* En-tête ≤ 440 px : logo incompressible (flex: none) et wordmark masqué, sinon
+   « TAHITIAN FOOD » débordait de sa boîte jusque sous « Menu » quand le bouton
+   « Votre panier » porte sa pastille (à 414 px, logo complet + Menu + téléphone
+   + « Votre panier 12 » ne tiennent pas). Le K seul suffit à ces largeurs. */
+@media (max-width: 440px) { .v2-root header .logo span { display: none; } }
+@media (max-width: 360px) { .v2-root header nav { gap: 8px; } .v2-root header nav a { font-size: 11px; letter-spacing: .04em; } .v2-root header nav a.order { padding: 0 11px; } }
 /* À propos, rubrique « Suivez-nous » : sur /v2 les deux boutons passent à la
    ligne sous 360 px au lieu de déborder de la modale (règle : rien ne déborde). */
 [data-skin="v2"] .kk-about .flex.gap-4 { flex-wrap: wrap; }

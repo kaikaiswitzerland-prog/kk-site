@@ -19,6 +19,7 @@ import { useEffect, useMemo } from 'react';
 import { getZoneByNpa } from '../lib/deliveryZones.js';
 import { CART_TARGET_ATTR } from '../lib/flyToCart.js';
 import { chf, variantDetail } from './v2Helpers.js';
+import { scrollToId } from './useScrollSpy.js';
 
 // Clé stable d'une variante : mêmes options → même clé, quel que soit l'ordre
 // des champs. Deux exemplaires strictement identiques partagent une ligne.
@@ -158,7 +159,12 @@ export function V2Drawer({
           </div>
         )}
 
-        {lines.length === 0 && <p className="empty">Votre panier est vide.</p>}
+        {lines.length === 0 && (
+          <div className="empty">
+            <p>Votre panier est vide.</p>
+            <button type="button" className="btn primary" onClick={() => { onClose(); scrollToId('menu'); }}>Voir le menu</button>
+          </div>
+        )}
 
         {lines.map((g) => (
           <div className="dline" key={g.key}>

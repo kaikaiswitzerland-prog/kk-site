@@ -1,7 +1,7 @@
 // src/accueil-v2/V2Header.jsx
 //
 // Barre de menu blanche de l'accueil v2 : logo K (public/logo_kaikai_k.png,
-// extrait du HTML fourni), navigation, bouton téléphone, bouton « Commander ».
+// extrait du HTML fourni), navigation, bouton téléphone, bouton « Votre panier ».
 // Hauteur 80 px, 68 px sur téléphone (jetons --nav / --logo dans accueil-v2.css).
 //
 // Aucune logique de commande : le compteur, le numéro et l'ouverture du tiroir
@@ -34,16 +34,16 @@ export default function V2Header({ headerRef, scrolled, activeTop, cartCount = 0
             <Phone size={18} strokeWidth={2.2} aria-hidden="true" />
           </a>
         )}
+        {/* Ouvre toujours le tiroir, même vide (il propose alors « Voir le menu »).
+            La pastille porte le nombre d'articles. */}
         <a
           href="#panier"
           className="order"
-          onClick={(e) => {
-            e.preventDefault();
-            if (cartCount > 0) onOpenDrawer();
-            else scrollToId('menu');
-          }}
+          aria-label={cartCount > 0 ? `Votre panier, ${cartCount} article${cartCount > 1 ? 's' : ''}` : 'Votre panier, vide'}
+          onClick={(e) => { e.preventDefault(); onOpenDrawer(); }}
         >
-          Commander
+          Votre panier
+          {cartCount > 0 && <span className="n" aria-hidden="true">{cartCount}</span>}
         </a>
       </nav>
     </header>
