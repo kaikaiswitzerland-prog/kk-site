@@ -16,7 +16,7 @@ import { getAllergensForItem, getAllAllergens, formatAllergenNamesShort } from '
 // lus dans src/refonte/productMeta.js — rien n'est recopié ici.
 import { getProductMeta } from '../refonte/productMeta.js';
 import V2Reviews from './V2Reviews.jsx';
-import { chf, SECTIONS, WOK_ANCHOR, CHIPS, SIGNATURE_IDS } from './v2Helpers.js';
+import { chf, SECTIONS, WOK_ANCHOR, CHIPS, badgesFor } from './v2Helpers.js';
 import { scrollToId } from './useScrollSpy.js';
 
 // Cascade d'images identique à ProductCard.jsx (refonte) : PNG détouré → JPG
@@ -64,6 +64,7 @@ function AllergenLine({ item, isFormula, onShow }) {
 function Card({ item, qty, out, isFormula, onAdd, onRemove, onShowAllergens }) {
   const meta = getProductMeta(item.id);
   const { current, onError } = useImageFallback(meta);
+  const badges = badgesFor(item.id);
   // Même règle à trois cas que ProductCard.jsx : `short` absent → description
   // officielle du plat (App.jsx) ; `short: ''` → aucune ligne.
   const desc = meta.short != null ? meta.short : (item.desc || '');
@@ -85,9 +86,14 @@ function Card({ item, qty, out, isFormula, onAdd, onRemove, onShowAllergens }) {
             style={current.kind === 'jpg' && meta.jpgPos ? { objectPosition: meta.jpgPos } : undefined}
           />
         )}
-        {/* Le badge vit sur la photo : dans le corps, il décalait le titre des
-            trois cartes qui le portent et cassait l'alignement de la grille. */}
-        {SIGNATURE_IDS.has(String(item.id)) && <span className="badge">Signature</span>}
+        {/* Les badges vivent sur la photo : dans le corps, ils décalaient le
+            titre des cartes qui les portent et cassaient l'alignement de la
+            grille. Déclarés dans v2Helpers.js (PRODUCT_BADGES), côte à côte. */}
+        {badges.length > 0 && (
+          <span className="badges">
+            {badges.map((b) => <span key={b.key} className={`badge ${b.key}`}>{b.label}</span>)}
+          </span>
+        )}
       </a>
       <div className="body">
         <h3>{item.name}</h3>

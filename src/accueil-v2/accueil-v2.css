@@ -134,7 +134,11 @@
 .v2-root .card .pic-img--png { object-fit: contain; padding: 7%; filter: drop-shadow(0 10px 18px rgba(13,59,54,.22)); }
 @media (hover: hover) { .v2-root .card:hover .pic img { transform: scale(1.045); } }
 .v2-root .card .body { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px 18px; flex: 1; }
-.v2-root .badge { position: absolute; top: 10px; left: 10px; z-index: 1; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--energy-ink); background: var(--energy-bg); padding: 3px 9px; border-radius: 999px; box-shadow: 0 1px 4px rgba(0,0,0,.10); }
+/* Badges sur la photo (haut gauche), côte à côte sans chevauchement. Signature
+   = Énergie (bleu), Populaire = Nature sur Évasion. */
+.v2-root .badges { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 1; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+.v2-root .badge { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--energy-ink); background: var(--energy-bg); padding: 3px 9px; border-radius: 999px; box-shadow: 0 1px 4px rgba(0,0,0,.10); white-space: nowrap; }
+.v2-root .badge.populaire { color: var(--green); background: var(--lime); }
 /* Titre (3 lignes max) et description courte (2 lignes max) sans hauteur
    réservée : plus de vide entre les deux. L'alignement des prix et boutons
    d'une carte à l'autre vient du pied ancré en bas (margin-top auto) dans des

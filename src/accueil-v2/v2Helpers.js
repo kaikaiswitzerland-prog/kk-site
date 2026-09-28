@@ -47,8 +47,27 @@ export const CHIPS = [
   { id: 'boissons', label: 'Boissons' },
 ];
 
-// Badge « Signature » — décision de présentation du HTML fourni (plats 4, 8, 9).
-export const SIGNATURE_IDS = new Set(['4', '8', '9']);
+// Badges des cartes — décisions de présentation de la v3 (l'équivalent, pour
+// cette peau, du champ `badge` de src/refonte/productMeta.js). Un plat peut en
+// porter plusieurs : ils s'affichent côte à côte sur la photo, en haut à
+// gauche. Pour en ajouter un à un plat, compléter PRODUCT_BADGES ; pour créer
+// une nouvelle sorte, l'ajouter à BADGE_KINDS et lui donner ses couleurs dans
+// accueil-v2.css (`.badge.<clé>`).
+export const BADGE_KINDS = {
+  signature: { label: 'Signature' }, // Énergie (bleu), plats emblématiques
+  populaire: { label: 'Populaire' }, // Nature (vert clair), plats les plus commandés
+};
+export const PRODUCT_BADGES = {
+  '4': ['signature'],
+  '8': ['signature'],
+  '9': ['signature'],
+  '5': ['populaire'], // Chao Men
+};
+export function badgesFor(id) {
+  return (PRODUCT_BADGES[String(id)] || [])
+    .filter((k) => BADGE_KINDS[k])
+    .map((k) => ({ key: k, label: BADGE_KINDS[k].label }));
+}
 
 // Libellé d'une variante pour une ligne du tiroir : miroir textuel de ce que
 // le Checkout affiche (formules Découverte/Voyage, options simples, wok
