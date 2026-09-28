@@ -113,11 +113,12 @@ function Card({ item, qty, out, isFormula, onAdd, onRemove, onShowAllergens }) {
   );
 }
 
-function Section({ id, title, items, cart, isUnavailable, isFormula = false, onAdd, onRemove, onShowAllergens, extraClass = '' }) {
+function Section({ id, title, note = null, items, cart, isUnavailable, isFormula = false, onAdd, onRemove, onShowAllergens, extraClass = '' }) {
   return (
     <section className={`cat${extraClass}`} id={id}>
       <div className="wrap">
         <h2>{title}</h2>
+        {note && <p className="sub">{note}</p>}
         <div className={`cards n${items.length}`}>
           {items.map((item) => (
             <Card
@@ -178,6 +179,7 @@ export default function V2Menu({
           <Section
             id={s.id}
             title={s.title}
+            note={s.note}
             items={sections[s.key] || []}
             cart={cart}
             isUnavailable={isUnavailable}
@@ -203,8 +205,6 @@ export default function V2Menu({
           )}
         </Fragment>
       ))}
-
-      <p className="note">Tous nos plats sont accompagnés de riz et de salade</p>
 
       <section className="about" id="apropos">
         <div className="wrap">

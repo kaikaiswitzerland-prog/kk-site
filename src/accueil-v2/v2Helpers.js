@@ -23,7 +23,9 @@ export function hmm(hhmm) {
 export const SECTIONS = [
   { key: 'entrees',   id: 'entrees',    title: 'Entrées' },
   { key: 'chaud',     id: 'chaud',      title: 'Plats chauds' },
-  { key: 'froid',     id: 'froid',      title: 'Plats froids' },
+  // `note` : sous-titre discret de la section — la mention riz et salade vit
+  // ici, sous « Plats froids », et non plus en bas de la carte.
+  { key: 'froid',     id: 'froid',      title: 'Plats froids', note: 'Tous nos plats sont accompagnés de riz et de salade' },
   { key: 'formules',  id: 'formules',   title: 'Formules' },
   { key: 'desserts',  id: 'desserts',   title: 'Desserts' },
   { key: 'jusMaison', id: 'jus-maison', title: 'Boissons fraîches maison' },
