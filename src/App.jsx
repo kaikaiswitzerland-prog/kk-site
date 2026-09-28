@@ -15,9 +15,12 @@ import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
 //   - l'import dynamique casse le cycle App.jsx ↔ src/refonte/, qui n'importe
 //     jamais App.jsx en retour (tout lui est passé en props).
 const RefonteShell = lazy(() => import("./refonte/RefonteShell.jsx"));
-// Peau « v2 » (route /, nouvelle page d'accueil — v3 du site). Même règle que
-// la refonte : lazy, rien dans src/accueil-v2/ n'importe App.jsx.
-const AccueilV2Shell = lazy(() => import("./accueil-v2/AccueilV2Shell.jsx"));
+// Peau « v2 » (route /, nouvelle page d'accueil — v3 du site) : import
+// STATIQUE, contrairement à la refonte. C'est la page d'accueil, donc le cas
+// par défaut : la charger à la demande ajoutait un aller-retour (chunk, puis
+// sa CSS) avant le premier rendu. src/accueil-v2/ n'importe pas App.jsx,
+// aucun cycle. Le composant est monté sous Suspense comme avant (inoffensif).
+import AccueilV2Shell from "./accueil-v2/AccueilV2Shell.jsx";
 import { supabase } from "./lib/supabase.js";
 import { useRestaurantOpen } from "./hooks/useRestaurantOpen.js";
 import { useOutOfStock } from "./hooks/useOutOfStock.js";

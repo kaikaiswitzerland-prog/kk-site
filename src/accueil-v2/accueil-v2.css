@@ -16,7 +16,8 @@
  * Structure, tailles, espacements : ceux du HTML fourni, au pixel.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+/* Montserrat est chargée par index.html (<link>), en parallèle du reste :
+   un @import ici la mettait en série derrière la CSS du bundle. */
 
 .v2-root {
   --ink: #14211c;
