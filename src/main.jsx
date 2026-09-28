@@ -1,11 +1,17 @@
-import { StrictMode } from 'react'
+import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
-import AdminApp from './pages/AdminApp.jsx'
-import LegalRouter, { isLegalRoute } from './pages/LegalPages.jsx'
+import { isLegalRoute } from './pages/LegalPages.jsx'
 import NotFound from './pages/NotFound.jsx'
 import { IslandModeProvider } from './context/IslandModeContext.jsx'
+
+// Chargés à la demande : la PWA admin et les pages légales ne doivent pas
+// peser sur le bundle de la page d'accueil (l'admin en représentait une bonne
+// part). Leurs polices (JetBrains Mono, Instrument Serif, Inter Tight) ne sont
+// demandées que sur /admin, ci-dessous.
+const AdminApp = lazy(() => import('./pages/AdminApp.jsx'))
+const LegalRouter = lazy(() => import('./pages/LegalPages.jsx'))
 
 // Détection de route — les trois versions du site sont conservées :
 //   /admin…       → PWA admin
@@ -58,6 +64,15 @@ if (isNotFound) {
 }
 
 
+// Polices de l'admin, uniquement sur /admin (elles étaient dans index.html,
+// donc téléchargées et bloquantes sur la page d'accueil).
+if (isAdminRoute) {
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700;800&display=swap';
+  document.head.appendChild(link);
+}
+
 // Enregistrement du service worker (PWA)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -70,9 +85,13 @@ if ('serviceWorker' in navigator) {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     {isAdminRoute ? (
-      <AdminApp />
+      <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0b0f0d' }} />}>
+        <AdminApp />
+      </Suspense>
     ) : isLegal ? (
-      <LegalRouter />
+      <Suspense fallback={<div style={{ minHeight: '100vh', background: '#F5F5F1' }} />}>
+        <LegalRouter />
+      </Suspense>
     ) : isV2Route ? (
       null
     ) : isNotFound ? (

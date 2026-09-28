@@ -76,6 +76,11 @@ function Card({ item, qty, out, isFormula, onAdd, onRemove, onShowAllergens }) {
           <img
             key={current.src}
             src={current.src}
+            /* Variantes 480 et 800 px générées à côté de chaque JPG (public/) :
+               le navigateur prend la plus petite qui suffit à la carte
+               (2 colonnes sur téléphone, 4 sur grand écran, écrans 2×). */
+            srcSet={current.kind === 'jpg' ? `${current.src.replace(/\.jpg$/, '-480.jpg')} 480w, ${current.src.replace(/\.jpg$/, '-800.jpg')} 800w, ${current.src} 1200w` : undefined}
+            sizes={current.kind === 'jpg' ? '(max-width: 820px) 46vw, (max-width: 1100px) 31vw, 300px' : undefined}
             alt=""
             loading="lazy"
             decoding="async"
