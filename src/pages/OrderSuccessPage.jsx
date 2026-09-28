@@ -24,7 +24,21 @@ const fmtCHF = (n) =>
 // 'paid' et au-delà = paiement carte confirmé par webhook.
 const SUCCESS_STATUSES = ['pending', 'paid', 'accepted', 'ready', 'delivered'];
 
-export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null }) {
+// `simulated` : commande fictive du MODE TEST (dev ou preview Vercel, voir
+// CHECKOUT_DRY_RUN dans src/App.jsx) — { id, total, delivery_mode,
+// payment_method, customer_email }. Quand elle est fournie, la page n'appelle
+// JAMAIS /api/get-order-status : elle affiche directement la confirmation
+// simulée. Toute la branche est gardée par DRY_RUN_ALLOWED (`import.meta.env.DEV`
+// ou `__KK_PREVIEW_DRY_RUN__`, tous deux figés à `false` au build de
+// production), donc absente du bundle prod.
+// `formatPrice` : formateur de prix de la peau courante (KaiKaiApp) ; sans
+// lui, Intl fr-CH comme aujourd'hui.
+// Où le mode simulation a le droit d'exister : dev, ou preview Vercel.
+const DRY_RUN_ALLOWED = import.meta.env.DEV || __KK_PREVIEW_DRY_RUN__;
+
+export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null, simulated = null, formatPrice = null }) {
+  const isSimulated = DRY_RUN_ALLOWED && !!simulated;
+  const fmt = formatPrice || fmtCHF;
   // Source de vérité de l'order_id, dans l'ordre :
   //  1. La prop initialOrderId passée par le parent (Cash/Twint juste
   //     après l'INSERT — le plus fiable, pas de dépendance au timing
@@ -72,6 +86,12 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null }
   useEffect(() => {
     let cancelled = false;
 
+    // MODE TEST : rien à lire, la confirmation est déjà connue.
+    if (DRY_RUN_ALLOWED && simulated) {
+      setLoading(false);
+      return () => { cancelled = true; };
+    }
+
     (async () => {
       const initial = await fetchOrder();
       if (cancelled) return;
@@ -111,7 +131,7 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null }
         pollTimerRef.current = null;
       }
     };
-  }, [fetchOrder]);
+  }, [fetchOrder, simulated]);
 
   // Reprise du paiement : on refait un POST /api/create-checkout pour le
   // même order_id. Le serveur refuse si status !== 'pending_payment', donc
@@ -151,6 +171,36 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null }
     );
   }
 
+  // MODE TEST (dev ou preview) : même écran de succès, même récapitulatif,
+  // avec le bandeau qui dit que rien n'est parti. Retiré du build prod.
+  if (DRY_RUN_ALLOWED && isSimulated) {
+    const isPickup = simulated.delivery_mode === 'pickup';
+    const etaMinutes = isPickup ? ETA.pickup : ETA.delivery;
+    return (
+      <Section>
+        <div className="kk-dry-run mx-auto mb-6 max-w-sm rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">
+          <div className="font-semibold">🧪 MODE TEST, rien n'est envoyé</div>
+          <div className="opacity-90">
+            Commande simulée ({simulated.payment_method === 'card' ? 'carte, aucun paiement effectué' : 'espèces'}) :
+            aucune ligne créée, aucune notification, aucun ticket.
+          </div>
+        </div>
+        <SuccessIcon />
+        <Title>Merci ! Votre commande a été reçue.</Title>
+        <Lead>Préparation en cours.</Lead>
+        <Recap
+          orderShortId={String(simulated.id).slice(0, 8).toUpperCase()}
+          total={simulated.total}
+          modeLabel={isPickup ? 'À emporter' : 'Livraison'}
+          email={simulated.customer_email}
+          fmt={fmt}
+        />
+        <EtaBadge text={isPickup ? `À emporter dans ~${etaMinutes} min` : `Livraison dans ~${etaMinutes} min`} />
+        <BackButton onClick={onBackToMenu} />
+      </Section>
+    );
+  }
+
   if (!orderId || !order) {
     return (
       <Section>
@@ -183,6 +233,7 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null }
           total={order.total}
           modeLabel={modeLabel}
           email={order.customer_email}
+          fmt={fmt}
         />
         <EtaBadge text={etaText} />
         <BackButton onClick={onBackToMenu} />
@@ -288,8 +339,10 @@ export default function OrderSuccessPage({ onBackToMenu, initialOrderId = null }
 // ─── Sous-composants présentation ────────────────────────────────────────
 
 function Section({ children }) {
+  // `kk-success` : accroche du thème clair de la peau v2 (accueil-v2.css,
+  // [data-skin="v2"] .kk-success …). Aucune classe utilitaire ne change ici.
   return (
-    <section className="mx-auto max-w-2xl px-4 py-16 text-center">
+    <section className="kk-success mx-auto max-w-2xl px-4 py-16 text-center">
       {children}
     </section>
   );
@@ -343,12 +396,12 @@ function EtaBadge({ text }) {
   );
 }
 
-function Recap({ orderShortId, total, modeLabel, email }) {
+function Recap({ orderShortId, total, modeLabel, email, fmt = fmtCHF }) {
   return (
     <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-sm">
       <Row label="Numéro" value={`#${orderShortId}`} />
       <Row label="Mode" value={modeLabel} />
-      <Row label="Total" value={fmtCHF(total)} bold />
+      <Row label="Total" value={fmt(total)} bold />
       {email && (
         <Row
           label="Confirmation"

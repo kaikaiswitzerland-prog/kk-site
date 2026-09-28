@@ -124,7 +124,7 @@ export default function BarChart({ title, subtitle, data, formatValue = fmt }) {
 
       {/* Libellés de service : chaque groupe prend une largeur proportionnelle
           à son nombre de barres, donc il tombe sous les siennes. Le midi ne
-          fait que 3 tranches sur 8 — un simple justify-between mentirait. */}
+          fait que 3 tranches sur 11 — un simple justify-between mentirait. */}
       <div className="mt-2 flex font-mono text-[9px] uppercase tracking-[0.12em] text-ink-3">
         {serviceGroups(data).map((g) => (
           <span key={g.service} className="text-center" style={{ flex: g.count }}>
@@ -137,8 +137,9 @@ export default function BarChart({ title, subtitle, data, formatValue = fmt }) {
 }
 
 const SERVICE_LABELS = {
-  midi: 'Service midi',
-  soir: 'Service soir',
+  midi: 'Midi',
+  'apres-midi': 'Après-midi',
+  soir: 'Soir',
   hors: 'Hors service',
 };
 
@@ -146,7 +147,7 @@ const SERVICE_LABELS = {
 // laisser deviner si le total est celui de l'heure qui commence ou qui finit.
 // La tranche « Autre » n'est bornée par rien : elle se nomme, elle ne s'encadre pas.
 function slotCaption(slot) {
-  if (slot.service === 'hors') return 'hors des deux services';
+  if (slot.service === 'hors') return 'hors des heures de service';
   const h = Number(slot.key);
   return Number.isFinite(h) ? `entre ${h}h et ${h + 1}h` : slot.label;
 }

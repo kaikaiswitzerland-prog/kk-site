@@ -1,0 +1,563 @@
+/* ─── ACCUEIL V2 — feuille de style isolée ───────────────────────────────────
+ *
+ * Portage de refonte/kaikai-accueil.html. TOUT est scopé sous `.v2-root` :
+ * ce fichier n'est importé que par src/accueil-v2/AccueilV2Shell.jsx, chargé
+ * en lazy sur /v2. Le site actuel (/, /refonte, /classique) ne le voit jamais,
+ * et Montserrat n'est chargée que d'ici.
+ *
+ * Palette officielle KaïKaï (27.09.2026) :
+ *   Évasion   #0D3B36  textes, titres, bloc wok, footer
+ *   Nature    #B7D94C  boutons Commander, pastilles, coches
+ *   Chaleur   #F5F5F1  fond de page (barre de menu et cartes restent blanches)
+ *   Douceur   #3F7D6B  lien actif, survols, message de zone validée
+ *   Fraîcheur #7F978D  fond de la section Livraison (#eaefeb) et plan, jamais du texte
+ *   Énergie   #6FA9C4  badge Signature uniquement (fond #e2eef4, texte #2d5f78)
+ *
+ * Structure, tailles, espacements : ceux du HTML fourni, au pixel.
+ */
+
+/* Montserrat est chargée par index.html (<link>), en parallèle du reste :
+   un @import ici la mettait en série derrière la CSS du bundle. */
+
+.v2-root {
+  --ink: #14211c;
+  --muted: #5d6a62;
+  --page: #F5F5F1;        /* Chaleur — fond de page */
+  --paper: #ffffff;       /* barre de menu, cartes, tiroir : blanc */
+  --paper-2: #f3f6ef;
+  --line: #e3e9dd;
+  --lime: #B7D94C;        /* Nature */
+  --green: #0D3B36;       /* Évasion */
+  --green-2: #155248;
+  --soft: #3F7D6B;        /* Douceur */
+  --mist: #7F978D;        /* Fraîcheur — jamais pour du texte */
+  --mist-bg: #eaefeb;
+  --energy: #6FA9C4;      /* Énergie — badge Signature */
+  --energy-bg: #e2eef4;
+  --energy-ink: #2d5f78;
+  --sans: "Montserrat", Helvetica, Arial, sans-serif;
+  --pad: clamp(20px, 4.5vw, 64px);
+  --nav: 80px;
+  --logo: 46px;
+  --radius: 18px;
+
+  /* Jetons lus par le composeur de woks (App.jsx) et par la pastille qui vole
+     vers le panier (src/lib/flyToCart.js) : accent et fond de barre récap. */
+  --rf-accent: #B7D94C;
+  --rf-bg-elev: #092A26;
+
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  margin: 0;
+  overflow-x: clip;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--page);
+  color: var(--ink);
+  font: 400 16px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.v2-root *, .v2-root *::before, .v2-root *::after { box-sizing: border-box; }
+.v2-root img { max-width: 100%; display: block; }
+.v2-root a { color: inherit; text-decoration: none; }
+.v2-root :focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 4px; }
+.v2-root .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.v2-root .skip { position: absolute; left: 16px; top: -60px; z-index: 30; padding: 12px 16px; background: var(--green); color: #fff; transition: top .15s; }
+.v2-root .skip:focus { top: calc(12px + env(safe-area-inset-top, 0px)); }
+.v2-root .wrap { max-width: 1180px; margin: 0 auto; }
+
+/* Cibles d'ancre : remplace le scroll-padding-top posé sur <html> dans le
+   HTML (on ne touche pas au document, partagé avec les autres peaux). */
+.v2-root #menu, .v2-root .cat, .v2-root .about, .v2-root .infos, .v2-root footer {
+  scroll-margin-top: calc(var(--nav) + 56px + env(safe-area-inset-top, 0px));
+}
+
+/* barre de menu */
+.v2-root header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; height: var(--nav); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--pad); background: rgba(255,255,255,.9); backdrop-filter: saturate(1.2) blur(12px); -webkit-backdrop-filter: saturate(1.2) blur(12px); border-bottom: 1px solid transparent; transition: border-color .2s; }
+.v2-root header.scrolled { border-bottom-color: var(--line); }
+.v2-root header .logo { display: flex; align-items: center; gap: 12px; height: var(--logo); flex: none; }
+.v2-root header .logo img { height: var(--logo); width: auto; }
+.v2-root header .logo b { font-weight: 800; font-size: calc(var(--logo) * .42); letter-spacing: .14em; color: var(--green); line-height: 1; }
+.v2-root header .logo small { display: block; font-weight: 700; font-size: calc(var(--logo) * .22); letter-spacing: .22em; color: var(--green); line-height: 1; }
+.v2-root header nav { display: flex; align-items: center; gap: clamp(14px, 2.6vw, 36px); }
+.v2-root header nav a { display: inline-flex; align-items: center; height: 44px; font-weight: 700; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--green); transition: color .2s; }
+.v2-root header nav a:hover, .v2-root header nav a[aria-current] { color: var(--soft); }
+.v2-root header nav a.order { padding: 0 20px; height: 42px; border-radius: 999px; background: var(--lime); color: var(--green); }
+.v2-root header nav a.order:hover { background: var(--soft); color: #fff; }
+/* Pastille « n articles » du bouton panier : Évasion sur Nature. */
+.v2-root header nav a.order .n { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 8px; border-radius: 999px; background: var(--green); color: #fff; font-size: 11px; letter-spacing: 0; }
+.v2-root header nav a.order:hover .n { background: #fff; color: var(--green); }
+
+/* photo d'accueil : 576 / 1452 = 0,397 */
+.v2-root .hero { position: relative; overflow: hidden; background: #1d3a1e; width: 100%; height: min(39.7vw, 88vh); height: min(39.7vw, 88svh); }
+.v2-root .hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; opacity: 0; transform: scale(1.03); animation: v2-reveal 1.1s cubic-bezier(.2,.7,.2,1) .05s forwards; }
+@keyframes v2-reveal { to { opacity: 1; transform: scale(1); } }
+
+/* accroche */
+.v2-root .intro { padding: clamp(48px, 7vw, 96px) var(--pad) clamp(32px, 4vw, 56px); text-align: center; }
+.v2-root .intro h2 { margin: 0 auto; max-width: 20ch; font-weight: 800; font-size: clamp(26px, 3.8vw, 48px); line-height: 1.1; letter-spacing: -.01em; color: var(--green); }
+.v2-root .intro .sub { margin: 18px auto 0; max-width: 56ch; font-size: clamp(15px, 1.3vw, 18px); color: var(--muted); }
+.v2-root .intro .status { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; padding: 10px 18px; border-radius: 999px; background: var(--paper-2); font-weight: 600; font-size: 15px; color: var(--green); }
+.v2-root .intro .status i { width: 10px; height: 10px; border-radius: 50%; background: var(--lime); flex: none; }
+/* Statut réel (useRestaurantOpen) : fermé → point rouge, fermeture manuelle → rouge aussi. */
+.v2-root .intro .status.closed i { background: #a63a2a; }
+.v2-root .actions { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 26px; }
+.v2-root .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 0 30px; border-radius: 999px; font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; transition: background .15s, color .15s, transform .15s; border: 0; cursor: pointer; font-family: inherit; }
+.v2-root .btn:active { transform: translateY(1px); }
+.v2-root .btn.primary { background: var(--lime); color: var(--green); }
+.v2-root .btn.primary:hover { background: var(--soft); color: #fff; }
+.v2-root .btn.ghost { border: 2px solid var(--green); color: var(--green); background: transparent; }
+.v2-root .btn.ghost:hover { background: var(--soft); border-color: var(--soft); color: #fff; }
+
+/* barre de catégories */
+.v2-root .chips { position: sticky; top: calc(var(--nav) + env(safe-area-inset-top, 0px)); z-index: 15; background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.v2-root .chips .wrap { display: flex; gap: 6px; overflow-x: auto; padding: 10px var(--pad); scrollbar-width: none; -ms-overflow-style: none; }
+.v2-root .chips .wrap::-webkit-scrollbar { display: none; }
+.v2-root .chips a { flex: 0 0 auto; display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 999px; font-weight: 600; font-size: 13.5px; color: var(--green); background: var(--paper-2); white-space: nowrap; transition: background .15s, color .15s; }
+.v2-root .chips a:hover { background: #e6eddb; }
+.v2-root .chips a[aria-current] { background: var(--green); color: #fff; }
+
+/* carte */
+.v2-root .cat { padding: clamp(40px, 5vw, 72px) var(--pad) 0; }
+.v2-root .cat h2 { margin: 0 0 22px; font-weight: 800; font-size: clamp(22px, 2.6vw, 32px); color: var(--green); letter-spacing: -.01em; }
+.v2-root .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(16px, 2vw, 26px); }
+.v2-root .cards.n2, .v2-root .cards.n3 { grid-template-columns: repeat(3, 1fr); }
+.v2-root .card { display: flex; flex-direction: column; border-radius: var(--radius); overflow: hidden; background: var(--paper); border: 1px solid var(--line); }
+/* Photo CARRÉE, même cadrage que la peau refonte (/) : JPG en cover avec le
+   jpgPos de productMeta.js, PNG détouré en contain avec 7 % de marge, zoom
+   1,045 au survol. */
+.v2-root .card .pic { display: block; position: relative; aspect-ratio: 1 / 1; overflow: hidden; background: var(--paper-2); }
+.v2-root .card .pic img { width: 100%; height: 100%; display: block; transition: transform .35s cubic-bezier(.22,1,.36,1); }
+.v2-root .card .pic-img--jpg { object-fit: cover; }
+.v2-root .card .pic-img--png { object-fit: contain; padding: 7%; filter: drop-shadow(0 10px 18px rgba(13,59,54,.22)); }
+@media (hover: hover) { .v2-root .card:hover .pic img { transform: scale(1.045); } }
+.v2-root .card .body { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px 18px; flex: 1; }
+/* Badges sur la photo (haut gauche), côte à côte sans chevauchement. Signature
+   = Énergie (bleu), Populaire = Nature sur Évasion. */
+.v2-root .badges { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 1; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+.v2-root .badge { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--energy-ink); background: var(--energy-bg); padding: 3px 9px; border-radius: 999px; box-shadow: 0 1px 4px rgba(0,0,0,.10); white-space: nowrap; }
+.v2-root .badge.populaire { color: var(--green); background: var(--lime); }
+/* Titre (3 lignes max) et description courte (2 lignes max) sans hauteur
+   réservée : plus de vide entre les deux. L'alignement des prix et boutons
+   d'une carte à l'autre vient du pied ancré en bas (margin-top auto) dans des
+   cartes étirées à la hauteur de leur rangée, avec sa seule hauteur réservée. */
+.v2-root .card h3 { margin: 0; font-weight: 700; font-size: 16.5px; line-height: 1.3; color: var(--green); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.v2-root .card p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex: none; }
+.v2-root .card .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 12px; min-height: 60px; }
+.v2-root .price { white-space: nowrap; font-weight: 800; font-size: 16px; color: var(--ink); }
+.v2-root .add { display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 999px; background: var(--lime); color: var(--green); font-weight: 700; font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase; transition: background .15s, color .15s; border: 0; cursor: pointer; font-family: inherit; }
+.v2-root .add:hover { background: var(--soft); color: #fff; }
+/* Sélecteur de quantité d'une carte au panier : pilule Nature, boutons ronds
+   44 px à taille fixe (flex: none), compteur Évasion. */
+.v2-root .qtyctl { display: inline-flex; align-items: center; gap: 6px; padding: 2px; border-radius: 999px; background: var(--lime); color: var(--green); flex: none; max-width: 100%; }
+.v2-root .qtyctl .qbtn { width: 44px; height: 44px; flex: none; border-radius: 50%; border: 0; background: rgba(255,255,255,.55); color: var(--green); font-size: 20px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-family: inherit; padding: 0; transition: background .15s; }
+.v2-root .qtyctl .qbtn:hover { background: #fff; }
+.v2-root .qtyctl .qbtn:disabled { opacity: .4; cursor: not-allowed; }
+.v2-root .qtyctl .qn { display: inline-block; min-width: 22px; text-align: center; font-weight: 800; font-size: 15px; }
+
+/* quantités (tiroir) */
+.v2-root .qb { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--green); background: transparent; color: var(--green); font-size: 16px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-family: inherit; padding: 0; flex: none; }
+.v2-root .qb:hover { background: var(--paper-2); }
+/* Rupture : la photo s'atténue, le texte reste lisible (contraste AA) ; le
+   bouton gris « En rupture » dit l'état. */
+.v2-root .card.out .pic { opacity: .5; }
+.v2-root .card.out h3, .v2-root .card.out .price { color: var(--muted); }
+.v2-root .card.out .add { pointer-events: none; background: #ddd; color: #777; }
+
+/* compose ton wok — bloc vert Évasion */
+.v2-root .wok .wrap { background: var(--green); color: #fff; border-radius: var(--radius); padding: clamp(28px, 4vw, 52px); padding-bottom: 0; overflow-x: clip; }
+.v2-root .wok h2 { color: #fff; }
+.v2-root .wok .lead { margin: -8px 0 26px; max-width: 58ch; color: #cfe0c9; }
+
+/* Surcharges du composeur existant (WokComposer, src/App.jsx) pour coller au
+   design du HTML : tuiles à bordure blanche 14 %, sélection lime, titres
+   d'étape lime 15 px, barre récap rgba(9,42,38,.94), bouton Commander lime.
+   Aucune logique ni aucun prix ici : seulement de la présentation. */
+.v2-root .wok-slot > div { border: 0; border-radius: 0; background: transparent; }
+.v2-root .wok-slot .p-5 { padding: 0; }
+.v2-root .wok-slot .wok-steps { max-width: 760px; gap: 10px; }
+.v2-root .wok-slot .wok-step { border: 2px solid rgba(255,255,255,.14); background: rgba(255,255,255,.04); border-radius: 12px; }
+.v2-root .wok-slot .wok-step--open { border-color: rgba(255,255,255,.3); background: rgba(255,255,255,.06); }
+.v2-root .wok-slot .wok-step--locked { opacity: .4; }
+.v2-root .wok-slot .wok-step__head { border-radius: 12px; min-height: 52px; }
+.v2-root .wok-slot .wok-step__num { border-color: rgba(255,255,255,.3); color: #fff; }
+.v2-root .wok-slot .wok-step--done .wok-step__num { background: var(--lime); border-color: var(--lime); color: var(--green); }
+.v2-root .wok-slot .wok-step__title { font-size: 15px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--lime); }
+.v2-root .wok-slot .wok-step__note { font-size: 11px; font-weight: 500; color: #cfe0c9; }
+.v2-root .wok-slot .wok-step__pick { color: rgba(255,255,255,.85); font-size: 13px; }
+.v2-root .wok-slot .wok-step__pick--empty { color: rgba(255,255,255,.62); }
+.v2-root .wok-slot .wok-step__tick { color: var(--lime); }
+.v2-root .wok-slot .wok-step__chev { color: rgba(255,255,255,.55); }
+.v2-root .wok-slot .wok-tile { background: rgba(255,255,255,.04); border: 2px solid rgba(255,255,255,.14); border-radius: 12px; }
+.v2-root .wok-slot .wok-tile:hover { background: rgba(255,255,255,.1) !important; border-color: rgba(255,255,255,.14) !important; }
+.v2-root .wok-slot .wok-tile--on { background: rgba(183,217,76,.16); border-color: var(--lime); }
+.v2-root .wok-slot .modal-tile.wok-tile--on:hover { background: rgba(183,217,76,.22) !important; border-color: var(--lime) !important; }
+.v2-root .wok-slot .wok-bar { margin: 22px -1px -1px; padding: 14px clamp(20px, 3vw, 40px) calc(14px + env(safe-area-inset-bottom, 0px)); background: rgba(9,42,38,.94); border-top: 1px solid rgba(255,255,255,.12); border-radius: 0 0 var(--radius) var(--radius); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.v2-root .wok-slot .wok-bar__inner { max-width: none; }
+.v2-root .wok-slot .wok-bar .text-2xl { font-size: 26px; font-weight: 800; color: #fff; }
+/* Contraste AA dans la barre récap : libellé « Votre wok » (style en ligne
+   dans App.jsx, d'où !important) et texte d'attente. */
+.v2-root .wok-slot .wok-bar .min-w-0 > div:first-child { color: rgba(255,255,255,.78) !important; }
+.v2-root .wok-slot .wok-bar .text-white\/40 { color: rgba(255,255,255,.72); }
+.v2-root .wok-slot .wok-bar button { background: var(--lime); color: var(--green); border: 0; border-radius: 999px; min-height: 50px; padding: 0 30px; font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; transition: background .15s, color .15s, transform .15s; }
+.v2-root .wok-slot .wok-bar button:hover:not(:disabled) { background: var(--soft); color: #fff; }
+.v2-root .wok-slot .wok-bar button:disabled { opacity: .45; cursor: not-allowed; }
+
+/* mini panier & tiroir */
+.v2-root .mini { position: fixed; right: 16px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 45; display: none; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 18px; background: var(--green); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,.28); cursor: pointer; border: 0; font: inherit; text-align: left; max-width: 300px; transition: opacity .2s, transform .2s; }
+.v2-root .mini.show { display: flex; }
+.v2-root .mini.hidden { opacity: 0; transform: translateY(16px) scale(.92); pointer-events: none; }
+.v2-root .mini .ic { width: 38px; height: 38px; border-radius: 11px; background: var(--lime); color: var(--green); display: flex; align-items: center; justify-content: center; font-weight: 800; flex: none; }
+.v2-root .mini .mt { display: block; font-size: 11px; color: #cfe0c9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+.v2-root .mini .mp { display: block; font-weight: 800; font-size: 15px; }
+.v2-root .drawer-bg { position: fixed; inset: 0; z-index: 70; background: rgba(6,20,17,.5); backdrop-filter: blur(4px); display: flex; justify-content: flex-end; animation: v2-fade .2s; }
+@keyframes v2-fade { from { opacity: 0; } }
+.v2-root .drawer { width: 100%; max-width: 520px; height: 100%; overflow: auto; background: var(--paper); color: var(--ink); padding: 20px 22px calc(28px + env(safe-area-inset-bottom, 0px)); padding-top: calc(20px + env(safe-area-inset-top, 0px)); animation: v2-slide .3s cubic-bezier(.32,1,.58,1); }
+@keyframes v2-slide { from { transform: translateX(40px); opacity: 0; } }
+.v2-root .drawer .dhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.v2-root .drawer h2 { margin: 0; font-size: 22px; font-weight: 700; color: var(--green); }
+.v2-root .drawer .x { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper-2); cursor: pointer; font-size: 16px; color: var(--ink); font-family: inherit; }
+.v2-root .dline { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.v2-root .dline .dmain { flex: 1; min-width: 0; }
+.v2-root .dline .n { font-weight: 700; font-size: 15px; overflow-wrap: anywhere; }
+.v2-root .dline .v { font-size: 12.5px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+.v2-root .dline .dqty { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; }
+.v2-root .dline .dqty .qn { min-width: 20px; text-align: center; font-weight: 800; font-size: 14px; }
+.v2-root .dline .r { text-align: right; flex: none; display: flex; flex-direction: column; align-items: flex-end; }
+.v2-root .dline .r b { display: block; margin-bottom: 2px; }
+.v2-root .dline .r small { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 4px; }
+.v2-root .dline .r .x { margin-top: 4px; border-color: var(--line); color: var(--muted); }
+.v2-root .dline .r .x:hover { border-color: #a63a2a; color: #a63a2a; background: rgba(166,58,42,.06); }
+.v2-root .modes { display: flex; gap: 8px; margin: 18px 0 10px; }
+.v2-root .modes button { flex: 1; height: 42px; border-radius: 999px; border: 2px solid var(--green); background: transparent; color: var(--green); font: inherit; font-weight: 700; cursor: pointer; }
+.v2-root .modes button.on { background: var(--green); color: #fff; }
+.v2-root .modes button:disabled { opacity: .4; cursor: not-allowed; }
+.v2-root .hint { font-size: 12.5px; color: var(--muted); min-height: 1.2em; margin: 0; }
+.v2-root .hint.ok { color: var(--soft); }
+.v2-root .hint.ko { color: #a63a2a; }
+.v2-root .tot { margin-top: 16px; padding: 14px 16px; border-radius: 14px; background: var(--paper-2); font-size: 14px; }
+.v2-root .tot div { display: flex; justify-content: space-between; padding: 3px 0; }
+.v2-root .tot .big { font-weight: 800; font-size: 17px; border-top: 1px solid var(--line); margin-top: 6px; padding-top: 8px; }
+.v2-root .drawer .btn { width: 100%; margin-top: 10px; }
+.v2-root .drawer .empty { padding: 24px 0 8px; color: var(--muted); margin: 0; }
+.v2-root .drawer .empty p { margin: 0 0 6px; }
+.v2-root .drawer .note { font-size: 12px; color: var(--muted); margin: 14px 0 0; line-height: 1.5; }
+.v2-root .drawer .clear { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; font-size: 13px; margin-top: 14px; }
+
+/* Sous-titre discret d'une section (mention riz et salade sous « Plats froids »). */
+.v2-root .cat .sub { margin: -14px 0 22px; font-size: 14px; font-style: italic; color: var(--muted); }
+.v2-root .cat:last-of-type { padding-bottom: 0; }
+/* « Notre histoire » clôt la page, juste avant le pied de page. */
+.v2-root .about { padding: clamp(48px, 6vw, 88px) var(--pad); border-top: 1px solid var(--line); }
+.v2-root .about .wrap { max-width: 820px; text-align: center; }
+.v2-root .about h2 { margin: 0 0 16px; font-weight: 800; font-size: clamp(24px, 2.8vw, 36px); color: var(--green); }
+.v2-root .about p { margin: 0 auto; color: var(--muted); max-width: 56ch; font-size: clamp(17px, 1.5vw, 21px); line-height: 1.6; }
+
+/* livraison & infos — fond Fraîcheur */
+.v2-root .infos { background: var(--mist-bg); padding: clamp(48px, 6vw, 88px) var(--pad); }
+.v2-root .infos h2 { margin: 0 0 26px; font-weight: 800; font-size: clamp(22px, 2.6vw, 32px); color: var(--green); }
+.v2-root .zones { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2vw, 24px); }
+.v2-root .zone { background: var(--paper); border-radius: var(--radius); padding: 22px 24px; border: 1px solid var(--line); }
+.v2-root .zone h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--green); }
+.v2-root .zone .fee { display: block; margin: 6px 0 8px; font-size: 26px; font-weight: 800; }
+.v2-root .zone p { margin: 0; font-size: 13.5px; color: var(--muted); }
+.v2-root .practical { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2vw, 24px); margin-top: clamp(14px, 2vw, 24px); }
+.v2-root .practical > div, .v2-root .practical > a { background: var(--paper); border-radius: var(--radius); padding: 22px 24px; border: 1px solid var(--line); }
+.v2-root .practical h3 { margin: 0 0 8px; font-size: 15px; font-weight: 700; color: var(--green); }
+.v2-root .practical p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.6; }
+.v2-root .practical strong { color: var(--ink); font-weight: 700; }
+.v2-root .practical .mapcard { padding: 0; overflow: hidden; display: flex; flex-direction: column; transition: transform .2s, box-shadow .2s; }
+.v2-root .practical .mapcard:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(13,59,54,.12); }
+.v2-root .mapcard svg { width: 100%; height: auto; display: block; }
+.v2-root .mapcard > div { padding: 16px 22px 20px; }
+.v2-root .mapcard .maplink { display: inline-block; margin-top: 10px; font-weight: 700; font-size: 13px; color: var(--green); border-bottom: 2px solid var(--lime); }
+.v2-root .mapcard:hover .maplink { color: var(--soft); }
+
+/* pied de page — Évasion */
+.v2-root footer { padding: 44px var(--pad) 40px; background: var(--green); color: #cfe0c9; font-size: 14px; }
+.v2-root footer .wrap { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 32px; }
+.v2-root .flogo { height: 72px; width: auto; margin-bottom: 12px; }
+.v2-root footer h3 { margin: 0 0 10px; font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--lime); }
+.v2-root footer p { margin: 0 0 4px; }
+.v2-root footer a { color: #fff; font-weight: 600; }
+.v2-root footer a:hover { color: var(--lime); }
+.v2-root footer .legal { grid-column: 1 / -1; margin-top: 20px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.14); font-size: 12.5px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+/* Mini-panier visible : le pied de page réserve sa hauteur (≈ 64 px + marge). */
+.v2-root--mini footer { padding-bottom: calc(40px + 96px + env(safe-area-inset-bottom, 0px)); }
+
+@media (max-width: 1100px) { .v2-root .cards { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 820px) {
+  .v2-root { --nav: 68px; --logo: 38px; }
+  .v2-root header nav { gap: 12px; }
+  .v2-root header nav a { font-size: 11.5px; letter-spacing: .08em; }
+  .v2-root header nav a.order { padding: 0 14px; height: 36px; white-space: nowrap; }
+  .v2-root header nav a.order .n { min-width: 18px; height: 18px; margin-left: 6px; font-size: 10px; }
+  .v2-root header nav a.hide-m { display: none; }
+  .v2-root header .logo small { font-size: 9px; letter-spacing: .18em; }
+  .v2-root .hero { height: 52vw; }
+  .v2-root .intro { padding: 26px var(--pad) 22px; }
+  .v2-root .intro h2 { font-size: 24px; max-width: none; }
+  .v2-root .intro .sub { margin-top: 10px; font-size: 14px; line-height: 1.5; }
+  .v2-root .intro .status { margin-top: 14px; padding: 8px 14px; font-size: 14px; text-align: left; }
+  .v2-root .actions { margin-top: 16px; gap: 10px; flex-wrap: nowrap; }
+  .v2-root .actions .btn { min-height: 44px; padding: 0 22px; font-size: 12.5px; flex: 0 1 auto; white-space: nowrap; }
+  .v2-root .cards, .v2-root .cards.n2, .v2-root .cards.n3 { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .v2-root .card .body { padding: 12px 13px 14px; }
+  /* Sur téléphone (cartes de ~170 px), « mangue-ananas — « Hawaï » » a
+     besoin de quatre lignes : tolérées, sans hauteur réservée. */
+  .v2-root .card h3 { font-size: 14.5px; -webkit-line-clamp: 4; }
+  .v2-root .card p { font-size: 12px; line-height: 1.45; }
+  .v2-root .card .foot { flex-direction: column; align-items: stretch; gap: 8px; }
+  .v2-root .add { height: 36px; justify-content: center; font-size: 11.5px; }
+  .v2-root .qtyctl { width: 100%; justify-content: space-between; gap: 0; }
+  .v2-root .zones, .v2-root .practical, .v2-root footer .wrap { grid-template-columns: 1fr; }
+  .v2-root .mini { left: 16px; max-width: none; }
+  .v2-root .mini .mt { max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-root .hero > img { opacity: 1; transform: none; animation: none; }
+  .v2-root .drawer-bg, .v2-root .drawer { animation: none; }
+}
+
+/* ─── AUCUN DÉBORDEMENT (règle absolue, audit Playwright à 320→1440 px) ───── */
+.v2-root .btn { min-width: 0; }
+/* En-têtes d'étapes du composeur : le libellé peut se réduire et passer à la
+   ligne (la règle globale le fige en flex: none). */
+.v2-root .wok-slot .wok-step__head { min-width: 0; }
+.v2-root .wok-slot .wok-step__label { flex: 0 1 auto; min-width: 0; }
+.v2-root .wok-slot .wok-step__title, .v2-root .wok-slot .wok-step__note { white-space: normal; overflow-wrap: anywhere; }
+.v2-root .wok-slot .wok-step__pick { flex: 1 1 60px; }
+/* Barre récap du composeur sur téléphone : prix et bouton passent sur leur
+   propre ligne, pleine largeur, au lieu d'être rognés à droite. */
+@media (max-width: 480px) {
+  .v2-root .wok-slot .wok-bar__inner { row-gap: 10px; }
+  .v2-root .wok-slot .wok-bar .flex-none { flex: 1 1 100%; justify-content: space-between; min-width: 0; }
+  .v2-root .wok-slot .wok-bar .text-2xl { font-size: 22px; white-space: nowrap; }
+  .v2-root .wok-slot .wok-bar button { padding: 0 18px; min-height: 46px; font-size: 12.5px; flex: none; }
+}
+/* ≤ 400 px : le prix et le bouton ne tiennent plus côte à côte (prix ~110 px,
+   bouton ~135 px, 254 px disponibles à 390 px) : ils s'empilent. */
+@media (max-width: 400px) {
+  .v2-root .wok-slot .wok-bar .flex-none { flex-direction: column; align-items: stretch; gap: 8px; }
+  .v2-root .wok-slot .wok-bar .text-2xl { text-align: center; }
+}
+/* Cartes très étroites (≤ 360 px) : marges et bouton plus compacts. */
+@media (max-width: 360px) {
+  .v2-root .card .body { padding: 10px 10px 12px; }
+  .v2-root .add { padding: 0 10px; font-size: 11px; letter-spacing: .04em; }
+}
+
+/* ─── THÈME CLAIR DES COMPOSANTS PARTAGÉS (peau v2 uniquement) ───────────────
+ *
+ * Les modales d'options (BottomSheet, OptionTile, SubSheet, FormuleModal), le
+ * Checkout et la modale des zones sont rendus par KaiKaiApp, HORS de
+ * `.v2-root`. Ils lisent la peau sur le conteneur racine (`data-skin`).
+ *
+ *   · Les modales portent leurs couleurs en jetons `--kk-*` (App.jsx) avec la
+ *     valeur sombre du site actuel en repli : sans ce bloc, rien ne change.
+ *   · Le Checkout et les zones sont en classes Tailwind : on redéfinit ici,
+ *     sous `.kk-checkout` / `.kk-zones`, chaque utilitaire de couleur sombre
+ *     par son équivalent clair. Les utilitaires vivent dans @layer utilities,
+ *     ces règles non « layerées » l'emportent donc toujours.
+ *
+ * Même composant, mêmes classes, mêmes mesures : seules les couleurs changent
+ * (palette officielle). / , /refonte et /classique n'ont pas data-skin="v2".
+ */
+[data-skin="v2"] {
+  --kk-backdrop: rgba(6,20,17,.55);
+  --kk-backdrop-sub: rgba(6,20,17,.45);
+  --kk-sheet-bg: #ffffff;
+  --kk-sheet-bg-sub: #ffffff;
+  --kk-sheet-border: #e3e9dd;
+  --kk-grab: #e3e9dd;
+  /* En-tête SUR PHOTO des BottomSheet : valeurs sombres d'origine (App.jsx) —
+     titre blanc ombré et dégradé sombre sous le texte, sinon le titre en
+     Évasion se perd dans la photo. Les titres sans photo restent en Évasion
+     (--kk-title). */
+  --kk-photo-fade: rgba(13,13,13,.92);
+  --kk-title: #0D3B36;
+  --kk-title-on-photo: #ffffff;
+  --kk-title-shadow: 0 1px 8px rgba(0,0,0,.8);
+  --kk-subtitle-on-photo: rgba(255,255,255,.55);
+  --kk-muted: #5d6a62;
+  --kk-faint: #7d8a82;
+  --kk-divider: #e3e9dd;
+  --kk-close-bg: #f3f6ef;
+  --kk-close-border: #e3e9dd;
+  --kk-close-ink: #0D3B36;
+  --kk-close-photo-bg: rgba(255,255,255,.88);
+  --kk-close-photo-border: #e3e9dd;
+  --kk-close-photo-ink: #0D3B36;
+  --kk-tile-bg: #f3f6ef;
+  --kk-tile-bg-on: #eef5db;
+  --kk-tile-border: #e3e9dd;
+  --kk-tile-border-on: #B7D94C;
+  --kk-tile-emoji-bg: #ffffff;
+  --kk-chevron: #b5c0b9;
+  --kk-check-bg: #B7D94C;
+  --kk-check-ink: #0D3B36;
+  --kk-halal-bg: rgba(63,125,107,.12);
+  --kk-halal-ink: #3F7D6B;
+  --kk-halal-border: rgba(63,125,107,.30);
+  --kk-badge-bg: rgba(166,58,42,.10);
+  --kk-badge-ink: #a63a2a;
+  --kk-badge-border: rgba(166,58,42,.25);
+  --kk-cta-bg: #B7D94C;
+  --kk-cta-ink: #0D3B36;
+  --kk-cta-bg-off: #e3e9dd;
+  --kk-cta-ink-off: #9aa59f;
+  --kk-progress-on: #B7D94C;
+  --kk-progress-off: #e3e9dd;
+  --kk-list-bg: #f3f6ef;
+  --kk-list-border: #cfd8d1;
+  --kk-list-item-bg: #ffffff;
+  --kk-list-ink: #14211c;
+  --kk-list-detail: #5d6a62;
+  --kk-list-remove-bg: #e3e9dd;
+  --kk-list-remove-ink: #0D3B36;
+}
+/* Survol des tuiles : la règle globale (App.jsx) est en !important, on la
+   surclasse par la spécificité, en !important aussi. */
+[data-skin="v2"] .modal-backdrop .modal-tile:hover { background: #eef5db !important; border-color: #B7D94C !important; }
+[data-skin="v2"] .modal-backdrop .modal-tile:disabled:hover { background: var(--kk-tile-bg) !important; border-color: var(--kk-tile-border) !important; }
+[data-skin="v2"] .modal-sheet { color: #14211c; }
+
+/* Checkout, zones et page de confirmation (OrderSuccessPage, `kk-success`) :
+   correspondance utilitaire sombre → couleur claire. */
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) { color: #14211c; }
+/* Email du récapitulatif : coupure aux points de rupture, pas au milieu d'un mot. */
+[data-skin="v2"] .kk-success .break-all { word-break: normal; overflow-wrap: anywhere; }
+[data-skin="v2"] .kk-checkout.bg-black\/60, [data-skin="v2"] .kk-zones.bg-black\/80, [data-skin="v2"] .kk-about.bg-black\/80, [data-skin="v2"] .kk-allergens-info.bg-black\/85 { background: rgba(6,20,17,.5); }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .bg-black { background: #ffffff; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(.border-white\/10, .border-white\/15, .border-white\/20) { border-color: #e3e9dd; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(.text-white, .text-white\/90, .text-white\/85) { color: #14211c; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .text-white\/80 { color: #2c3a33; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(.text-white\/70, .text-white\/65, .text-white\/60, .text-white\/55) { color: #5d6a62; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(.text-white\/50, .text-white\/45) { color: #7d8a82; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .text-white\/40 { color: #8f9a94; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .text-white\/30 { color: #b5c0b9; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .bg-white\/30 { background: #b5c0b9; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .text-emerald-300, [data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .text-emerald-400\/70 { color: #3F7D6B; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .border-emerald-500\/20 { border-color: rgba(63,125,107,.30); }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .bg-emerald-500\/5 { background: rgba(63,125,107,.08); }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .bg-white\/5 { background: #f3f6ef; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .bg-white\/10 { background: #eef1ea; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .hover\:bg-white\/10:hover { background: #f3f6ef; }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .hover\:text-white:hover { color: #0D3B36; }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .focus\:border-white\/40:focus { border-color: #3F7D6B; }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(input, textarea)::placeholder { color: #8f9a94; }
+/* Boutons pleins (mode choisi, Commander) : blanc/noir → Nature/Évasion, survol Douceur. */
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .bg-white { background: #B7D94C; }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .text-black { color: #0D3B36; }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .hover\:bg-white\/90:hover { background: #3F7D6B; color: #ffffff; }
+/* Bandeaux d'information (livraison estimée, à emporter, paiement choisi) : Douceur / Nature. */
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(.border-blue-500\/30, .border-\[\#C9A96E\]\/30) { border-color: rgba(63,125,107,.30); }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(.bg-blue-500\/10, .bg-\[\#C9A96E\]\/10) { background: rgba(63,125,107,.10); }
+[data-skin="v2"] :is(.kk-checkout, .kk-zones, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(.text-blue-400, .text-\[\#C9A96E\]) { color: #3F7D6B; }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .border-\[\#C9A96E\] { border-color: #0D3B36; }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .bg-\[\#C9A96E\]\/15 { background: rgba(183,217,76,.22); }
+/* Alertes : mêmes teintes, encres foncées lisibles sur blanc. */
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(.text-red-400, .text-red-300) { color: #a63a2a; }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(.hover\:text-red-300:hover, .hover\:text-red-400:hover) { color: #7f2b1f; }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(.border-red-500\/30, .border-red-500\/50, .hover\:border-red-500\/30:hover) { border-color: rgba(166,58,42,.40); }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(.bg-red-500\/10, .bg-red-500\/15, .hover\:bg-red-500\/15:hover) { background: rgba(166,58,42,.08); }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .text-amber-300 { color: #8a5a00; }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .border-amber-500\/30 { border-color: rgba(138,90,0,.35); }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .bg-amber-500\/10 { background: rgba(138,90,0,.08); }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .text-orange-400 { color: #a05a00; }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .border-orange-500\/30 { border-color: rgba(160,90,0,.35); }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .bg-orange-500\/10 { background: rgba(160,90,0,.08); }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .text-green-400 { color: #3F7D6B; }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) :is(.border-green-500\/30, .border-green-500\/40) { border-color: rgba(63,125,107,.40); }
+[data-skin="v2"] :is(.kk-checkout, .kk-success, .kk-about, .kk-allergens-info, .kk-allergens) .bg-green-500\/10 { background: rgba(63,125,107,.10); }
+
+/* ─── Parité fonctionnelle avec /classique (audit du 27.09.2026) ─────────────
+   Allergènes sous la description de chaque carte : mêmes trois cas que
+   MenuItem (App.jsx), détail au clic. Bouton nu, texte 11 px. */
+.v2-root .card .allerg { display: block; margin: 0; padding: 0; border: 0; background: none; font: inherit; font-size: 11px; line-height: 1.4; color: var(--muted); text-align: left; cursor: pointer; overflow-wrap: anywhere; flex: none; }
+.v2-root .card button.allerg:hover { color: var(--green); }
+.v2-root .card .allerg.none { color: var(--soft); }
+.v2-root .card .allerg.static { cursor: default; }
+.v2-root .card .allerg .traces { display: block; font-size: 10.5px; color: var(--muted); }
+/* Téléphone dans l'en-tête, comme le bouton téléphone de /classique : rond 40 px. */
+.v2-root header nav a.tel { width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 50%; border: 1.5px solid var(--line); color: var(--green); flex: none; }
+.v2-root header nav a.tel:hover { background: var(--paper-2); color: var(--soft); }
+/* Liens-boutons vers les modales partagées : « À propos de KaïKaï »,
+   « Voir les zones desservies » (page), « À propos » · « Voir les zones » (pied). */
+/* Liens texte sur fond clair : Douceur légèrement assombrie (#35705F) pour
+   atteindre le contraste AA 4,5:1 sur Chaleur et sur le fond Fraîcheur. */
+.v2-root .linkbtn { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: #35705F; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.v2-root .linkbtn:hover { color: var(--green); }
+.v2-root .about .linkbtn { display: inline-block; margin-top: 18px; font-size: 15px; }
+.v2-root .infos .zoneslink { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+.v2-root footer .linkbtn { color: #fff; font-weight: 600; }
+.v2-root footer .linkbtn:hover { color: var(--lime); }
+.v2-root footer .links { margin-top: 10px; }
+/* Mini-panier : délai annoncé (ouvert) ; fermé → atténué, statut en info-bulle,
+   comme le mini-panier de /classique. */
+.v2-root .mini .me { display: block; font-size: 10px; font-weight: 600; color: var(--lime); margin-top: 1px; }
+.v2-root .mini.closed { opacity: .65; }
+.v2-root .mini.closed.hidden { opacity: 0; }
+/* Tiroir : bandeau « fermé », mêmes textes et mêmes teintes que le Checkout. */
+.v2-root .drawer .closed-banner { margin: 0 0 14px; padding: 12px 14px; border-radius: 12px; font-size: 13px; line-height: 1.45; }
+.v2-root .drawer .closed-banner.manual { background: rgba(166,58,42,.08); border: 1px solid rgba(166,58,42,.35); color: #a63a2a; }
+.v2-root .drawer .closed-banner.hours { background: rgba(138,90,0,.08); border: 1px solid rgba(138,90,0,.35); color: #8a5a00; }
+.v2-root .drawer .closed-banner b { display: block; font-weight: 700; }
+@media (max-width: 400px) { .v2-root header nav a.tel { width: 36px; height: 36px; } }
+/* En-tête ≤ 440 px : logo incompressible (flex: none) et wordmark masqué, sinon
+   « TAHITIAN FOOD » débordait de sa boîte jusque sous « Menu » quand le bouton
+   « Votre panier » porte sa pastille (à 414 px, logo complet + Menu + téléphone
+   + « Votre panier 12 » ne tiennent pas). Le K seul suffit à ces largeurs. */
+@media (max-width: 440px) { .v2-root header .logo span { display: none; } }
+@media (max-width: 360px) { .v2-root header nav { gap: 8px; } .v2-root header nav a { font-size: 11px; letter-spacing: .04em; } .v2-root header nav a.order { padding: 0 11px; } }
+/* À propos, rubrique « Suivez-nous » : sur /v2 les deux boutons passent à la
+   ligne sous 360 px au lieu de déborder de la modale (règle : rien ne déborde). */
+[data-skin="v2"] .kk-about .flex.gap-4 { flex-wrap: wrap; }
+
+/* ─── Avis Google (V2Reviews.jsx) : en-tête, étoiles au prorata, cartes ────
+   Avis transcrits dans src/data/reviews.js ; section absente si la liste est
+   vide. La piste est un défilement horizontal natif (data-scroll-x), poussé
+   doucement par JS et dupliqué pour boucler ; cartes étirées à la hauteur de
+   la rangée. Chaque étoile est remplie au prorata (--f) : 4,6 → quatre pleines
+   et une à 60 %. */
+.v2-root .reviews { padding: clamp(48px, 6vw, 88px) var(--pad) clamp(40px, 5vw, 64px); border-top: 1px solid var(--line); }
+.v2-root .reviews .rhead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; margin-bottom: 22px; }
+.v2-root .reviews h2 { margin: 0; font-weight: 800; font-size: clamp(22px, 2.6vw, 32px); color: var(--green); letter-spacing: -.01em; }
+.v2-root .reviews .rsum { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--ink); font-size: 15px; font-weight: 700; }
+.v2-root .stars { display: inline-flex; gap: 2px; font-size: 20px; line-height: 1; white-space: nowrap; }
+.v2-root .stars i { font-style: normal; background: linear-gradient(90deg, #f5b301 var(--f, 0%), #dfe5da 0); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+.v2-root .stars.small { font-size: 14px; gap: 1px; }
+.v2-root .rtrack { display: flex; align-items: stretch; gap: 16px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding: 4px 4px 12px; margin: 0 -4px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; outline-offset: 4px; }
+.v2-root .rtrack.loops { scroll-snap-type: none; }
+.v2-root .rcard { flex: 0 0 min(320px, 82vw); scroll-snap-align: start; display: flex; flex-direction: column; gap: 12px; padding: 18px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 1px 2px rgba(13,59,54,.04); }
+.v2-root .rcard .rtop { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.v2-root .rcard .ravatar { width: 40px; height: 40px; border-radius: 50%; background: var(--lime); color: var(--green); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; }
+.v2-root .rcard .rwho { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.v2-root .rcard .rauthor { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; min-width: 0; font-weight: 700; color: var(--ink); }
+.v2-root .rcard .rname { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Badge Google (« Local Guide ») : hors du nom tronqué, jamais coupé. */
+.v2-root .rcard .rbadge { flex: none; display: inline-block; padding: 1px 7px; border-radius: 999px; background: var(--paper-2); color: var(--muted); font-style: normal; font-weight: 600; font-size: 10.5px; white-space: nowrap; }
+.v2-root .rcard small { font-size: 12px; color: var(--muted); }
+.v2-root .rcard p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.v2-root .rcard.open p { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.v2-root .rcard .rnote { font-size: 11.5px; color: var(--muted); font-style: italic; }
+.v2-root .rcard .rread { margin-top: auto; align-self: flex-start; padding: 0; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 700; color: #35705F; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.v2-root .rcard .rread:hover { color: var(--green); }
+.v2-root .rmore { margin: 14px 0 0; font-size: 14px; }
+.v2-root .rmore a { font-weight: 700; color: #35705F; text-decoration: underline; text-underline-offset: 3px; }
+.v2-root .rmore a:hover { color: var(--green); }
+/* Sous 360 px : la date prend sa propre ligne sous le nom et les étoiles,
+   jamais coupée. La colonne « qui » se dissout dans la grille (display:
+   contents) pour placer ses deux enfants sur deux lignes. */
+@media (max-width: 360px) {
+  .v2-root .rcard .rwho { display: contents; }
+  .v2-root .rcard .rtop { grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "avatar author stars" ". date date"; row-gap: 2px; }
+  .v2-root .rcard .ravatar { grid-area: avatar; }
+  .v2-root .rcard .rauthor { grid-area: author; }
+  .v2-root .rcard .rtop .stars { grid-area: stars; }
+  .v2-root .rcard .rtop small { grid-area: date; white-space: nowrap; }
+}

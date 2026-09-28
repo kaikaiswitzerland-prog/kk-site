@@ -15,6 +15,12 @@ import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
 //   - l'import dynamique casse le cycle App.jsx ↔ src/refonte/, qui n'importe
 //     jamais App.jsx en retour (tout lui est passé en props).
 const RefonteShell = lazy(() => import("./refonte/RefonteShell.jsx"));
+// Peau « v2 » (route /, nouvelle page d'accueil — v3 du site) : import
+// STATIQUE, contrairement à la refonte. C'est la page d'accueil, donc le cas
+// par défaut : la charger à la demande ajoutait un aller-retour (chunk, puis
+// sa CSS) avant le premier rendu. src/accueil-v2/ n'importe pas App.jsx,
+// aucun cycle. Le composant est monté sous Suspense comme avant (inoffensif).
+import AccueilV2Shell from "./accueil-v2/AccueilV2Shell.jsx";
 import { supabase } from "./lib/supabase.js";
 import { useRestaurantOpen } from "./hooks/useRestaurantOpen.js";
 import { useOutOfStock } from "./hooks/useOutOfStock.js";
@@ -62,7 +68,7 @@ import {
   getDeliveryFee,
   getAllNpas,
 } from "./lib/deliveryZones.js";
-import { RESTAURANT_INFO } from "./data/restaurant.js";
+import { RESTAURANT_INFO, HOURS_DISPLAY } from "./data/restaurant.js";
 import { flyToCart, CART_TARGET_ATTR } from "./lib/flyToCart.js";
 
 // Clé localStorage versionnée — bump le suffixe v* si la structure change.
@@ -77,7 +83,32 @@ const sanitizeNote = (s, max) => String(s || '').trim().slice(0, max);
 // prix/menu ont pu bouger entre-temps).
 const CART_TTL_MS = 24 * 60 * 60 * 1000;
 
+// ─── MODE SIMULATION DU CHECKOUT — DEV ET PREVIEW, JAMAIS EN PRODUCTION ─────
+// Actif dans deux cas :
+//   · en dev (serveur Vite) si VITE_CHECKOUT_DRY_RUN=true dans .env.local ;
+//   · sur les déploiements Preview de Vercel (__KK_PREVIEW_DRY_RUN__, figé au
+//     build depuis VERCEL_ENV — voir vite.config.js) : la preview partage la
+//     base Supabase de production, une commande y serait réelle.
+// En build de production, Vite remplace `import.meta.env.DEV` par `false` et
+// `__KK_PREVIEW_DRY_RUN__` par `false` : l'expression est pliée à false et
+// tout ce qui en dépend disparaît du bundle — aucun chemin du mode test
+// n'existe en prod, quelles que soient les variables d'environnement.
+//
+// En simulation : aucun INSERT dans orders, aucun appel /api, aucun paiement,
+// donc ni notification ni ticket. Le Checkout affiche un bandeau « MODE TEST »
+// et la confirmation porte un identifiant fictif, sur les trois peaux.
+const CHECKOUT_DRY_RUN = (import.meta.env.DEV && import.meta.env.VITE_CHECKOUT_DRY_RUN === 'true') || __KK_PREVIEW_DRY_RUN__;
+// Minimum de commande pour la livraison (CHF). Au niveau module pour être
+// partagé par Checkout et par la passerelle menuCatalog (peau v2) sans le
+// recopier. Le serveur applique la même règle (api/create-checkout.js).
+const MINIMUM_DELIVERY = 20.00;
+
 // MODIFICATION 1: Logo PNG au lieu du SVG
+// ⚠ LOGO PROVISOIRE, À REMPLACER : public/logo_kaikai.png est fabriqué à partir
+// de « Logo 2 blanc détouré .png » recoloré au lime officiel #B7D94C (prélevé
+// sur « Logo Lime 2 fond vert.png »), fond transparent, recadré au plus près.
+// Le logo définitif arrive plus tard — le remplacer fichier pour fichier, sans
+// toucher à ce code. (27.09.2026, branche test/accueil-v2)
 const LOGO_SRC = "/logo_kaikai.png";
 
 // Style global pour empêcher le scroll horizontal
@@ -829,6 +860,14 @@ export const menuCatalog = {
     jusMaison: SEC_JUS_MAISON,
   },
   isUnavailable: isMenuItemUnavailable,
+  // Ajouts pour la peau v2 : photos des fiches (les mêmes JPG de public/ que
+  // le site historique), prix d'un exemplaire garniture/légumes/extras
+  // compris, et minimum de livraison. Toujours une seule source.
+  getPhoto,
+  getPhotoPos,
+  unitPrice,
+  lineSubtotal,
+  minimumDelivery: MINIMUM_DELIVERY,
 };
 
 
@@ -963,7 +1002,13 @@ const BOISSON_PHOTO_POS = {
   "25": "center",
 };
 
+// Style d'affichage des prix : « 24.90 CHF » (Intl fr-CH) sur le site actuel
+// et la refonte, « CHF 24,90 » sur la peau v2 (format du HTML fourni, partout :
+// fiches, composeur, tiroir, Checkout, confirmation). Réglé par KaiKaiApp au
+// rendu — une seule instance, donc une variable de module suffit.
+let priceStyle = 'legacy';
 function format(price) {
+  if (priceStyle === 'v2') return 'CHF ' + Number(price || 0).toFixed(2).replace('.', ',');
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(price);
 }
 
@@ -986,7 +1031,7 @@ function Badge({ type }) {
 // 3 couleurs :
 //   - Vert : ouvert (statusLabel = "Ouvert · ferme à 14h")
 //   - Rouge : fermé temporairement (toggle admin "Stop commandes")
-//   - Orange : fermé automatiquement (lundi ou hors heures de service)
+//   - Orange : fermé automatiquement (hors heures de service)
 function OpenStatus({ isOpen, manualClosure, statusLabel }) {
   let palette;
   if (isOpen) {
@@ -1147,6 +1192,11 @@ function useActiveCategory() {
 // qu'une seule implémentation de la commande, ici.
 export default function KaiKaiApp({ skin = 'legacy' }) {
   const isRefonte = skin === 'refonte';
+  const isV2 = skin === 'v2';
+  // Peau historique : ni refonte, ni v2. Les blocs du site actuel (header,
+  // menu, confirmation, footer) ne sont montés que pour elle.
+  const isLegacy = !isRefonte && !isV2;
+  priceStyle = isV2 ? 'v2' : 'legacy';
   const { isOpen: restaurantOpen, manualClosure, statusLabel: openStatusLabel, status: openStatus } = useRestaurantOpen();
   const { items: outOfStockItems } = useOutOfStock();
 
@@ -1201,8 +1251,15 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   // window.location.search au mount alors que replaceState n'a peut-être
   // pas encore été appliqué côté navigateur (ou React commit avant).
   const [successOrderId, setSuccessOrderId] = useState(null);
+  // Commande SIMULÉE (mode test, dev uniquement) : ce que la page de
+  // confirmation affiche à la place d'une lecture Supabase. null sinon.
+  const [successSimulated, setSuccessSimulated] = useState(null);
   const [logoVisible, setLogoVisible] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
+  // Détail allergènes d'une carte de la peau v2 : la carte n'a pas d'état
+  // propre (contrairement à MenuItem), c'est donc ici que vit le plat dont on
+  // ouvre la modale — la même AllergensModal, les mêmes données.
+  const [allergensItem, setAllergensItem] = useState(null);
 
   const activeCategory = useActiveCategory();
 
@@ -1281,6 +1338,24 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         }
       }
       return n;
+    });
+  };
+
+  // Retire d'un coup `count` exemplaires d'un plat. `indices` = positions à
+  // retirer dans cartVariants[id] (vide pour un plat sans options). Sert au
+  // tiroir de la peau v2, qui regroupe les exemplaires identiques sur une
+  // ligne : son ✕ enlève toute la ligne. Lit `cart` au moment du clic pour
+  // supprimer aussi les variantes quand la quantité tombe à zéro.
+  const removeMany = (id, count, indices = []) => {
+    const drop = new Set(indices);
+    const q = (cart[id] || 0) - count;
+    setCart(c => { const n = { ...c }; if (q <= 0) delete n[id]; else n[id] = q; return n; });
+    setCartVariants(cv => {
+      const nv = { ...cv };
+      if (q <= 0 || !Array.isArray(cv[id])) { delete nv[id]; return nv; }
+      const arr = cv[id].filter((_, i) => !drop.has(i));
+      if (arr.length === 0) delete nv[id]; else nv[id] = arr;
+      return nv;
     });
   };
 
@@ -1404,8 +1479,12 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   // Retour au menu depuis l'écran de confirmation. Partagé par les deux peaux :
   // il nettoie l'URL pour qu'un F5 ne ramène pas sur /payment-success.
   const backToMenuFromSuccess = () => {
-    try { window.history.replaceState(null, '', '/'); } catch { /* ignore */ }
+    // Chaque peau revient sur sa propre adresse, pour qu'un F5 après « Retour
+    // au menu » retombe sur la même peau : v3 (skin v2) sur /, refonte sur
+    // /refonte, historique sur /classique.
+    try { window.history.replaceState(null, '', isV2 ? '/' : isRefonte ? '/refonte' : '/classique'); } catch { /* ignore */ }
     setSuccessOrderId(null);
+    setSuccessSimulated(null);
     setStep('menu');
   };
 
@@ -1449,6 +1528,26 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         subtotal: lineSubtotal(it, it.qty, cartVariants[it.id]),
         variants: cartVariants[it.id] || [],
       }));
+
+    if (CHECKOUT_DRY_RUN) {
+      // MODE TEST : on s'arrête ICI, avant l'INSERT et avant tout appel /api.
+      // Même parcours visuel qu'une vraie commande (attente, confirmation),
+      // mais rien ne quitte le navigateur.
+      const fakeId = `test-${Date.now().toString(36)}`;
+      console.info("[KaïKaï] MODE TEST — commande simulée, rien n'est envoyé", { paymentMethod, mode, total, items: orderItems });
+      await new Promise((r) => setTimeout(r, 500));
+      setSuccessSimulated({
+        id: fakeId,
+        total: parseFloat(total.toFixed(2)),
+        delivery_mode: mode,
+        payment_method: paymentMethod,
+        customer_email: form.email?.trim() || null,
+      });
+      setSuccessOrderId(fakeId);
+      setStep('success');
+      clear();
+      return null;
+    }
 
     try {
       const isCard = paymentMethod === 'card';
@@ -1547,9 +1646,12 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   return (
     <>
       <style>{globalStyles}</style>
-      <div className="min-h-screen bg-black text-white">
+      {/* `data-skin` : les composants partagés (modales d'options, Checkout,
+          zones) lisent la peau en CSS. Seule la peau v2 pose des jetons de
+          couleur (src/accueil-v2/accueil-v2.css) ; les autres n'en voient rien. */}
+      <div className="min-h-screen bg-black text-white" data-skin={skin}>
       {/* Header — peau historique */}
-      {!isRefonte && (
+      {isLegacy && (
       <header className="sticky top-0 z-49 border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
@@ -1636,6 +1738,8 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
             {step === "success" && (
               <OrderSuccessPage
                 initialOrderId={successOrderId}
+                simulated={successSimulated}
+                formatPrice={format}
                 onBackToMenu={backToMenuFromSuccess}
               />
             )}
@@ -1643,8 +1747,69 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         </Suspense>
       )}
 
+      {/* Peau v2 (route /, v3 du site) — même logique de commande, présentation du HTML
+          fourni. Le mini-panier est rendu PAR le shell (celui du HTML), le
+          Checkout et les modaux d'options restent ceux partagés ci-dessous. */}
+      {isV2 && (
+        <Suspense fallback={<div style={{ minHeight: '100vh', background: '#F5F5F1' }} />}>
+          <AccueilV2Shell
+            showContent={step === "menu"}
+            sections={menuCatalog.sections}
+            catalog={menuCatalog}
+            wokComposer={
+              <WokComposer
+                bases={SEC_WOK}
+                cart={cart}
+                add={add}
+                stockList={outOfStockItems}
+                outOfStockFor={(it) => isMenuItemUnavailable(outOfStockItems, it)}
+                onCoversMiniCart={setWokBarCoversCart}
+                ctaLabel="Commander"
+              />
+            }
+            cart={cart}
+            cartVariants={cartVariants}
+            items={items}
+            cartCount={cartCount}
+            subtotal={subtotal}
+            deliveryFee={deliveryFee}
+            total={total}
+            onAdd={(it) => requestAdd(it, isMenuItemUnavailable(outOfStockItems, it))}
+            onRemove={(it) => remove(it.id)}
+            onRemoveAt={removeOne}
+            onRemoveMany={removeMany}
+            onAddExact={add}
+            onClear={clear}
+            isUnavailable={(it) => isMenuItemUnavailable(outOfStockItems, it)}
+            onOpenCheckout={() => setStep("checkout")}
+            mode={mode}
+            setMode={setMode}
+            deliveryNpa={deliveryNpa}
+            restaurantOpen={restaurantOpen}
+            manualClosure={manualClosure}
+            openStatusLabel={openStatusLabel}
+            miniVisible={cartCount > 0 && !miniCartHold}
+            miniHidden={wokBarCoversCart}
+            restaurant={RESTAURANT_INFO}
+            discount={discount}
+            onShowAllergens={setAllergensItem}
+            onShowZones={() => setShowZonesModal(true)}
+            onShowAbout={() => setShowAbout(true)}
+          >
+            {step === "success" && (
+              <OrderSuccessPage
+                initialOrderId={successOrderId}
+                simulated={successSimulated}
+                formatPrice={format}
+                onBackToMenu={backToMenuFromSuccess}
+              />
+            )}
+          </AccueilV2Shell>
+        </Suspense>
+      )}
+
       {/* Menu principal — peau historique */}
-      {step === "menu" && !isRefonte && (
+      {step === "menu" && isLegacy && (
         <>
           <CategoryNav activeCategory={activeCategory} />
           <HeroSliderV2 />
@@ -1756,20 +1921,32 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
       {/* Modaux d'options de la grille refonte — mêmes composants que MenuItem. */}
       {optionModals}
 
+      {/* Détail allergènes d'une carte de la peau v2 : la modale que MenuItem
+          ouvre sur la peau historique, avec les mêmes données (allergens.js). */}
+      {allergensItem && (
+        <AllergensModal
+          item={allergensItem}
+          allergens={getAllergensForItem(allergensItem.id)}
+          onClose={() => setAllergensItem(null)}
+        />
+      )}
+
       {showZonesModal && <ZonesModal onClose={() => setShowZonesModal(false)} />}
 
       {/* Peau historique uniquement : son menu est entièrement démonté en
           confirmation et aucun conteneur intermédiaire ne réserve une hauteur
           d'écran, donc le rendu en frère y est sans danger. La refonte, elle,
           rend la confirmation DANS son shell (voir plus haut). */}
-      {step === "success" && !isRefonte && (
+      {step === "success" && isLegacy && (
         <OrderSuccessPage
           initialOrderId={successOrderId}
+          simulated={successSimulated}
+          formatPrice={format}
           onBackToMenu={backToMenuFromSuccess}
         />
       )}
 
-      {step === "menu" && Object.values(cart).reduce((s, q) => s + q, 0) > 0 && !miniCartHold && (
+      {step === "menu" && Object.values(cart).reduce((s, q) => s + q, 0) > 0 && !miniCartHold && !isV2 && (
         <MiniCart
           hidden={wokBarCoversCart}
           cart={cart}
@@ -1785,7 +1962,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         />
       )}
 
-      {!isRefonte && (
+      {isLegacy && (
       <>
       {/* Mode Île — pastille membres */}
       <div style={{ display: 'flex', justifyContent: 'center', margin: '40px auto' }}>
@@ -1804,7 +1981,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
             </a>
           </div>
           <div>KaïKaï — restaurant tahitien · {RESTAURANT_INFO.address}</div>
-          <div className="mt-1">📞 {RESTAURANT_INFO.phoneDisplay} · 🕐 12h-14h | 18h-22h (pré-commande dès 11h / 17h30)</div>
+          <div className="mt-1">📞 {RESTAURANT_INFO.phoneDisplay} · 🕐 {HOURS_DISPLAY}</div>
           <div className="mt-1">
             📍 Livraison à Genève · Centre + 1ère et 2ème couronnes ·{' '}
             <button
@@ -2002,7 +2179,9 @@ const useAvantPeinture = typeof window !== 'undefined' ? useLayoutEffect : useEf
 // escamotait le mini-panier trop tôt.
 //
 // Prop FACULTATIVE : sans elle le composeur se comporte exactement comme avant.
-export function WokComposer({ bases, cart, add, stockList, outOfStockFor, onCoversMiniCart }) {
+// `ctaLabel` : libellé du bouton d'ajout (« Commander » sur la peau v2) ; sans
+// lui, « + Ajouter » comme aujourd'hui. L'état « Ajouté ✓ » ne change pas.
+export function WokComposer({ bases, cart, add, stockList, outOfStockFor, onCoversMiniCart, ctaLabel = null }) {
   // Aucune base pré-cochée : le composeur s'ouvre vierge et c'est le client qui
   // choisit. `base` peut donc valoir null tout au long du rendu — chaque lecture
   // en aval le suppose, y compris le récap et le total.
@@ -2645,7 +2824,9 @@ export function WokComposer({ bases, cart, add, stockList, outOfStockFor, onCove
             >
               {added
                 ? <><Check className="h-4 w-4" strokeWidth={3} />Ajouté</>
-                : <><Plus className="h-4 w-4" />Ajouter</>}
+                : ctaLabel
+                  ? ctaLabel
+                  : <><Plus className="h-4 w-4" />Ajouter</>}
             </button>
           </div>
          </div>
@@ -2929,15 +3110,18 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
   return (
     <div
       className="modal-backdrop fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)' }}
+      style={{ background: 'var(--kk-backdrop, rgba(0,0,0,0.82))', backdropFilter: 'blur(10px)' }}
       onClick={onClose}
     >
       <div
         className="modal-sheet w-full max-w-lg flex flex-col"
         style={{
-          background: 'linear-gradient(180deg, #0d0d0d 0%, #111 100%)',
+          // Couleurs en jetons `--kk-*` : la valeur de repli est celle du site
+          // actuel, la peau v2 (accueil-v2.css) pose les siennes. Même
+          // composant, seules les couleurs changent — cf. MiniCart.
+          background: 'var(--kk-sheet-bg, linear-gradient(180deg, #0d0d0d 0%, #111 100%))',
           borderRadius: '28px 28px 0 0',
-          border: '1px solid rgba(255,255,255,0.09)',
+          border: '1px solid var(--kk-sheet-border, rgba(255,255,255,0.09))',
           borderBottom: 'none',
           maxHeight: '91vh',
           overflow: 'hidden',
@@ -2945,7 +3129,7 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
-          <div style={{ width: 38, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
+          <div style={{ width: 38, height: 4, borderRadius: 2, background: 'var(--kk-grab, rgba(255,255,255,0.18))' }} />
         </div>
 
         {photoOk && (
@@ -2955,14 +3139,14 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
               style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoPos || 'center' }}
               onError={() => setPhotoKo(true)}
             />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(13,13,13,0.92) 100%)' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, var(--kk-photo-fade, rgba(13,13,13,0.92)) 100%)' }} />
             <div style={{ position: 'absolute', bottom: 14, left: 16, right: 52 }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'white', textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{title}</div>
-              {subtitle && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{subtitle}</div>}
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--kk-title-on-photo, white)', textShadow: 'var(--kk-title-shadow, 0 1px 8px rgba(0,0,0,0.8))' }}>{title}</div>
+              {subtitle && <div style={{ fontSize: 13, color: 'var(--kk-subtitle-on-photo, rgba(255,255,255,0.55))', marginTop: 2 }}>{subtitle}</div>}
             </div>
             <button
               onClick={onClose}
-              style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}
+              style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: '50%', background: 'var(--kk-close-photo-bg, rgba(0,0,0,0.55))', border: '1px solid var(--kk-close-photo-border, rgba(255,255,255,0.15))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--kk-close-photo-ink, white)' }}
             ><X size={15} /></button>
           </div>
         )}
@@ -2970,23 +3154,23 @@ function BottomSheet({ title, subtitle, photo, photoPos, children, onClose, foot
         {!photoOk && (
           <div style={{ padding: '6px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
             <div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'white' }}>{title}</div>
-              {subtitle && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>{subtitle}</div>}
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--kk-title, white)' }}>{title}</div>
+              {subtitle && <div style={{ fontSize: 13, color: 'var(--kk-muted, rgba(255,255,255,0.45))', marginTop: 3 }}>{subtitle}</div>}
             </div>
-            <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0, marginTop: 2 }}>
+            <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--kk-close-bg, rgba(255,255,255,0.07))', border: '1px solid var(--kk-close-border, rgba(255,255,255,0.12))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--kk-close-ink, white)', flexShrink: 0, marginTop: 2 }}>
               <X size={15} />
             </button>
           </div>
         )}
 
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '14px 0 0', flexShrink: 0 }} />
+        <div style={{ height: 1, background: 'var(--kk-divider, rgba(255,255,255,0.06))', margin: '14px 0 0', flexShrink: 0 }} />
 
         <div style={{ overflowY: 'auto', flex: 1, padding: '10px 16px 16px' }}>
           {children}
         </div>
 
         {footerContent && (
-          <div style={{ padding: '12px 16px 32px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+          <div style={{ padding: '12px 16px 32px', borderTop: '1px solid var(--kk-divider, rgba(255,255,255,0.06))', flexShrink: 0 }}>
             {footerContent}
           </div>
         )}
@@ -3010,8 +3194,8 @@ function OptionTile({ emoji, photo, name, desc, isSelected, onClick, index, badg
       style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: 12,
         padding: '13px 14px', marginBottom: 8,
-        background: isSelected ? 'rgba(255,255,255,0.11)' : 'rgba(255,255,255,0.03)',
-        border: isSelected ? '1px solid rgba(255,255,255,0.28)' : '1px solid rgba(255,255,255,0.08)',
+        background: isSelected ? 'var(--kk-tile-bg-on, rgba(255,255,255,0.11))' : 'var(--kk-tile-bg, rgba(255,255,255,0.03))',
+        border: isSelected ? '1px solid var(--kk-tile-border-on, rgba(255,255,255,0.28))' : '1px solid var(--kk-tile-border, rgba(255,255,255,0.08))',
         borderRadius: 16,
         cursor: disabled ? 'not-allowed' : 'pointer',
         textAlign: 'left',
@@ -3019,7 +3203,7 @@ function OptionTile({ emoji, photo, name, desc, isSelected, onClick, index, badg
       }}
     >
       {(emoji || vignette) && (
-        <span style={{ fontSize: 26, width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 13, flexShrink: 0, overflow: 'hidden' }}>
+        <span style={{ fontSize: 26, width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--kk-tile-emoji-bg, rgba(255,255,255,0.05))', borderRadius: 13, flexShrink: 0, overflow: 'hidden' }}>
           {vignette ? (
             <img
               src={photo}
@@ -3033,20 +3217,20 @@ function OptionTile({ emoji, photo, name, desc, isSelected, onClick, index, badg
         </span>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--kk-title, white)', display: 'flex', alignItems: 'center', gap: 6 }}>
           {name}
           {/* Mention halal — même géométrie que la pastille `badge` ci-dessous,
               en vert pour ne pas se confondre avec l'ambre des ruptures. Elle
               reste affichée sur une option en rupture : c'est une information
               diététique, pas une accroche, et la ligne est déjà grisée. */}
-          {halal && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'rgba(80,220,140,0.13)', color: 'rgba(110,235,170,0.90)', border: '1px solid rgba(80,220,140,0.22)' }}>HALAL</span>}
-          {badge && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'rgba(255,180,0,0.15)', color: 'rgba(255,180,0,0.85)', border: '1px solid rgba(255,180,0,0.2)' }}>{badge}</span>}
+          {halal && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'var(--kk-halal-bg, rgba(80,220,140,0.13))', color: 'var(--kk-halal-ink, rgba(110,235,170,0.90))', border: '1px solid var(--kk-halal-border, rgba(80,220,140,0.22))' }}>HALAL</span>}
+          {badge && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: 'var(--kk-badge-bg, rgba(255,180,0,0.15))', color: 'var(--kk-badge-ink, rgba(255,180,0,0.85))', border: '1px solid var(--kk-badge-border, rgba(255,180,0,0.2))' }}>{badge}</span>}
         </div>
-        {desc && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</div>}
+        {desc && <div style={{ fontSize: 12, color: 'var(--kk-muted, rgba(255,255,255,0.40))', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</div>}
       </div>
       {isSelected
-        ? <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Check size={13} color="black" strokeWidth={3} /></div>
-        : <ChevronRight size={15} style={{ color: 'rgba(255,255,255,0.20)', flexShrink: 0 }} />
+        ? <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--kk-check-bg, white)', color: 'var(--kk-check-ink, black)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Check size={13} strokeWidth={3} /></div>
+        : <ChevronRight size={15} style={{ color: 'var(--kk-chevron, rgba(255,255,255,0.20))', flexShrink: 0 }} />
       }
     </button>
   );
@@ -3054,7 +3238,7 @@ function OptionTile({ emoji, photo, name, desc, isSelected, onClick, index, badg
 
 function SectionLabel({ children }) {
   return (
-    <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', letterSpacing: '0.09em', textTransform: 'uppercase', padding: '14px 2px 10px' }}>
+    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--kk-faint, rgba(255,255,255,0.30))', letterSpacing: '0.09em', textTransform: 'uppercase', padding: '14px 2px 10px' }}>
       {children}
     </div>
   );
@@ -3066,14 +3250,14 @@ function SelectionList({ label, items, onRemove }) {
       marginTop: 4,
       marginBottom: 4,
       padding: 10,
-      background: 'rgba(255,255,255,0.03)',
+      background: 'var(--kk-list-bg, rgba(255,255,255,0.03))',
       borderRadius: 14,
-      border: '1px dashed rgba(255,255,255,0.12)',
+      border: '1px dashed var(--kk-list-border, rgba(255,255,255,0.12))',
     }}>
       <div style={{
         fontSize: 9,
         fontWeight: 700,
-        color: 'rgba(255,255,255,0.50)',
+        color: 'var(--kk-faint, rgba(255,255,255,0.50))',
         letterSpacing: '0.1em',
         textTransform: 'uppercase',
         marginBottom: 8,
@@ -3087,15 +3271,15 @@ function SelectionList({ label, items, onRemove }) {
           alignItems: 'center',
           gap: 10,
           padding: '7px 10px',
-          background: 'rgba(255,255,255,0.05)',
+          background: 'var(--kk-list-item-bg, rgba(255,255,255,0.05))',
           borderRadius: 10,
           marginBottom: 4,
         }}>
           {it.emoji && <span style={{ fontSize: 18, flexShrink: 0 }}>{it.emoji}</span>}
-          <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: 'var(--kk-list-ink, white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {it.name}
             {it.detail && (
-              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginLeft: 6 }}>
+              <span style={{ color: 'var(--kk-list-detail, rgba(255,255,255,0.55))', fontSize: 11, marginLeft: 6 }}>
                 · {it.detail}
               </span>
             )}
@@ -3105,8 +3289,8 @@ function SelectionList({ label, items, onRemove }) {
             aria-label="Retirer"
             style={{
               width: 26, height: 26, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.08)',
-              border: 'none', color: 'rgba(255,255,255,0.65)',
+              background: 'var(--kk-list-remove-bg, rgba(255,255,255,0.08))',
+              border: 'none', color: 'var(--kk-list-remove-ink, rgba(255,255,255,0.65))',
               fontSize: 13, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
@@ -3127,15 +3311,15 @@ function SubSheet({ title, subtitle, options, outIds = [], onSelect, onClose }) 
   return (
     <div
       className="modal-backdrop fixed inset-0 z-[100] flex items-end justify-center"
-      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }}
+      style={{ background: 'var(--kk-backdrop-sub, rgba(0,0,0,0.65))', backdropFilter: 'blur(6px)' }}
       onClick={onClose}
     >
       <div
         className="modal-sheet w-full max-w-lg"
         style={{
-          background: '#181818',
+          background: 'var(--kk-sheet-bg-sub, #181818)',
           borderRadius: '24px 24px 0 0',
-          border: '1px solid rgba(255,255,255,0.09)',
+          border: '1px solid var(--kk-sheet-border, rgba(255,255,255,0.09))',
           borderBottom: 'none',
           maxHeight: '65vh',
           overflow: 'hidden',
@@ -3144,18 +3328,18 @@ function SubSheet({ title, subtitle, options, outIds = [], onSelect, onClose }) 
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
-          <div style={{ width: 34, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
+          <div style={{ width: 34, height: 4, borderRadius: 2, background: 'var(--kk-grab, rgba(255,255,255,0.15))' }} />
         </div>
         <div style={{ padding: '10px 20px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'white' }}>{title}</div>
-            {subtitle && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 2 }}>{subtitle}</div>}
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--kk-title, white)' }}>{title}</div>
+            {subtitle && <div style={{ fontSize: 12, color: 'var(--kk-muted, rgba(255,255,255,0.40))', marginTop: 2 }}>{subtitle}</div>}
           </div>
-          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--kk-close-bg, rgba(255,255,255,0.07))', border: '1px solid var(--kk-close-border, rgba(255,255,255,0.10))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--kk-close-ink, white)' }}>
             <X size={14} />
           </button>
         </div>
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+        <div style={{ height: 1, background: 'var(--kk-divider, rgba(255,255,255,0.06))', flexShrink: 0 }} />
         <div style={{ overflowY: 'auto', flex: 1, padding: '8px 16px 28px' }}>
           {options.map((opt, i) => {
             const out = outSet.has(opt.id);
@@ -3319,7 +3503,8 @@ function AllergensModal({ item, allergens, onClose }) {
       photoPos={getPhotoPos(item.id)}
       onClose={onClose}
     >
-      <div className="space-y-5 pb-2">
+      {/* `kk-allergens` : accroche du thème clair de la peau v2 (accueil-v2.css). */}
+      <div className="kk-allergens space-y-5 pb-2">
         {noAllergensAtAll ? (
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
             <div className="text-sm text-emerald-300">Sans allergène majeur</div>
@@ -3601,8 +3786,8 @@ function FormuleModal({ item, stockList = [], onConfirm, onClose }) {
       disabled={!canConfirm()}
       style={{
         width: '100%', padding: '15px 20px', borderRadius: 18,
-        background: canConfirm() ? 'white' : 'rgba(255,255,255,0.10)',
-        color: canConfirm() ? 'black' : 'rgba(255,255,255,0.28)',
+        background: canConfirm() ? 'var(--kk-cta-bg, white)' : 'var(--kk-cta-bg-off, rgba(255,255,255,0.10))',
+        color: canConfirm() ? 'var(--kk-cta-ink, black)' : 'var(--kk-cta-ink-off, rgba(255,255,255,0.28))',
         border: 'none', fontSize: 15, fontWeight: 700,
         cursor: canConfirm() ? 'pointer' : 'not-allowed',
         transition: 'all 0.2s ease',
@@ -3626,9 +3811,9 @@ function FormuleModal({ item, stockList = [], onConfirm, onClose }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 2px 0', marginBottom: 2 }}>
           {[...Array(prog.total)].map((_, i) => (
-            <div key={i} style={{ height: 3, flex: 1, borderRadius: 2, background: i < prog.done ? 'white' : 'rgba(255,255,255,0.14)', transition: 'background 0.3s ease' }} />
+            <div key={i} style={{ height: 3, flex: 1, borderRadius: 2, background: i < prog.done ? 'var(--kk-progress-on, white)' : 'var(--kk-progress-off, rgba(255,255,255,0.14))', transition: 'background 0.3s ease' }} />
           ))}
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginLeft: 4, whiteSpace: 'nowrap' }}>{prog.done}/{prog.total}</span>
+          <span style={{ fontSize: 11, color: 'var(--kk-faint, rgba(255,255,255,0.35))', marginLeft: 4, whiteSpace: 'nowrap' }}>{prog.done}/{prog.total}</span>
         </div>
 
         <SectionLabel>{isVoyage ? 'Choisissez vos 2 plats' : 'Votre plat'}</SectionLabel>
@@ -3969,7 +4154,7 @@ function ZonesModal({ onClose }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="kk-zones fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
       <div
         className="bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -4028,7 +4213,9 @@ function AboutModal({ onClose, onShowZones = null }) {
   const [showAllergensInfo, setShowAllergensInfo] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
+    // `kk-about` : accroche du thème clair de la peau v2 (accueil-v2.css).
+    // Aucune classe utilitaire ne change ici.
+    <div className="kk-about fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="bg-black border border-white/20 rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold">À propos de KaïKaï</h2>
@@ -4107,11 +4294,7 @@ function AboutModal({ onClose, onShowZones = null }) {
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 flex-shrink-0" />
-                <span>Service midi : 12h-14h (pré-commande dès 11h)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 flex-shrink-0" />
-                <span>Service soir : 18h-22h (pré-commande dès 17h30)</span>
+                <span>{HOURS_DISPLAY}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 flex-shrink-0" />
@@ -4177,7 +4360,7 @@ function AllergensInfoModal({ onClose }) {
   const keys = Object.keys(ALLERGENS);
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4"
+      className="kk-allergens-info fixed inset-0 z-[60] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
@@ -4246,7 +4429,6 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState(null);
 
-  const MINIMUM_DELIVERY = 20.00;
   const canDelivery = subtotal >= MINIMUM_DELIVERY;
 
   const hasItems = items.some(i => i.qty > 0);
@@ -4295,7 +4477,9 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
   }, [mode, paymentMethod]);
 
   return (
-    <section className="fixed inset-0 z-50 flex items-start justify-end bg-black/60 backdrop-blur-sm">
+    // `kk-checkout` : accroche du thème clair de la peau v2 (accueil-v2.css,
+    // [data-skin="v2"] .kk-checkout …). Aucune classe utilitaire ne change ici.
+    <section className="kk-checkout fixed inset-0 z-50 flex items-start justify-end bg-black/60 backdrop-blur-sm">
       <div className="h-full w-full max-w-xl overflow-auto border-l border-white/10 bg-black p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Commande</h2>
@@ -4303,6 +4487,14 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        {/* Bandeau du mode simulation — dev uniquement, retiré du build prod. */}
+        {CHECKOUT_DRY_RUN && (
+          <div className="kk-dry-run mb-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">
+            <div className="font-semibold">🧪 MODE TEST, rien n'est envoyé</div>
+            <div className="opacity-90">Aucune commande enregistrée, aucun paiement, aucune notification ni ticket.</div>
+          </div>
+        )}
 
         {!restaurantOpen && (
           <div

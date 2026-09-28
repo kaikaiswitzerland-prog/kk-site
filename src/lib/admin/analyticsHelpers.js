@@ -234,15 +234,21 @@ export function aggregateByWeekday(orders) {
 }
 
 // ─── CA par tranche horaire ─────────────────────────────────
-// Découpage calé sur les deux services réels (midi 11h-14h, soir 17h30-22h,
-// cf. restaurantHours.js) plutôt que sur 24 barres dont 16 vides. Une commande
-// tombée hors service — pré-commande matinale, retard de webhook SumUp — n'est
-// pas jetée : elle atterrit dans « Hors service », affiché seulement s'il pèse.
+// Découpage calé sur le service CONTINU (dim-ven 11h30-22h, samedi 18h-22h,
+// cf. restaurantHours.js) : une barre par heure de 11h à 21h, regroupées en
+// trois plages — midi 11h30-14h, après-midi 14h-18h, soir 18h-22h — plutôt
+// que 24 barres dont la moitié vides. La barre « 11h » ne couvre en pratique
+// que 11h30-12h (ouverture). Une commande tombée hors plage — avant 11h,
+// après 22h, retard de webhook SumUp — n'est pas jetée : elle atterrit dans
+// « Hors service », affiché seulement s'il pèse.
 const HOUR_SLOTS = [
   { key: '11', label: '11h', service: 'midi', hours: [11] },
   { key: '12', label: '12h', service: 'midi', hours: [12] },
   { key: '13', label: '13h', service: 'midi', hours: [13] },
-  { key: '17', label: '17h', service: 'soir', hours: [17] },
+  { key: '14', label: '14h', service: 'apres-midi', hours: [14] },
+  { key: '15', label: '15h', service: 'apres-midi', hours: [15] },
+  { key: '16', label: '16h', service: 'apres-midi', hours: [16] },
+  { key: '17', label: '17h', service: 'apres-midi', hours: [17] },
   { key: '18', label: '18h', service: 'soir', hours: [18] },
   { key: '19', label: '19h', service: 'soir', hours: [19] },
   { key: '20', label: '20h', service: 'soir', hours: [20] },
