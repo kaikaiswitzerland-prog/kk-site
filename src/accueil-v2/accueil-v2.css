@@ -540,3 +540,14 @@
 .v2-root .rmore { margin: 14px 0 0; font-size: 14px; }
 .v2-root .rmore a { font-weight: 700; color: var(--soft); text-decoration: underline; text-underline-offset: 3px; }
 .v2-root .rmore a:hover { color: var(--green); }
+/* Sous 360 px : la date prend sa propre ligne sous le nom et les étoiles,
+   jamais coupée. La colonne « qui » se dissout dans la grille (display:
+   contents) pour placer ses deux enfants sur deux lignes. */
+@media (max-width: 360px) {
+  .v2-root .rcard .rwho { display: contents; }
+  .v2-root .rcard .rtop { grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "avatar author stars" ". date date"; row-gap: 2px; }
+  .v2-root .rcard .ravatar { grid-area: avatar; }
+  .v2-root .rcard .rauthor { grid-area: author; }
+  .v2-root .rcard .rtop .stars { grid-area: stars; }
+  .v2-root .rcard .rtop small { grid-area: date; white-space: nowrap; }
+}
