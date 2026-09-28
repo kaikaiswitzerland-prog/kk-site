@@ -15,6 +15,7 @@ import { getAllergensForItem, getAllAllergens, formatAllergenNamesShort } from '
 // Photos, cadrage et descriptions courtes : les MÊMES que la peau refonte (/),
 // lus dans src/refonte/productMeta.js — rien n'est recopié ici.
 import { getProductMeta } from '../refonte/productMeta.js';
+import V2Reviews from './V2Reviews.jsx';
 import { chf, SECTIONS, WOK_ANCHOR, CHIPS, SIGNATURE_IDS } from './v2Helpers.js';
 import { scrollToId } from './useScrollSpy.js';
 
@@ -268,7 +269,10 @@ export default function V2Menu({
       </section>
 
       {/* Tout en bas de la page, juste avant le pied de page : les avis Google
-          (point suivant) puis « Notre histoire ». */}
+          (masqués tant que /api/google-reviews ne répond pas), puis « Notre
+          histoire ». */}
+      <V2Reviews restaurant={restaurant} />
+
       <section className="about" id="apropos">
         <div className="wrap">
           <div>

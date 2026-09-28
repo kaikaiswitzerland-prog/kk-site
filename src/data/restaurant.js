@@ -17,6 +17,10 @@ export const RESTAURANT_INFO = {
   // les liens "Voir sur Google Maps". Distinct de l'iframe embed qui doit
   // garder une URL embed-friendly (?output=embed).
   google_page: "https://maps.app.goo.gl/P1rmU4VNfXNxLWQi9?g_st=ic",
+  // Identifiant de lieu Google Places de cette même fiche — à renseigner une
+  // fois connu ; sinon api/google-reviews.js le retrouve par recherche
+  // textuelle (nom + adresse) au premier appel, puis le mémorise.
+  google_place_id: "",
   
   // Display uniquement — heures de SERVICE affichées aux clients. Source de
   // vérité numérique : src/lib/restaurantHours.js (SERVICE_DEFAULT /

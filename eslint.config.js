@@ -6,8 +6,8 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   globalIgnores(['dist']),
-  // Configuration Vite : exécutée par Node au build (process.env.VERCEL_ENV).
-  { files: ['vite.config.js'], languageOptions: { globals: globals.node } },
+  // Code exécuté par Node : configuration Vite (build) et fonctions Vercel (api/).
+  { files: ['vite.config.js', 'api/**/*.js'], languageOptions: { globals: globals.node } },
   {
     files: ['**/*.{js,jsx}'],
     extends: [
