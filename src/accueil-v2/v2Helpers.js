@@ -39,6 +39,8 @@ export const WOK_ANCHOR = { id: 'wok', title: 'Compose ton wok' };
 
 // Chips de catégories : sections + composeur, dans l'ordre d'affichage.
 export const CHIPS = [
+  // Raccourci commande groupée (formule Bureau) : mis en avant, en tête.
+  { id: 'bureau', label: '🏢 Bureau · livraison offerte', accent: true },
   { id: 'midi', label: 'Midi' },
   { id: 'entrees', label: 'Entrées' },
   { id: 'wok', label: 'Compose ton wok' },

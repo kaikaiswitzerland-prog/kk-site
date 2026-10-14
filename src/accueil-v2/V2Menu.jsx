@@ -178,6 +178,7 @@ export default function V2Menu({
             <a
               key={c.id}
               href={`#${c.id}`}
+              className={c.accent ? 'accent' : undefined}
               aria-current={activeChip === c.id ? 'true' : undefined}
               onClick={(e) => { e.preventDefault(); scrollToId(c.id); }}
             >

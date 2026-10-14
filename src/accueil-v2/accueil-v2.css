@@ -119,6 +119,9 @@
 .v2-root .chips a { flex: 0 0 auto; display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 999px; font-weight: 600; font-size: 13.5px; color: var(--green); background: var(--paper-2); white-space: nowrap; transition: background .15s, color .15s; }
 .v2-root .chips a:hover { background: #e6eddb; }
 .v2-root .chips a[aria-current] { background: var(--green); color: #fff; }
+/* Raccourci Bureau : lime, comme les boutons d'action, pour se repérer d'un coup d'œil. */
+.v2-root .chips a.accent { background: var(--lime); color: var(--green); font-weight: 700; }
+.v2-root .chips a.accent:hover { background: var(--soft); color: #fff; }
 
 /* carte */
 .v2-root .cat { padding: clamp(40px, 5vw, 72px) var(--pad) 0; }

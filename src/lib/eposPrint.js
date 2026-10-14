@@ -393,7 +393,7 @@ function buildItemsBlock(order) {
 function buildTotalBlock(order) {
   // Remise code promo (PREMIER…) au-dessus du total, si la commande en porte une.
   const promo = Number(order.discount) > 0
-    ? line(padLine(toAscii(`${order.promo_code || 'PROMO'} -20%`), toAscii(`-${fmt(order.discount)}`), colsFor(S.body)), S.body)
+    ? line(padLine(toAscii(`${order.promo_code || 'PROMO'} -20%`), toAscii(`-${fmt(order.discount)}`), RULE_COLS), S.itemPrice)
     : '';
   return promo + line(padLine('TOTAL', toAscii(fmt(order.total ?? 0)), colsFor(S.total)), S.total);
 }
