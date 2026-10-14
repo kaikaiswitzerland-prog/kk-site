@@ -5,6 +5,8 @@
 // Orchestrateur uniquement : auth, navigation entre pages, modale, impression.
 // Le rendu des sections vit dans src/pages/admin/*.
 
+import { ObjectiveBanner } from './admin/PilotageBlock.jsx';
+import { usePlatformDaily } from '../hooks/usePlatformDaily.js';
 import { useMemo, useRef, useState } from 'react';
 import './admin/admin.css';
 
@@ -91,6 +93,8 @@ export default function AdminApp() {
   // d'accueil ET toute la compta (KPIs, transactions, export CSV) ;
   // `trashedOrders` (triées par trashed_at DESC) alimentent la vue Corbeille.
   const activeOrders = useMemo(() => orders.filter((o) => !o.is_trashed), [orders]);
+  // Saisies Uber Eats / Just Eat (bandeau Objectif + Compta).
+  const [platformDaily, setPlatformDaily] = usePlatformDaily();
   const trashedOrders = useMemo(
     () =>
       orders
@@ -238,6 +242,12 @@ export default function AdminApp() {
           alarmActive={alarmActive}
         />
 
+        {/* Objectif 9 commandes/jour (conseil du 14.10.2026) : une ligne, sur
+            tous les écrans de gestion. */}
+        {(page === 'orders' || page === 'compta' || page === 'analyses') && (
+          <ObjectiveBanner orders={activeOrders} platformDaily={platformDaily} />
+        )}
+
         {page === 'orders' && (
           <OrdersView
             orders={activeOrders}
@@ -257,6 +267,8 @@ export default function AdminApp() {
         {page === 'compta' && (
           <ComptaView
             orders={activeOrders}
+            platformDaily={platformDaily}
+            setPlatformDaily={setPlatformDaily}
             onSelectOrder={setSelectedOrder}
           />
         )}

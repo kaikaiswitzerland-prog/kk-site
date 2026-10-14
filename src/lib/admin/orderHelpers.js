@@ -166,7 +166,7 @@ export const ITEM_CATEGORY_MAP = {
   '22': 'chaud',     // Riz sauté curry
   '23': 'chaud',     // Riz sauté
   '24': 'chaud',     // Riz blanc jasmin
-  '26': 'chaud',     // Offre du midi (compté avec les plats chauds)
+  '26': 'midi',      // Offre du midi : catégorie à part pour la suivre
 };
 
 export const CATEGORY_LABELS = {
@@ -176,6 +176,7 @@ export const CATEGORY_LABELS = {
   formules: 'Formule',
   desserts: 'Dessert',
   boissons: 'Boisson',
+  midi:     'Offre du midi',
 };
 
 // Renvoie toujours un string non-null :
@@ -420,7 +421,8 @@ export function dayBoundaries(now = new Date()) {
   const startOfYesterday = new Date(startOfDay);
   startOfYesterday.setDate(startOfDay.getDate() - 1);
   const startOfWeek = new Date(startOfDay);
-  startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
+  // Semaine du LUNDI (conseil du 14.10.2026), comme les Analyses.
+  startOfWeek.setDate(startOfDay.getDate() - ((startOfDay.getDay() + 6) % 7));
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   return { startOfDay, startOfYesterday, startOfWeek, startOfMonth };
 }
@@ -600,6 +602,7 @@ export function exportOrdersCSV(orders) {
   const headers = [
     'Date', 'Heure', 'N° Commande', 'Client', 'Téléphone', 'Adresse',
     'Mode livraison', 'Articles', 'Total CHF', 'Paiement', 'Statut',
+    'Email', 'Code promo', 'Remise CHF', 'Couverts',
   ];
   const rows = orders.map((o) => {
     const itemsStr = Array.isArray(o.items)
@@ -617,6 +620,10 @@ export function exportOrdersCSV(orders) {
       Number(o.total).toFixed(2),
       o.payment_method,
       o.status,
+      o.customer_email || '',
+      o.promo_code || '',
+      Number(o.discount || 0).toFixed(2),
+      o.cutlery === true ? 'oui' : o.cutlery === false ? 'non' : '',
     ];
   });
   const csv = [headers, ...rows]

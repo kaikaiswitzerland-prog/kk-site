@@ -106,6 +106,9 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint, on
               )}
             </span>
           </Row>
+          {Number(order.discount) > 0 && (
+            <Row label="Code promo" value={`${order.promo_code || '—'} · −${fmt(order.discount)}`} />
+          )}
           {/* Notes séparées (chantier 4) + fallback legacy `notes` pour les
               commandes antérieures à la migration. */}
           {order.note_kitchen && (

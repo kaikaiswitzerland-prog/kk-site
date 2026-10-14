@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import KpiCard from './KpiCard.jsx';
 import TransactionsTable from './TransactionsTable.jsx';
+import { PilotageCards } from './PilotageBlock.jsx';
 import {
   fmt,
   calcStats,
@@ -14,7 +15,7 @@ import {
   PAYMENT_ICON,
 } from '../../lib/admin/orderHelpers.js';
 
-export default function ComptaView({ orders, onSelectOrder }) {
+export default function ComptaView({ orders, onSelectOrder, platformDaily = {}, setPlatformDaily = () => {} }) {
   const kpis = useMemo(() => {
     const { startOfDay, startOfYesterday, startOfWeek, startOfMonth } = dayBoundaries();
     const valid = orders.filter(isRevenue);
@@ -57,6 +58,9 @@ export default function ComptaView({ orders, onSelectOrder }) {
 
   return (
     <div>
+      {/* Pilotage de la semaine (conseil du 14.10.2026). */}
+      <PilotageCards orders={orders} platformDaily={platformDaily} setPlatformDaily={setPlatformDaily} />
+
       {/* KPIs */}
       <div className="mb-8 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
         <KpiCard
@@ -97,7 +101,7 @@ export default function ComptaView({ orders, onSelectOrder }) {
       <div className="mb-8 grid grid-cols-1 gap-3.5 md:grid-cols-2">
         <div className="rounded-xl border border-line bg-bg-elev p-5">
           <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.15em] text-ink-3">
-            Cette semaine
+            Cette semaine (depuis lundi)
           </div>
           <div className="font-display text-2xl italic tracking-[-0.02em]">
             {fmt(kpis.weekStats.revenue)}

@@ -157,7 +157,7 @@ function lineRevenue(item) {
 const categorySlug = (item) => ITEM_CATEGORY_MAP[String(item?.id ?? '')] || 'autres';
 
 // Ordre d'affichage des catégories : celui de la carte, pas celui du hasard.
-const CATEGORY_ORDER = ['entrees', 'chaud', 'froid', 'formules', 'desserts', 'boissons', 'autres'];
+const CATEGORY_ORDER = ['entrees', 'chaud', 'midi', 'froid', 'formules', 'desserts', 'boissons', 'autres'];
 
 const CATEGORY_DISPLAY = {
   ...CATEGORY_LABELS,
