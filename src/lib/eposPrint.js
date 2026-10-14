@@ -323,6 +323,10 @@ function buildCustomerBlock(order) {
   const paySuffix = order.status === 'paid' ? ' (ENCAISSEE)' : '';
   rows.push(...labelLines('PAIEMENT', `${payLabel}${paySuffix}`, cols));
 
+  // Couverts : seulement si la colonne existe (anciennes commandes : rien).
+  if (typeof order.cutlery === 'boolean') {
+    rows.push(...labelLines('COUVERTS', order.cutlery ? 'OUI' : 'NON', cols));
+  }
   if (order.note_kitchen) {
     rows.push(...labelLines('NOTE', toAscii(order.note_kitchen), cols));
   }

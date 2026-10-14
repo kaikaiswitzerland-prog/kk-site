@@ -85,6 +85,9 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint, on
               <span className="text-muted">— (email : {order.customer_email || 'aucun'})</span>
             )}
           </Row>
+          {typeof order.cutlery === 'boolean' && (
+            <Row label="Couverts" value={order.cutlery ? 'Oui' : 'Non'} />
+          )}
           <Row
             label="Livraison"
             value={

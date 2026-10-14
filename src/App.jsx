@@ -1561,7 +1561,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
       // après l'INSERT. On le génère ici et on l'utilise directement.
       const newOrderId = crypto.randomUUID();
 
-      const { error } = await supabase.from('orders').insert([{
+      const orderRow = {
         id: newOrderId,
         customer_name: `${form.firstName} ${form.lastName}`.trim(),
         customer_email: form.email?.trim() || null,
@@ -1580,7 +1580,19 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         note_kitchen:  noteKitchen,
         note_delivery: noteDelivery,
         delivery_mode: mode,
-      }]);
+        cutlery: !!form.cutlery,
+      };
+
+      let { error } = await supabase.from('orders').insert([orderRow]);
+      // Fail-safe : si la colonne `cutlery` n'existe pas encore en base
+      // (SQL pas encore lancé), on réessaie sans elle et on garde
+      // l'info dans la note cuisine, pour qu'elle sorte quand même sur le ticket.
+      if (error && /cutlery/i.test(`${error.message || ''} ${error.details || ''}`)) {
+        const { cutlery, ...withoutCutlery } = orderRow;
+        const tag = cutlery ? 'COUVERTS : OUI' : 'COUVERTS : NON';
+        withoutCutlery.note_kitchen = noteKitchen ? `${tag} · ${noteKitchen}` : tag;
+        ({ error } = await supabase.from('orders').insert([withoutCutlery]));
+      }
 
       if (error) throw error;
       const inserted = { id: newOrderId };
@@ -4423,7 +4435,9 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
     // allergies/cuissons (cuisine) et instructions d'accès (livreur)
     // sans les mélanger — l'admin les voit en 2 sections distinctes.
     noteKitchen: "",
-    noteDelivery: ""
+    noteDelivery: "",
+    // Couverts : non par défaut (on en mettait à chaque commande pour rien).
+    cutlery: false
   });
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [submitting, setSubmitting] = useState(false);
@@ -4838,6 +4852,17 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
             </>
           )}
           
+          <label className="flex items-center gap-3 rounded-xl border border-white/20 px-3 py-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              name="cutlery"
+              className="h-4 w-4 accent-current"
+              checked={form.cutlery}
+              onChange={(e) => setForm({ ...form, cutlery: e.target.checked })}
+            />
+            <span className="text-sm">Ajouter des couverts</span>
+          </label>
+
           <div>
             <label className="mb-1 block text-xs uppercase tracking-wider text-white/50">
               Note pour la cuisine
