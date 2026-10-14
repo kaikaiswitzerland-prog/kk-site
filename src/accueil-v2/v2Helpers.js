@@ -22,7 +22,7 @@ export function hmm(hhmm) {
 // recopiées ici. `id` est l'ancre (chips + navigation).
 export const SECTIONS = [
   // Offre du midi (14.10.2026) : en tête, grisée hors 11h30–16h.
-  { key: 'midi',      id: 'midi',       title: 'Offre du midi', note: 'Chao men ou Kai fan, viande au choix · 11h30–16h · uniquement sur le site' },
+  { key: 'midi',      id: 'midi',       title: 'Offre du midi', note: 'Chao men ou Kai fan, viande au choix · 11h30–16h' },
   { key: 'entrees',   id: 'entrees',    title: 'Entrées' },
   { key: 'chaud',     id: 'chaud',      title: 'Plats chauds' },
   // `note` : sous-titre discret de la section — la mention riz et salade vit
@@ -59,14 +59,12 @@ export const CHIPS = [
 export const BADGE_KINDS = {
   signature: { label: 'Signature' }, // Énergie (bleu), plats emblématiques
   populaire: { label: 'Populaire' }, // Nature (vert clair), plats les plus commandés
-  midi: { label: '14.90 midi' },     // Offre du midi
 };
 export const PRODUCT_BADGES = {
   '4': ['signature'],
   '8': ['signature'],
   '9': ['signature'],
   '5': ['populaire'], // Chao Men
-  '26': ['midi'],     // Offre du midi
 };
 export function badgesFor(id) {
   return (PRODUCT_BADGES[String(id)] || [])

@@ -699,7 +699,7 @@ const MENU = [
   {
     id: "26",
     name: "Offre du midi",
-    desc: "Chao men (nouilles sautées) ou Kai fan (riz sauté), viande au choix. De 11h30 à 16h, uniquement sur le site.",
+    desc: "Chao men (nouilles sautées) ou Kai fan (riz sauté), viande au choix. De 11h30 à 16h.",
     price: 14.90,
     category: "midi",
     hasProteinVariants: true,
