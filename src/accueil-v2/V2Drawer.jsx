@@ -16,6 +16,7 @@
 // exactement comme sur /classique.
 
 import { qualifiesFreeDelivery, BUREAU_LABEL } from '../lib/bureauOffer.js';
+import { hasLunchItem } from '../lib/lunchOffer.js';
 import { useEffect, useMemo } from 'react';
 import { getZoneByNpa } from '../lib/deliveryZones.js';
 import { CART_TARGET_ATTR } from '../lib/flyToCart.js';
@@ -124,7 +125,8 @@ export function V2Drawer({
   const removeLine = (g) => onRemoveMany(g.item.id, g.count, g.indices);
 
   const minDelivery = catalog.minimumDelivery;
-  const canDel = subtotal >= minDelivery;
+  // Exception : l'offre du midi se livre même sous le minimum (comme au Checkout).
+  const canDel = subtotal >= minDelivery || hasLunchItem(items);
   const zone = mode === 'delivery' ? getZoneByNpa(deliveryNpa) : null;
   const closed = !restaurantOpen ? closedText(manualClosure, openStatusLabel) : null;
 

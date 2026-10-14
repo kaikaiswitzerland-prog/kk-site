@@ -4560,7 +4560,8 @@ function Checkout({ promoCode = null, setPromoCode = () => {}, items, cartVarian
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState(null);
 
-  const canDelivery = subtotal >= MINIMUM_DELIVERY;
+  // Exception : l'offre du midi se livre même sous le minimum de commande.
+  const canDelivery = subtotal >= MINIMUM_DELIVERY || hasLunchItem(items);
 
   const hasItems = items.some(i => i.qty > 0);
   const handleChange = (e) => {
