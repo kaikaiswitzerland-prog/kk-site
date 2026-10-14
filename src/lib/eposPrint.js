@@ -361,19 +361,34 @@ function buildItemBlock(item) {
   ];
 
   const subCols = wrapColsFor(S.body) - 5; // 3 d'indentation + "> "
-  renderVariantLines(safeIt.variants).forEach((v) => {
-    // Un extra facturé sort du lot : bandeau pleine largeur, pas une
-    // sous-ligne indentée de plus. C'est ce qui coûte le plus cher à rater.
-    if (isExtraLine(v)) {
-      // Le bandeau est en Font A pleine largeur : on tronque au besoin plutôt
-      // que de laisser l'imprimante replier, ce qui casserait le fond plein.
-      const txt = toAscii(v).slice(0, RULE_COLS - 4 - WRAP_SAFETY);
-      const pad = Math.max(0, RULE_COLS - txt.length - 4);
-      out.push(line(`  ${txt}${' '.repeat(pad)}  `, S.extra));
-      return;
-    }
-    wrapText(toAscii(v), subCols).forEach((l, i) => {
-      out.push(line(`   ${i === 0 ? '> ' : '  '}${l}`, S.body));
+  const variants = Array.isArray(safeIt.variants) ? safeIt.variants : [];
+
+  // Ligne en vidéo inverse pleine largeur (extras facturés, porc).
+  const banner = (txt) => {
+    const t = toAscii(txt).slice(0, RULE_COLS - 4 - WRAP_SAFETY);
+    const pad = Math.max(0, RULE_COLS - t.length - 4);
+    out.push(line(`  ${t}${' '.repeat(pad)}  `, S.extra));
+  };
+  // Le porc ressort en bandeau : une boîte avec porc donnée à un client qui
+  // mange halal est l'erreur la plus grave possible au moment d'emballer.
+  const hasPorc = (txt) => /porc/i.test(String(txt || ''));
+
+  // 14.10.2026 : UNE LIGNE PAR BOÎTE. Quand un plat est commandé plusieurs
+  // fois avec des choix, chaque boîte a sa propre ligne numérotée
+  // (« [1] POULET », « [2] PORC »…) au lieu d'une liste à recompter.
+  const perBox = qty > 1 && variants.length > 1;
+
+  variants.forEach((variant, k) => {
+    const lines = renderVariantLines([variant]);
+    lines.forEach((v, j) => {
+      // Un extra facturé sort du lot : bandeau pleine largeur, pas une
+      // sous-ligne indentée de plus. C'est ce qui coûte le plus cher à rater.
+      if (isExtraLine(v)) { banner(v); return; }
+      const prefix = perBox && j === 0 ? `[${k + 1}] ` : '';
+      if (hasPorc(v)) { banner(`${prefix}${v}`); return; }
+      wrapText(toAscii(`${prefix}${v}`), subCols).forEach((l, i) => {
+        out.push(line(`   ${i === 0 ? '> ' : '  '}${l}`, S.body));
+      });
     });
   });
 
