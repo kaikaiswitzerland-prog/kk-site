@@ -63,3 +63,10 @@ test('offre du midi : 14.90 et créneau 11h30–16h', () => {
 test('NPA hors zone refusé', () => {
   assert.equal(computeOrderTotal(delivery([{ id: '9', qty: 1 }]), '9999').error, 'invalid_delivery_zone');
 });
+
+test('PREMIER non cumulable avec l\'offre du midi', () => {
+  const mix = computeOrderTotal(pickup([{ id: '26', qty: 1 }, { id: '9', qty: 1 }]), null, 'PREMIER');
+  assert.equal(mix.discount, 4.6);           // 20 % du tartare seulement
+  assert.equal(mix.total, 33.2);             // 14.90 + 22.90 − 4.60
+  assert.equal(computeOrderTotal(pickup([{ id: '26', qty: 2 }]), null, 'PREMIER').error, 'promo_not_applicable');
+});

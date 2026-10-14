@@ -58,7 +58,7 @@ import {
 } from "./data/menuMeta.js";
 import { LUNCH_LABEL, isLunchWindow, hasLunchItem } from "./lib/lunchOffer.js";
 import { qualifiesFreeDelivery, BUREAU_LABEL } from "./lib/bureauOffer.js";
-import { PROMO_CODES, promoDiscount, checkPromo, normalizeCode, PROMO_NEED_CONTACT } from "./lib/promoCodes.js";
+import { PROMO_CODES, promoDiscount, checkPromo, normalizeCode, PROMO_NEED_CONTACT, PROMO_EXCLUDED_IDS, PROMO_NOT_APPLICABLE } from "./lib/promoCodes.js";
 import {
   getItemOptions,
   isItemExplicitlyOut,
@@ -1296,7 +1296,12 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
     () => items.reduce((s, it) => s + lineSubtotal(it, it.qty, cartVariants[it.id]), 0),
     [items, cartVariants],
   );
-  const discount = useMemo(() => (promoCode ? promoDiscount(promoCode, subtotal) : 0), [promoCode, subtotal]);
+  // Sous-total remisable : sans l'offre du midi (code non cumulable avec elle).
+  const promoBase = useMemo(
+    () => items.reduce((s, it) => (PROMO_EXCLUDED_IDS.includes(it.id) ? s : s + lineSubtotal(it, it.qty, cartVariants[it.id])), 0),
+    [items, cartVariants],
+  );
+  const discount = useMemo(() => (promoCode ? promoDiscount(promoCode, promoBase) : 0), [promoCode, promoBase]);
   // Panier vidé (commande passée ou « Vider ») → le code repart.
   useEffect(() => { if (subtotal <= 0 && promoCode) setPromoCode(null); }, [subtotal, promoCode]);
   // deliveryFee dépend du NPA (zone) : 4.90 / 6.90 / 9.90 CHF, ou 0 si
@@ -1588,6 +1593,10 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
     // Code promo : re-vérifié au moment de commander (une fois par client,
     // avec le téléphone / l'email réellement saisis). La carte est re-validée
     // une seconde fois par create-checkout, qui fixe le montant SumUp.
+    if (promoCode && discount <= 0) {
+      setPromoCode(null);
+      return `${PROMO_NOT_APPLICABLE} Le code a été retiré, vérifiez le total puis recommandez.`;
+    }
     if (promoCode) {
       try {
         const r = await fetch('/api/validate-promo', {
@@ -4601,6 +4610,7 @@ function Checkout({ promoCode = null, setPromoCode = () => {}, items, cartVarian
   const applyPromo = async () => {
     const local = checkPromo(promoInput);
     if (!local.ok) { setPromoMsg(local.message); return; }
+    if (!items.some(it => it.qty > 0 && !PROMO_EXCLUDED_IDS.includes(it.id))) { setPromoMsg(PROMO_NOT_APPLICABLE); return; }
     if (!hasPhone && !hasEmail) { setPromoMsg(PROMO_NEED_CONTACT); return; }
     setPromoBusy(true);
     try {

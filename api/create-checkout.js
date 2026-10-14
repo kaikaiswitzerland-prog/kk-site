@@ -20,7 +20,7 @@ import { supabaseAdmin } from './_lib/supabaseServer.js';
 import { getRestaurantStatus, formatStatusLabel } from './_lib/restaurantHours.js';
 import { computeOrderTotal } from './_lib/orderTotal.js';
 import { validatePromoForCustomer } from './_lib/promoServer.js';
-import { normalizeCode } from '../src/lib/promoCodes.js';
+import { normalizeCode, PROMO_NOT_APPLICABLE } from '../src/lib/promoCodes.js';
 import { MENU_ITEMS_BY_ID, isVariantUnavailable } from '../src/data/menuMeta.js';
 import { hasLunchItem, isLunchWindow, LUNCH_LABEL } from '../src/lib/lunchOffer.js';
 import { isItemUnavailable } from '../src/lib/stockRules.js';
@@ -182,6 +182,9 @@ export default async function handler(req, res) {
     }
 
     const computed = computeOrderTotal(order, npa, appliedPromo);
+    if (computed.error === 'promo_not_applicable') {
+      return res.status(409).json({ error: 'promo_not_applicable', message: PROMO_NOT_APPLICABLE });
+    }
     if (computed.error === 'invalid_delivery_zone') {
       console.warn('[KaïKaï create-checkout] refus : NPA hors zone', order.id, { npa });
       return res.status(409).json({

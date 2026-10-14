@@ -7,7 +7,7 @@
 import { getServerPrice, getServerUnitPrice } from './menuPrices.js';
 import { getZoneByNpa } from './deliveryZones.js';
 import { qualifiesFreeDelivery } from '../../src/lib/bureauOffer.js';
-import { promoDiscount } from '../../src/lib/promoCodes.js';
+import { promoDiscount, PROMO_EXCLUDED_IDS } from '../../src/lib/promoCodes.js';
 
 // Recompute du total côté serveur — miroir de la logique du front
 // (App.jsx:577). Les prix unitaires viennent de api/_lib/menuPrices.js
@@ -24,6 +24,9 @@ export function computeOrderTotal(order, npa, promoCode = null) {
   const items = Array.isArray(order.items) ? order.items : [];
 
   let subtotal = 0;
+  // Part du sous-total sur laquelle un code promo peut s'appliquer (sans
+  // l'offre du midi, non cumulable).
+  let promoBase = 0;
   for (const it of items) {
     const serverPrice = getServerPrice(it?.id);
     if (typeof serverPrice !== 'number') {
@@ -41,14 +44,18 @@ export function computeOrderTotal(order, npa, promoCode = null) {
     const variants = Array.isArray(it?.variants) ? it.variants : [];
     for (let k = 0; k < qty; k++) {
       const unit = getServerUnitPrice(it?.id, variants[k]);
-      subtotal += typeof unit === 'number' ? unit : serverPrice;
+      const u = typeof unit === 'number' ? unit : serverPrice;
+      subtotal += u;
+      if (!PROMO_EXCLUDED_IDS.includes(String(it?.id))) promoBase += u;
     }
   }
   // Remise : uniquement un code promo DÉJÀ validé par le caller (connu, non
   // expiré, pas encore utilisé par ce client). L'ancien −10 % « Mode Île »
   // reste coupé. Calculée sur les plats seuls, hors livraison, arrondie à 0.05.
   subtotal = Math.round(subtotal * 100) / 100;
-  const discount = promoCode ? promoDiscount(promoCode, subtotal) : 0;
+  promoBase = Math.round(promoBase * 100) / 100;
+  if (promoCode && promoBase <= 0) return { error: 'promo_not_applicable' };
+  const discount = promoCode ? promoDiscount(promoCode, promoBase) : 0;
 
   let deliveryFee = 0;
   if (order.delivery_mode === 'delivery' && subtotal > 0) {

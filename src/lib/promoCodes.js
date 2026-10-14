@@ -76,4 +76,8 @@ export function checkPromo(raw, now = Date.now()) {
 }
 
 export const PROMO_USED_MESSAGE = 'Ce code a déjà été utilisé pour ce client (une seule fois par personne).';
+// Plats exclus des codes promo : l'offre du midi (non cumulable).
+export const PROMO_EXCLUDED_IDS = ['26'];
+export const PROMO_NOT_APPLICABLE = "Le code ne s'applique pas à l'offre du midi. Ajoutez un autre plat pour en profiter.";
+
 export const PROMO_NEED_CONTACT = "Indiquez d'abord votre téléphone ou votre email pour utiliser le code.";
