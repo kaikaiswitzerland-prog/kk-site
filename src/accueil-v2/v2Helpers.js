@@ -22,7 +22,7 @@ export function hmm(hhmm) {
 // recopiées ici. `id` est l'ancre (chips + navigation).
 export const SECTIONS = [
   // Offre du midi (14.10.2026) : en tête, grisée hors 11h30–16h.
-  { key: 'midi',      id: 'midi',       title: 'Offre du midi', note: 'Chao men ou Kai fan, viande au choix · 11h30–16h' },
+  { key: 'midi',      id: 'midi',       title: 'Offre du midi', note: 'Nouilles sautées ou riz sauté, viande au choix · 11h30–16h' },
   { key: 'entrees',   id: 'entrees',    title: 'Entrées' },
   { key: 'chaud',     id: 'chaud',      title: 'Plats chauds' },
   // `note` : sous-titre discret de la section — la mention riz et salade vit

@@ -101,7 +101,7 @@ export const PRODUCT_META = {
   // ── Plats chauds ─────────────────────────────────────────────────────────
   '5':  { png: `${PNG_DIR}/chaud-chao-men.png`,           jpg: '/chaud-chaomen.jpg',       badge: 'populaire', short: 'Nouilles sautées, légumes, viande au choix' },
   '6':  { png: `${PNG_DIR}/chaud-kai-fan.png`,            jpg: '/chaud-kaifan.jpg',        badge: 'populaire', short: 'Riz sauté, viande au choix' },
-  '26': { png: null, jpg: '/chaud-chaomen.jpg', badge: null, short: 'Chao men ou Kai fan, viande au choix' },
+  '26': { png: null, jpg: '/offre-midi-carte.jpg', badge: null, short: 'Nouilles sautées ou riz sauté, viande au choix' },
   '7':  { png: `${PNG_DIR}/chaud-omelette-fu-young.png`,  jpg: '/chaud-omelette.jpg',      badge: null,        short: 'Omelette, légumes sautés' },
   '8':  { png: `${PNG_DIR}/chaud-wok-boeuf.png`,          jpg: '/chaud-boeuf.jpg',         badge: 'signature', short: 'Bœuf, légumes, sauce sésame' },
 

@@ -699,7 +699,7 @@ const MENU = [
   {
     id: "26",
     name: "Offre du midi",
-    desc: "Chao men (nouilles sautées) ou Kai fan (riz sauté), viande au choix. De 11h30 à 16h.",
+    desc: "Nouilles sautées ou riz sauté, viande au choix. De 11h30 à 16h.",
     price: 14.90,
     category: "midi",
     hasProteinVariants: true,
@@ -970,13 +970,14 @@ const CHAUD_PHOTOS = {
   "6": "/chaud-kaifan.jpg",
   "7": "/chaud-omelette.jpg",
   "8": "/chaud-boeuf.jpg",
-  "26": "/chaud-chaomen.jpg", // Offre du midi
+  "26": "/offre-midi.jpg", // Offre du midi (affiche)
 };
 const CHAUD_PHOTO_POS = {
   "5": "center 60%",
   "6": "center 60%",
   "7": "center 40%",
   "8": "center 45%",
+  "26": "center 72%",
 };
 
 const FROID_PHOTOS = {
