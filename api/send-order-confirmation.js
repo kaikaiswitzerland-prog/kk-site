@@ -19,6 +19,7 @@
 import { supabaseAdmin } from './_lib/supabaseServer.js';
 import { sendEmail } from './_lib/resend.js';
 import { buildOrderConfirmationEmail } from './_lib/emails/orderConfirmation.js';
+import { loadPromoFields } from './_lib/promoServer.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -78,7 +79,7 @@ export default async function handler(req, res) {
     }
 
     // 4. Envoi
-    const { subject, html, text } = buildOrderConfirmationEmail(order);
+    const { subject, html, text } = buildOrderConfirmationEmail({ ...order, ...(await loadPromoFields(order.id)) });
     const mailRes = await sendEmail({
       to: order.customer_email,
       subject,

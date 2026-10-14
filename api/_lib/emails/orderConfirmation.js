@@ -148,6 +148,16 @@ function buildFullConfirmation(order) {
 
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:8px;">
   ${itemsRows}
+  ${Number(order.discount) > 0 ? `<tr>
+    <td style="padding:10px 0 0 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td style="font-size:13px;color:${COLORS.textMuted};">${esc(String(order.promo_code || 'Code promo'))} −20 %</td>
+          <td align="right" style="font-size:14px;font-variant-numeric:tabular-nums;">−${esc(fmtCHF(order.discount))}</td>
+        </tr>
+      </table>
+    </td>
+  </tr>` : ''}
   <tr>
     <td style="padding:14px 0 0 0;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
@@ -208,6 +218,7 @@ ${notesHtml}
     '— Détails —',
     itemsText,
     '',
+    ...(Number(order.discount) > 0 ? [`${order.promo_code || 'Code promo'} −20 % : −${fmtCHF(order.discount)}`] : []),
     `TOTAL : ${fmtCHF(order.total)}`,
     '',
     modeText,

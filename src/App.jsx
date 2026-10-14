@@ -58,6 +58,7 @@ import {
 } from "./data/menuMeta.js";
 import { LUNCH_LABEL, isLunchWindow, hasLunchItem } from "./lib/lunchOffer.js";
 import { qualifiesFreeDelivery, BUREAU_LABEL } from "./lib/bureauOffer.js";
+import { PROMO_CODES, promoDiscount, checkPromo, normalizeCode, PROMO_NEED_CONTACT } from "./lib/promoCodes.js";
 import {
   getItemOptions,
   isItemExplicitlyOut,
@@ -1264,10 +1265,9 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   // `setWokBarCoversCart` est passé tel quel au composeur : une référence
   // stable, donc sa mesure ne se réarme pas à chaque rendu de la page.
   const [wokBarCoversCart, setWokBarCoversCart] = useState(false);
-  // TODO réactiver -10% quand le Mode Île (programme membre) revient.
-  // Garder le couponApplied pour que la logique discount/MiniCart/Checkout
-  // continue de fonctionner sans changement quand on remettra à true.
-  const [couponApplied] = useState(false);
+  // Code promo validé (ex. 'PREMIER'), ou null. Remplace l'ancien −10 %
+  // « Mode Île », qui reste coupé. Le serveur re-valide et fait foi.
+  const [promoCode, setPromoCode] = useState(null);
   const [step, setStep] = useState(
     window.location.pathname === '/payment-success' ? 'success' : 'menu'
   );
@@ -1295,7 +1295,9 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
     () => items.reduce((s, it) => s + lineSubtotal(it, it.qty, cartVariants[it.id]), 0),
     [items, cartVariants],
   );
-  const discount = useMemo(() => (couponApplied ? subtotal * 0.10 : 0), [couponApplied, subtotal]);
+  const discount = useMemo(() => (promoCode ? promoDiscount(promoCode, subtotal) : 0), [promoCode, subtotal]);
+  // Panier vidé (commande passée ou « Vider ») → le code repart.
+  useEffect(() => { if (subtotal <= 0 && promoCode) setPromoCode(null); }, [subtotal, promoCode]);
   // deliveryFee dépend du NPA (zone) : 4.90 / 6.90 / 9.90 CHF, ou 0 si
   // NPA hors zone ou mode pickup. Le total qui en découle est aussi
   // recalculé côté serveur (api/create-checkout.js) pour empêcher tout
@@ -1582,6 +1584,26 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
       return null;
     }
 
+    // Code promo : re-vérifié au moment de commander (une fois par client,
+    // avec le téléphone / l'email réellement saisis). La carte est re-validée
+    // une seconde fois par create-checkout, qui fixe le montant SumUp.
+    if (promoCode) {
+      try {
+        const r = await fetch('/api/validate-promo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: promoCode, phone: form.phone, email: form.email }),
+        });
+        const v = await r.json();
+        if (!v.ok) {
+          setPromoCode(null);
+          return `${v.message || 'Code refusé.'} Le code a été retiré, vérifiez le total puis recommandez.`;
+        }
+      } catch {
+        return "Impossible de vérifier le code promo pour l'instant. Réessayez, ou retirez le code.";
+      }
+    }
+
     try {
       const isCard = paymentMethod === 'card';
       const noteKitchen  = sanitizeNote(form.noteKitchen, NOTE_KITCHEN_MAX);
@@ -1614,14 +1636,17 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         note_delivery: noteDelivery,
         delivery_mode: mode,
         cutlery: !!form.cutlery,
+        promo_code: promoCode || null,
+        discount: parseFloat((discount || 0).toFixed(2)),
       };
 
       let { error } = await supabase.from('orders').insert([orderRow]);
       // Fail-safe : si la colonne `cutlery` n'existe pas encore en base
       // (SQL pas encore lancé), on réessaie sans elle et on garde
       // l'info dans la note cuisine, pour qu'elle sorte quand même sur le ticket.
-      if (error && /cutlery/i.test(`${error.message || ''} ${error.details || ''}`)) {
-        const { cutlery, ...withoutCutlery } = orderRow;
+      if (error && /cutlery|promo_code|discount/i.test(`${error.message || ''} ${error.details || ''}`)) {
+        // eslint-disable-next-line no-unused-vars
+        const { cutlery, promo_code, discount: _d, ...withoutCutlery } = orderRow;
         const tag = cutlery ? 'COUVERTS : OUI' : 'COUVERTS : NON';
         withoutCutlery.note_kitchen = noteKitchen ? `${tag} · ${noteKitchen}` : tag;
         ({ error } = await supabase.from('orders').insert([withoutCutlery]));
@@ -1649,6 +1674,7 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
             // contenu).
             noteKitchen,
             noteDelivery,
+            promo_code: promoCode || null,
           }),
         });
         const checkout = await res.json();
@@ -1944,6 +1970,8 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
 
       {step === "checkout" && (
         <Checkout
+          promoCode={promoCode}
+          setPromoCode={setPromoCode}
           items={items}
           cartVariants={cartVariants}
           subtotal={subtotal}
@@ -4174,7 +4202,7 @@ function MiniCart({ cart, items, total, discount, mode = 'delivery', onOpen, res
         </div>
         <div style={{ fontSize: 14, fontWeight: 700, color: c.principal }}>
           {format(total)}
-          {discount > 0 && <span style={{ fontSize: 11, fontWeight: 400, color: c.secondaire, marginLeft: 4 }}>(-10%)</span>}
+          {discount > 0 && <span style={{ fontSize: 11, fontWeight: 400, color: c.secondaire, marginLeft: 4 }}>(code promo)</span>}
         </div>
         {restaurantOpen && (
           <div style={{ fontSize: 10, fontWeight: 600, color: c.eta, marginTop: 1 }}>
@@ -4457,7 +4485,7 @@ function AllergensInfoModal({ onClose }) {
 // la validation finale c'est Resend qui la fera.
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total, mode, setMode, onClose, onClear, onRemoveOne, onAdd, onSuccess, restaurantOpen = true, manualClosure = false, openStatusLabel = '', deliveryNpa = '', setDeliveryNpa = () => {}, onShowZones = () => {} }) {
+function Checkout({ promoCode = null, setPromoCode = () => {}, items, cartVariants, subtotal, discount, deliveryFee, total, mode, setMode, onClose, onClear, onRemoveOne, onAdd, onSuccess, restaurantOpen = true, manualClosure = false, openStatusLabel = '', deliveryNpa = '', setDeliveryNpa = () => {}, onShowZones = () => {} }) {
   // `postalCode` ne fait plus partie de form : le NPA est élevé au niveau
   // parent (KaiKaiApp) pour piloter deliveryFee. On le lit/écrit via les
   // props deliveryNpa / setDeliveryNpa.
@@ -4510,6 +4538,32 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
   const emailFormatOk = !form.email || EMAIL_REGEX.test(form.email.trim());
   const emailOk = emailFormatOk && (!emailRequired || hasEmail);
   const contactOk = isPickup ? (hasPhone || hasEmail) : hasPhone;
+
+  // Code promo : contrôle local (connu, non expiré) puis serveur (une fois
+  // par client, d'où le téléphone / l'email requis avant).
+  const [promoInput, setPromoInput] = useState("");
+  const [promoMsg, setPromoMsg] = useState(null);
+  const [promoBusy, setPromoBusy] = useState(false);
+  const applyPromo = async () => {
+    const local = checkPromo(promoInput);
+    if (!local.ok) { setPromoMsg(local.message); return; }
+    if (!hasPhone && !hasEmail) { setPromoMsg(PROMO_NEED_CONTACT); return; }
+    setPromoBusy(true);
+    try {
+      const r = await fetch('/api/validate-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: normalizeCode(promoInput), phone: form.phone, email: form.email }),
+      });
+      const v = await r.json();
+      if (v.ok) { setPromoCode(v.code); setPromoMsg(null); setPromoInput(""); }
+      else setPromoMsg(v.message || 'Code refusé.');
+    } catch {
+      setPromoMsg("Impossible de vérifier le code pour l'instant. Réessayez.");
+    } finally {
+      setPromoBusy(false);
+    }
+  };
 
   const canSubmit = restaurantOpen &&
                     hasItems &&
@@ -4979,10 +5033,41 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           </div>
         </div>
 
+        {/* Code promo (PREMIER…) — règles dans src/lib/promoCodes.js. */}
+        <div className="mt-6">
+          <label className="mb-1 block text-xs uppercase tracking-wider text-white/50">Code promo</label>
+          {promoCode ? (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm">
+              <span>{PROMO_CODES[promoCode]?.label || promoCode} appliqué</span>
+              <button type="button" className="text-xs underline opacity-80" onClick={() => { setPromoCode(null); setPromoMsg(null); }}>Retirer</button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                name="promo"
+                placeholder="Ex. PREMIER"
+                autoComplete="off"
+                className="min-w-0 flex-1 rounded-xl border border-white/20 bg-transparent px-3 py-2 uppercase outline-none focus:border-white/40 transition-colors"
+                value={promoInput}
+                onChange={(e) => { setPromoInput(e.target.value); setPromoMsg(null); }}
+              />
+              <button
+                type="button"
+                onClick={applyPromo}
+                disabled={promoBusy || !promoInput.trim()}
+                className="rounded-xl border border-white/20 px-4 py-2 text-sm hover:bg-white/10 transition-all disabled:opacity-40"
+              >
+                {promoBusy ? '…' : 'Appliquer'}
+              </button>
+            </div>
+          )}
+          {promoMsg && <div className="mt-1 text-xs text-red-400">{promoMsg}</div>}
+        </div>
+
         <div className="mt-6 space-y-2 rounded-2xl border border-white/10 p-4">
           <Line label="Sous-total" value={format(subtotal)} />
           {discount > 0 && (
-            <Line label="Réduction site (-10%)" value={`- ${format(discount)}`} />
+            <Line label={PROMO_CODES[promoCode]?.label || 'Code promo'} value={`- ${format(discount)}`} />
           )}
           {mode === "delivery" && (qualifiesFreeDelivery(items)
             ? <Line label={BUREAU_LABEL} value={format(0)} />

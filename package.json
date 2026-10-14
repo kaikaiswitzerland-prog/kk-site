@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test": "node --test tests/*.test.mjs",
     "print-agent": "node print-agent/agent.mjs"
   },
   "dependencies": {

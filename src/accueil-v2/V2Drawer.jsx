@@ -206,7 +206,7 @@ export function V2Drawer({
               {/* Même ligne que le Checkout et le mini-panier de /classique
                   (« Réduction site (-10%) ») ; sans coupon appliqué, elle
                   n'apparaît pas. */}
-              {discount > 0 && <div><span>Réduction site (-10%)</span><span>- {chf(discount)}</span></div>}
+              {discount > 0 && <div><span>Code promo</span><span>- {chf(discount)}</span></div>}
               {/* Frais connus seulement si un NPA en zone a déjà été saisi au
                   Checkout (même état) ; sinon ils seront calculés là-bas. */}
               {mode === 'delivery' && (qualifiesFreeDelivery(items)

@@ -18,74 +18,19 @@
 
 import { supabaseAdmin } from './_lib/supabaseServer.js';
 import { getRestaurantStatus, formatStatusLabel } from './_lib/restaurantHours.js';
-import { getZoneByNpa } from './_lib/deliveryZones.js';
-import { getServerPrice, getServerUnitPrice } from './_lib/menuPrices.js';
+import { computeOrderTotal } from './_lib/orderTotal.js';
+import { validatePromoForCustomer } from './_lib/promoServer.js';
+import { normalizeCode } from '../src/lib/promoCodes.js';
 import { MENU_ITEMS_BY_ID, isVariantUnavailable } from '../src/data/menuMeta.js';
 import { hasLunchItem, isLunchWindow, LUNCH_LABEL } from '../src/lib/lunchOffer.js';
-import { qualifiesFreeDelivery } from '../src/lib/bureauOffer.js';
 import { isItemUnavailable } from '../src/lib/stockRules.js';
-
-// Recompute du total côté serveur — miroir de la logique du front
-// (App.jsx:577). Les prix unitaires viennent de api/_lib/menuPrices.js
-// (source de vérité serveur) et NON de items[].price reçu via l'INSERT
-// anon — sinon un client peut payer 0.01 CHF en modifiant le price.
-// Si un id du panier est inconnu côté serveur, on renvoie un sentinel
-// pour que le caller renvoie 409.
-//
-// Pour le deliveryFee : on prend le NPA du body de la requête (pas de la
-// DB — l'order ne stocke pas le NPA séparément, juste dans customer_address)
-// et on regarde dans NOTRE table de zones. Si le client envoie un NPA bidon
-// ou rien, on refuse.
-function computeOrderTotal(order, npa) {
-  const items = Array.isArray(order.items) ? order.items : [];
-
-  let subtotal = 0;
-  for (const it of items) {
-    const serverPrice = getServerPrice(it?.id);
-    if (typeof serverPrice !== 'number') {
-      return { error: 'unknown_item', itemId: String(it?.id ?? '') };
-    }
-    // Recompute PAR EXEMPLAIRE, et non prix × qty : depuis le composeur de
-    // woks, deux exemplaires du même plat peuvent porter des légumes
-    // différents, donc des prix différents. Les exemplaires au-delà de
-    // variants[] (ou sans légumes) retombent sur le prix plein — comportement
-    // identique à l'ancien prix × qty pour tout le reste de la carte.
-    //
-    // qty est borné : un qty forgé à 10 000 gonflerait la boucle sans que le
-    // client paie davantage, mais autant ne pas offrir le levier.
-    const qty = Math.max(0, Math.min(Number(it?.qty || 0), 99));
-    const variants = Array.isArray(it?.variants) ? it.variants : [];
-    for (let k = 0; k < qty; k++) {
-      const unit = getServerUnitPrice(it?.id, variants[k]);
-      subtotal += typeof unit === 'number' ? unit : serverPrice;
-    }
-  }
-  // TODO réactiver -10% quand Mode Île revient (cohérent avec couponApplied
-  // côté front App.jsx). Tant que le programme membre est OFF, pas de remise.
-  const discount = 0;
-
-  let deliveryFee = 0;
-  if (order.delivery_mode === 'delivery' && subtotal > 0) {
-    const zone = getZoneByNpa(npa);
-    if (!zone) {
-      // Sentinel : on signale "NPA invalide" au caller pour qu'il renvoie 409.
-      return { error: 'invalid_delivery_zone' };
-    }
-    // Formule Bureau : dès 5 plats chauds, livraison offerte (zone toujours
-    // vérifiée ci-dessus). Même règle que le front (src/lib/bureauOffer.js).
-    deliveryFee = qualifiesFreeDelivery(items) ? 0 : zone.fee;
-  }
-
-  const total = Math.max(0, subtotal - discount) + deliveryFee;
-  return { total: Math.round(total * 100) / 100, deliveryFee, subtotal };
-}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { order_id, redirect_url, npa, noteKitchen, noteDelivery } = req.body || {};
+  const { order_id, redirect_url, npa, noteKitchen, noteDelivery, promo_code } = req.body || {};
 
   if (!order_id || !redirect_url) {
     return res.status(400).json({ error: 'Missing required fields (order_id, redirect_url)' });
@@ -136,7 +81,7 @@ export default async function handler(req, res) {
     // 1. Charger l'order
     const { data: order, error: fetchError } = await supabaseAdmin
       .from('orders')
-      .select('id, status, items, delivery_mode, payment_method')
+      .select('id, status, items, delivery_mode, payment_method, customer_phone, customer_email')
       .eq('id', order_id)
       .single();
 
@@ -222,7 +167,21 @@ export default async function handler(req, res) {
     }
 
     // 3. Recompute serveur (anti price-tampering + anti zone-tampering)
-    const computed = computeOrderTotal(order, npa);
+    // 2.7. Code promo : re-validé ICI (connu, non expiré, une fois par
+    // client). C'est ce calcul qui fixe le montant envoyé à SumUp.
+    let appliedPromo = null;
+    if (normalizeCode(promo_code)) {
+      const promoCheck = await validatePromoForCustomer(
+        promo_code, order.customer_phone, order.customer_email, { excludeOrderId: order.id },
+      );
+      if (!promoCheck.ok) {
+        console.warn('[KaïKaï create-checkout] refus : code promo', order.id, promoCheck.error);
+        return res.status(409).json({ error: promoCheck.error, message: promoCheck.message });
+      }
+      appliedPromo = promoCheck.code;
+    }
+
+    const computed = computeOrderTotal(order, npa, appliedPromo);
     if (computed.error === 'invalid_delivery_zone') {
       console.warn('[KaïKaï create-checkout] refus : NPA hors zone', order.id, { npa });
       return res.status(409).json({
@@ -238,13 +197,13 @@ export default async function handler(req, res) {
         message: 'Un plat de la commande est introuvable.',
       });
     }
-    const { total, deliveryFee, subtotal } = computed;
+    const { total, deliveryFee, subtotal, discount } = computed;
     if (total <= 0) {
       return res.status(400).json({ error: 'Total recalculé invalide' });
     }
     console.log(
       `[KaïKaï create-checkout] order=${order.id} mode=${order.delivery_mode} ` +
-      `NPA=${npa || '-'} fee=${deliveryFee.toFixed(2)} subtotal=${subtotal.toFixed(2)} total=${total.toFixed(2)}`
+      `NPA=${npa || '-'} fee=${deliveryFee.toFixed(2)} subtotal=${subtotal.toFixed(2)} promo=${appliedPromo || '-'} discount=${(discount || 0).toFixed(2)} total=${total.toFixed(2)}`
     );
 
     // 4. Construire les URLs SumUp
@@ -305,6 +264,20 @@ export default async function handler(req, res) {
       // On log mais on poursuit : si le webhook arrive sans avoir l'ID en DB,
       // il pourra fallback sur checkout_reference (= order.id) via re-fetch.
       console.error('[KaïKaï] create-checkout: échec persist checkout_id', updateError);
+    }
+
+    // Remise et total serveur, dans un UPDATE séparé : un souci sur ces
+    // colonnes ne doit jamais empêcher de persister le checkout_id ci-dessus.
+    const { error: promoUpdateError } = await supabaseAdmin
+      .from('orders')
+      .update({
+        promo_code: appliedPromo,
+        discount: discount || 0,
+        total,
+      })
+      .eq('id', order.id);
+    if (promoUpdateError) {
+      console.warn('[KaïKaï] create-checkout: échec persist promo/total (non bloquant)', promoUpdateError.message);
     }
 
     return res.status(200).json({ checkout_url: sumupData.hosted_checkout_url });

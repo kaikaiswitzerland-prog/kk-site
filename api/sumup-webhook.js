@@ -20,6 +20,7 @@
 // (ou même si on n'a rien à faire) — sinon SumUp retry à 1m / 5m / 20m / 2h.
 // On log les erreurs côté serveur (Vercel logs) pour debug ultérieur.
 
+import { loadPromoFields } from './_lib/promoServer.js';
 import { supabaseAdmin } from './_lib/supabaseServer.js';
 import { sendEmail } from './_lib/resend.js';
 import { buildOrderConfirmationEmail } from './_lib/emails/orderConfirmation.js';
@@ -79,6 +80,9 @@ export default async function handler(req, res) {
       'customer_name, customer_email, customer_phone, customer_address, ' +
       'items, total, delivery_mode, confirmation_email_sent_at, ' +
       'notes, note_kitchen, note_delivery';
+    // promo_code / discount (14.10.2026) ne sont PAS listés ici : tant que le
+    // SQL n'est pas lancé, les nommer ferait échouer ce SELECT. Ils sont lus
+    // à part, en tolérant leur absence (cf. plus bas).
     let { data: order, error: fetchErr } = await supabaseAdmin
       .from('orders')
       .select(ORDER_COLS)
@@ -172,7 +176,7 @@ export default async function handler(req, res) {
           // L'objet `order` ne contient pas encore le sumup_transaction_id
           // posté par le patch — on le fusionne pour cohérence si jamais le
           // template l'utilise plus tard. (Aujourd'hui il ne l'utilise pas.)
-          const fullOrder = { ...order, sumup_transaction_id: patch.sumup_transaction_id };
+          const fullOrder = { ...order, ...(await loadPromoFields(order.id)), sumup_transaction_id: patch.sumup_transaction_id };
           console.log('[KaïKaï mail confirm] envoi', {
             orderId: order.id,
             mode: order.delivery_mode,
