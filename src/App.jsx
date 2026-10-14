@@ -3524,10 +3524,62 @@ function JusModal({ item, stockList = [], onSelect, onClose }) {
 // ne vit que dans la modale visée.
 const HALAL_PROTEIN_IDS = new Set(['poulet', 'boeuf']);
 
+// Offre du midi : deux étapes, la base puis la viande. Le choix final reste
+// UNE option de LUNCH_OPTS (ex. « kaifan-poulet »), donc prix, ruptures,
+// panier et ticket fonctionnent comme pour n'importe quel plat à options.
+const LUNCH_BASES = [
+  { id: 'chaomen', name: 'Nouilles sautées', emoji: '🍜' },
+  { id: 'kaifan', name: 'Riz sauté', emoji: '🍚' },
+];
+const LUNCH_PROTEINS = [
+  { id: 'porc', name: 'Porc', desc: 'Viande de porc mijotée façon KaïKaï', emoji: '🍖' },
+  { id: 'poulet', name: 'Poulet', desc: 'Wok de poulet', emoji: '🍗' },
+  { id: 'porc-poulet', name: 'Porc + Poulet', desc: 'Les deux viandes', emoji: '🍽️' },
+  { id: 'veggie', name: 'Veggie', desc: '100% végétarien', emoji: '🥦' },
+];
+
+function LunchModal({ item, stockList = [], onSelect, onClose }) {
+  const [base, setBase] = useState(null);
+  const optFor = (b, p) => item.proteinVariants.find(v => v.id === `${b}-${p}`);
+  const isOut = (b, p) => { const o = optFor(b, p); return !o || isOptionOut(stockList, item.id, o.id); };
+  const baseOut = (b) => LUNCH_PROTEINS.every(p => isOut(b, p.id));
+  const current = LUNCH_BASES.find(b => b.id === base);
+  return (
+    <BottomSheet
+      title={item.name}
+      subtitle={current ? `${current.name} · choisissez votre viande` : 'Choisissez votre base'}
+      photo={getPhoto(item.id)}
+      photoPos={getPhotoPos(item.id)}
+      onClose={onClose}
+    >
+      {!current && LUNCH_BASES.map((b, i) => {
+        const out = baseOut(b.id);
+        return (
+          <OptionTile key={b.id} emoji={b.emoji} name={b.name} desc="Viande au choix ensuite" isSelected={false} onClick={() => setBase(b.id)} index={i} disabled={out} badge={out ? OUT_BADGE : null} />
+        );
+      })}
+      {current && (
+        <>
+          {LUNCH_PROTEINS.map((p, i) => {
+            const out = isOut(current.id, p.id);
+            return (
+              <OptionTile key={p.id} emoji={p.emoji} name={p.name} desc={p.desc} isSelected={false} onClick={() => onSelect(optFor(current.id, p.id))} index={i} disabled={out} halal={HALAL_PROTEIN_IDS.has(p.id)} badge={out ? OUT_BADGE : null} />
+            );
+          })}
+          <button type="button" onClick={() => setBase(null)} className="mt-2 w-full py-2 text-sm underline opacity-70">
+            ← Changer de base
+          </button>
+        </>
+      )}
+    </BottomSheet>
+  );
+}
+
 function ProteinModal({ item, stockList = [], onSelect, onClose }) {
+  if (item.lunchOnly) return <LunchModal item={item} stockList={stockList} onSelect={onSelect} onClose={onClose} />;
   const protEmojis = { porc: '🍖', poulet: '🍗', 'porc-poulet': '🍽️', veggie: '🥦' };
   return (
-    <BottomSheet title={item.name} subtitle={item.lunchOnly ? "Choisissez votre plat et votre viande" : "Choisissez votre protéine"} photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
+    <BottomSheet title={item.name} subtitle="Choisissez votre protéine" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
       {item.proteinVariants.map((v, i) => {
         const out = isOptionOut(stockList, item.id, v.id);
         return (
