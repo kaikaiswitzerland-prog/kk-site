@@ -4233,19 +4233,18 @@ function AboutModal({ onClose, onShowZones = null }) {
             <h3 className="text-lg font-semibold mb-2 text-white">🌴 Notre Histoire</h3>
             <p className="text-sm leading-relaxed">
               KaïKaï est né de la passion pour la cuisine tahitienne authentique. Notre mission est de vous faire voyager 
-              à travers les saveurs des îles du Pacifique, en utilisant des produits frais et de qualité.
+              à travers les saveurs des îles du Pacifique, en utilisant des produits de qualité.
             </p>
           </div>
           
           <div>
             <h3 className="text-lg font-semibold mb-2 text-white">🥗 Notre Engagement</h3>
             <div className="flex flex-wrap gap-2 mb-3">
-              <Badge type="halal" />
               <Badge type="healthy" />
             </div>
             <p className="text-sm leading-relaxed">
-              Tous nos plats sont préparés avec soin, en respectant les traditions culinaires tahitiennes. 
-              Nous garantissons une alimentation saine, des produits halal et une fraîcheur incomparable.
+              Tous nos plats sont préparés à la commande, en respectant les traditions culinaires tahitiennes.
+              Notre poulet et notre bœuf sont cuits à part, avec des ustensiles dédiés. Nos woks peuvent aussi contenir du porc.
             </p>
           </div>
           

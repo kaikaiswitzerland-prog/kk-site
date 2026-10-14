@@ -288,7 +288,7 @@ export default function V2Menu({
         <div className="wrap">
           <div>
             <h2>Notre histoire</h2>
-            <p>KaïKaï est né de la passion pour la cuisine tahitienne authentique. Notre mission est de vous faire voyager à travers les saveurs des îles du Pacifique, en utilisant des produits frais et de qualité.</p>
+            <p>KaïKaï est né de la passion pour la cuisine tahitienne authentique. Notre mission est de vous faire voyager à travers les saveurs des îles du Pacifique, en utilisant des produits de qualité.</p>
             {/* La modale « À propos » partagée (engagement halal, allergènes et
                 liste des 14, livraison et zones, plan, réseaux) — celle du
                 bouton Info de /classique. */}

@@ -25,7 +25,7 @@ export const SECTIONS = [
   { key: 'chaud',     id: 'chaud',      title: 'Plats chauds' },
   // `note` : sous-titre discret de la section — la mention riz et salade vit
   // ici, sous « Plats froids », et non plus en bas de la carte.
-  { key: 'froid',     id: 'froid',      title: 'Plats froids', note: 'Tous nos plats sont accompagnés de riz et de salade' },
+  { key: 'froid',     id: 'froid',      title: 'Plats froids', note: '180 g de thon par tartare, riz et salade servis à part' },
   { key: 'formules',  id: 'formules',   title: 'Formules' },
   { key: 'desserts',  id: 'desserts',   title: 'Desserts' },
   { key: 'jusMaison', id: 'jus-maison', title: 'Boissons fraîches maison' },

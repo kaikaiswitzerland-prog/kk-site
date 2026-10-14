@@ -24,6 +24,8 @@ import V2Footer from './V2Footer.jsx';
 import { V2Mini, V2Drawer } from './V2Drawer.jsx';
 import { useScrollSpy, scrollToId } from './useScrollSpy.js';
 import { CHIPS } from './v2Helpers.js';
+import { DELIVERY_ZONES } from '../lib/deliveryZones.js';
+import { RESTAURANT_INFO } from '../data/restaurant.js';
 import './accueil-v2.css';
 
 const CHIP_IDS = CHIPS.map((c) => c.id);
@@ -117,6 +119,9 @@ export default function AccueilV2Shell({
 
           <section className="intro">
             <h2>Votre restaurant tahitien en livraison et à emporter sur Genève</h2>
+            <p className="sub">
+              Livraison {Number(DELIVERY_ZONES.ZONE_1.fee).toFixed(2)} CHF à Plainpalais et au centre-ville · {String(RESTAURANT_INFO.deliveryTime).replace('-', ' à ')} min
+            </p>
             {/* Pastille juste sous le titre, branchée sur useRestaurantOpen
                 (KaiKaiApp) : vrai statut, pas un texte fixe. Les horaires
                 affichés vivent dans le footer. */}
