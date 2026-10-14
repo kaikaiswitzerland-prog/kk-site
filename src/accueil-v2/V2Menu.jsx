@@ -286,6 +286,26 @@ export default function V2Menu({
           histoire ». */}
       <V2Reviews restaurant={restaurant} />
 
+      {/* Formule Bureau (action 17) : dès 5 woks, livraison offerte — règle
+          calculée dans src/lib/bureauOffer.js, côté site ET serveur. */}
+      <section className="about bureau" id="bureau">
+        <div className="wrap">
+          <div>
+            <h2>Repas d'équipe</h2>
+            <p>Dès 5 woks, la livraison est offerte. Vous choisissez l'heure, on la tient. Facture au nom de l'entreprise sur demande.</p>
+            <a
+              className="btn primary"
+              href={`https://wa.me/${String(restaurant.phone || '').replace(/\D/g, '')}?text=${encodeURIComponent("Bonjour KaïKaï, je voudrais commander pour le bureau.")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Commander pour le bureau
+            </a>
+            <p className="bureau-tel">WhatsApp : <a href={`tel:${restaurant.phone}`}>{restaurant.phoneDisplay}</a></p>
+          </div>
+        </div>
+      </section>
+
       <section className="about" id="apropos">
         <div className="wrap">
           <div>

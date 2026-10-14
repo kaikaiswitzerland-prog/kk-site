@@ -15,6 +15,7 @@
 // paiement : carte en ligne (SumUp), ou espèces au retrait pour l'emporter —
 // exactement comme sur /classique.
 
+import { qualifiesFreeDelivery, BUREAU_LABEL } from '../lib/bureauOffer.js';
 import { useEffect, useMemo } from 'react';
 import { getZoneByNpa } from '../lib/deliveryZones.js';
 import { CART_TARGET_ATTR } from '../lib/flyToCart.js';
@@ -208,7 +209,9 @@ export function V2Drawer({
               {discount > 0 && <div><span>Réduction site (-10%)</span><span>- {chf(discount)}</span></div>}
               {/* Frais connus seulement si un NPA en zone a déjà été saisi au
                   Checkout (même état) ; sinon ils seront calculés là-bas. */}
-              {mode === 'delivery' && <div><span>Livraison</span><span>{zone ? chf(deliveryFee) : 'calculée à l\'étape suivante'}</span></div>}
+              {mode === 'delivery' && (qualifiesFreeDelivery(items)
+                ? <div><span>{BUREAU_LABEL}</span><span>{chf(0)}</span></div>
+                : <div><span>Livraison</span><span>{zone ? chf(deliveryFee) : 'calculée à l\'étape suivante'}</span></div>)}
               <div className="big"><span>Total</span><span>{chf(total)}</span></div>
             </div>
 

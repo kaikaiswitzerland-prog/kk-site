@@ -22,6 +22,7 @@ import { getZoneByNpa } from './_lib/deliveryZones.js';
 import { getServerPrice, getServerUnitPrice } from './_lib/menuPrices.js';
 import { MENU_ITEMS_BY_ID, isVariantUnavailable } from '../src/data/menuMeta.js';
 import { hasLunchItem, isLunchWindow, LUNCH_LABEL } from '../src/lib/lunchOffer.js';
+import { qualifiesFreeDelivery } from '../src/lib/bureauOffer.js';
 import { isItemUnavailable } from '../src/lib/stockRules.js';
 
 // Recompute du total côté serveur — miroir de la logique du front
@@ -70,7 +71,9 @@ function computeOrderTotal(order, npa) {
       // Sentinel : on signale "NPA invalide" au caller pour qu'il renvoie 409.
       return { error: 'invalid_delivery_zone' };
     }
-    deliveryFee = zone.fee;
+    // Formule Bureau : dès 5 plats chauds, livraison offerte (zone toujours
+    // vérifiée ci-dessus). Même règle que le front (src/lib/bureauOffer.js).
+    deliveryFee = qualifiesFreeDelivery(items) ? 0 : zone.fee;
   }
 
   const total = Math.max(0, subtotal - discount) + deliveryFee;

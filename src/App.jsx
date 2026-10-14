@@ -57,6 +57,7 @@ import {
   LUNCH_OPTS,
 } from "./data/menuMeta.js";
 import { LUNCH_LABEL, isLunchWindow, hasLunchItem } from "./lib/lunchOffer.js";
+import { qualifiesFreeDelivery, BUREAU_LABEL } from "./lib/bureauOffer.js";
 import {
   getItemOptions,
   isItemExplicitlyOut,
@@ -1299,10 +1300,12 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
   // NPA hors zone ou mode pickup. Le total qui en découle est aussi
   // recalculé côté serveur (api/create-checkout.js) pour empêcher tout
   // tampering, via la même table NPA → zone (api/_lib/deliveryZones.js).
+  // Formule Bureau : dès 5 plats chauds, livraison offerte (miroir du serveur).
   const deliveryFee = useMemo(() => {
     if (mode !== "delivery" || subtotal <= 0) return 0;
+    if (qualifiesFreeDelivery(items)) return 0;
     return getDeliveryFee(deliveryNpa) ?? 0;
-  }, [mode, subtotal, deliveryNpa]);
+  }, [mode, subtotal, deliveryNpa, items]);
   const total = useMemo(() => Math.max(0, subtotal - discount) + deliveryFee, [subtotal, discount, deliveryFee]);
 
   // Point de passage UNIQUE de tout ajout au panier : bouton + d'une carte,
@@ -4981,7 +4984,9 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           {discount > 0 && (
             <Line label="Réduction site (-10%)" value={`- ${format(discount)}`} />
           )}
-          {mode === "delivery" && <Line label="Frais de livraison" value={format(deliveryFee)} />}
+          {mode === "delivery" && (qualifiesFreeDelivery(items)
+            ? <Line label={BUREAU_LABEL} value={format(0)} />
+            : <Line label="Frais de livraison" value={format(deliveryFee)} />)}
           <Line label="Total" value={format(total)} bold />
         </div>
 
