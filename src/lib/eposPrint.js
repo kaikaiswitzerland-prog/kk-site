@@ -314,6 +314,9 @@ function buildCustomerBlock(order) {
   rows.push(...labelLines('CLIENT', toAscii(order.customer_name), cols));
   if (order.customer_phone) {
     rows.push(...labelLines('TEL', toAscii(order.customer_phone), cols));
+  } else if (order.customer_email) {
+    // À emporter sans téléphone : l'email est le seul moyen de joindre le client.
+    rows.push(...labelLines('EMAIL', toAscii(order.customer_email), cols));
   }
 
   const payLabel = toAscii(PAYMENT_LABELS[order.payment_method] || order.payment_method || '');

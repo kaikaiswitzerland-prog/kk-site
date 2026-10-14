@@ -77,9 +77,13 @@ export default function OrderModal({ order, onClose, onUpdateStatus, onPrint, on
         {/* Client */}
         <Section title="Client">
           <Row label="Téléphone">
-            <a href={`tel:${order.customer_phone}`} className="font-mono text-accent">
-              {order.customer_phone}
-            </a>
+            {order.customer_phone ? (
+              <a href={`tel:${order.customer_phone}`} className="font-mono text-accent">
+                {order.customer_phone}
+              </a>
+            ) : (
+              <span className="text-muted">— (email : {order.customer_email || 'aucun'})</span>
+            )}
           </Row>
           <Row
             label="Livraison"

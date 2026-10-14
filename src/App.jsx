@@ -1565,7 +1565,8 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
         id: newOrderId,
         customer_name: `${form.firstName} ${form.lastName}`.trim(),
         customer_email: form.email?.trim() || null,
-        customer_phone: form.phone,
+        // NOT NULL en base : chaîne vide si le client à emporter n'a donné que l'email.
+        customer_phone: form.phone?.trim() || '',
         customer_address: mode === 'delivery'
           ? `${form.address}, ${deliveryNpa} Genève`
           : 'À emporter',
@@ -4451,15 +4452,20 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
   // Validation email :
   //  - paiement Carte  → email obligatoire ET au format valide
   //  - paiement Cash/Twint → email facultatif mais SI rempli, au format valide
-  const emailRequired = paymentMethod === "card";
+  //  - À emporter → un seul des deux suffit (téléphone OU email), au moins un.
+  const isPickup = mode === "pickup";
+  const hasEmail = !!form.email.trim();
+  const hasPhone = !!form.phone.trim();
+  const emailRequired = !isPickup && paymentMethod === "card";
   const emailFormatOk = !form.email || EMAIL_REGEX.test(form.email.trim());
-  const emailOk = emailFormatOk && (!emailRequired || !!form.email.trim());
+  const emailOk = emailFormatOk && (!emailRequired || hasEmail);
+  const contactOk = isPickup ? (hasPhone || hasEmail) : hasPhone;
 
   const canSubmit = restaurantOpen &&
                     hasItems &&
                     form.firstName &&
                     form.lastName &&
-                    form.phone &&
+                    contactOk &&
                     emailOk &&
                     (mode === "pickup" || (form.address && !!zoneInfo));
   
@@ -4722,9 +4728,11 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
             type="email"
             inputMode="email"
             autoComplete="email"
-            placeholder={emailRequired
-              ? "Email * (pour la confirmation)"
-              : "Email (recommandé pour recevoir la confirmation)"}
+            placeholder={isPickup
+              ? "Email (ou téléphone)"
+              : emailRequired
+                ? "Email * (pour la confirmation)"
+                : "Email (recommandé pour recevoir la confirmation)"}
             className={`rounded-xl border ${
               form.email && !emailFormatOk
                 ? 'border-red-500/50'
@@ -4741,11 +4749,19 @@ function Checkout({ items, cartVariants, subtotal, discount, deliveryFee, total,
           )}
           <input
             name="phone"
-            placeholder="Téléphone *"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder={isPickup ? "Téléphone (ou email)" : "Téléphone *"}
             className="rounded-xl border border-white/20 bg-transparent px-3 py-2 outline-none focus:border-white/40 transition-colors"
             value={form.phone}
             onChange={handleChange}
           />
+          {isPickup && !hasPhone && !hasEmail && (
+            <div className="text-xs text-white/60">
+              Indiquez votre téléphone ou votre email pour qu'on puisse vous prévenir.
+            </div>
+          )}
           
           {mode === "delivery" && (
             <>
