@@ -21,6 +21,7 @@ import { useRef, useState } from 'react';
 import V2Header from './V2Header.jsx';
 import V2Menu from './V2Menu.jsx';
 import V2Footer from './V2Footer.jsx';
+import V2PromoPopup from './V2PromoPopup.jsx';
 import { V2Mini, V2Drawer } from './V2Drawer.jsx';
 import { useScrollSpy, scrollToId } from './useScrollSpy.js';
 import { CHIPS } from './v2Helpers.js';
@@ -157,6 +158,9 @@ export default function AccueilV2Shell({
       )}
 
       <V2Footer restaurant={restaurant} onShowAbout={onShowAbout} onShowZones={onShowZones} />
+
+      {/* Code de bienvenue PREMIER : une fois par visiteur, jusqu'au 30 nov. */}
+      <V2PromoPopup />
 
       {showContent && (
         <V2Mini
