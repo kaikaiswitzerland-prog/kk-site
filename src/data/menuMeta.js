@@ -12,6 +12,7 @@ import {
 } from '../lib/stockRules.js';
 
 export const MENU_GROUPS = [
+  { id: 'midi',     label: 'Offre du midi' },
   { id: 'entrees',  label: 'Entrées' },
   { id: 'chaud',    label: 'Plats chauds' },
   { id: 'froid',    label: 'Plats froids' },
@@ -66,6 +67,19 @@ export const PROTEIN_OPTS_STANDARD = [
   { id: "poulet", name: "Poulet", desc: "Wok de poulet" },
   { id: "porc-poulet", name: "Porc + Poulet", desc: "Mix des deux viandes" },
   { id: "veggie", name: "Veggie", desc: "100% végétarien" }
+];
+
+// Plat 26 — Offre du midi : la base (Chao men / Kai fan) et la viande dans un
+// seul choix, pour réutiliser la modale d'options existante. Pas de bœuf.
+export const LUNCH_OPTS = [
+  { id: "chaomen-porc", name: "Chao men · Porc", desc: "Nouilles sautées, porc" },
+  { id: "chaomen-poulet", name: "Chao men · Poulet", desc: "Nouilles sautées, poulet" },
+  { id: "chaomen-porc-poulet", name: "Chao men · Porc + Poulet", desc: "Nouilles sautées, mix des deux viandes" },
+  { id: "chaomen-veggie", name: "Chao men · Veggie", desc: "Nouilles sautées, 100% végétarien" },
+  { id: "kaifan-porc", name: "Kai fan · Porc", desc: "Riz sauté, porc" },
+  { id: "kaifan-poulet", name: "Kai fan · Poulet", desc: "Riz sauté, poulet" },
+  { id: "kaifan-porc-poulet", name: "Kai fan · Porc + Poulet", desc: "Riz sauté, mix des deux viandes" },
+  { id: "kaifan-veggie", name: "Kai fan · Veggie", desc: "Riz sauté, 100% végétarien" }
 ];
 
 // Plat 7 — Omelette Fu Young (jeu réduit, ordre inversé vs STANDARD)
@@ -196,6 +210,8 @@ export const MENU_ITEMS = [
   { id: '20', name: 'Eau plate/gazeuse',    category: 'boissons', eauVariants: EAU_OPTS },
 
   { id: '25', name: 'Boissons fraîches maison', category: 'jus-maison', jusVariants: JUS_MAISON_OPTS },
+
+  { id: '26', name: 'Offre du midi',        category: 'midi', proteinVariants: LUNCH_OPTS },
 
   // Bases du composeur de woks. Elles ne sont pas rendues en fiche sur le site
   // public, mais elles DOIVENT figurer ici : api/create-checkout.js résout

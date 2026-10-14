@@ -46,6 +46,8 @@ export const MENU_PRICES = {
   // JUS MAISON — gamme distincte des jus exotiques (19), à son propre prix.
   '25': 4.90,   // Boissons fraîches maison (4 parfums)
 
+  '26': 14.90,  // Offre du midi (11h30–16h, site uniquement)
+
   // BASES DU COMPOSEUR DE WOKS — ces ids n'ont pas de prix propre : c'est la
   // garniture qui fait le prix (MENU_OPTION_PRICES ci-dessous). La valeur ici
   // n'est qu'un repli, utilisé seulement si un panier arrivait sans garniture.

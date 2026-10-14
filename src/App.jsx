@@ -54,7 +54,9 @@ import {
   FORMULE_JUS_ITEM_ID,
   FORMULE_EAU_ITEM_ID,
   isVariantUnavailable,
+  LUNCH_OPTS,
 } from "./data/menuMeta.js";
+import { LUNCH_LABEL, isLunchWindow, hasLunchItem } from "./lib/lunchOffer.js";
 import {
   getItemOptions,
   isItemExplicitlyOut,
@@ -690,6 +692,18 @@ const MENU = [
     proteinVariants: WOK_GARNITURES,
     legumeVariants: LEGUME_OPTS
   },
+
+  // OFFRE DU MIDI — 11h30–16h, site uniquement (src/lib/lunchOffer.js).
+  {
+    id: "26",
+    name: "Offre du midi",
+    desc: "Chao men (nouilles sautées) ou Kai fan (riz sauté), viande au choix. De 11h30 à 16h, uniquement sur le site.",
+    price: 14.90,
+    category: "midi",
+    hasProteinVariants: true,
+    proteinVariants: LUNCH_OPTS,
+    lunchOnly: true
+  }
 ];
 
 // Prix d'UN exemplaire, garniture et légumes compris. Miroir exact de
@@ -772,6 +786,8 @@ const IDS_BOISSON  = [19, 20];
 // exotiques,
 // ce sont deux gammes distinctes, à deux prix.
 const IDS_JUS_MAISON = [25];
+// Offre du midi : affichée en tête de carte sur l'accueil v3.
+const IDS_MIDI = [26];
 
 const byIds = (ids) => ids.map(id => MENU.find(m => m.id === String(id))).filter(Boolean);
 const SEC_ENTREES  = byIds(IDS_ENTREES);
@@ -782,11 +798,12 @@ const SEC_FORMULES = byIds(IDS_FORMULES);
 const SEC_DESSERT  = byIds(IDS_DESSERT);
 const SEC_BOISSON  = byIds(IDS_BOISSON);
 const SEC_JUS_MAISON = byIds(IDS_JUS_MAISON);
+const SEC_MIDI = byIds(IDS_MIDI);
 
 // Les bases y figurent bien : MENU_SORTED sert au panier et à la validation du
 // panier restauré, pas seulement à l'affichage des fiches. Sans elles, un wok
 // composé disparaîtrait du panier au rechargement.
-const ORDERED_IDS = [...IDS_ENTREES, ...IDS_WOK, ...IDS_CHAUD, ...IDS_FROID, ...IDS_FORMULES, ...IDS_DESSERT, ...IDS_BOISSON, ...IDS_JUS_MAISON];
+const ORDERED_IDS = [...IDS_MIDI, ...IDS_ENTREES, ...IDS_WOK, ...IDS_CHAUD, ...IDS_FROID, ...IDS_FORMULES, ...IDS_DESSERT, ...IDS_BOISSON, ...IDS_JUS_MAISON];
 const MENU_SORTED = byIds(ORDERED_IDS);
 
 const MENU_BY_ID = Object.fromEntries(MENU.map(m => [m.id, m]));
@@ -837,6 +854,8 @@ function isFormuleUnavailable(stockList, item) {
 // (cascade) et formules (composabilité).
 function isMenuItemUnavailable(stockList, item) {
   if (!item) return false;
+  // Offre du midi : hors 11h30–16h, grisée (et purgée du panier).
+  if (item.lunchOnly && !isLunchWindow()) return true;
   if (item.hasFormule) return isFormuleUnavailable(stockList, item);
   return isItemUnavailable(stockList, item);
 }
@@ -858,7 +877,11 @@ export const menuCatalog = {
     desserts: SEC_DESSERT,
     boissons: SEC_BOISSON,
     jusMaison: SEC_JUS_MAISON,
+    midi:     SEC_MIDI,
   },
+  // Libellé du bouton quand une carte est grisée : créneau pour l'offre du
+  // midi, rupture pour le reste.
+  outLabel: (item) => (item?.lunchOnly && !isLunchWindow() ? LUNCH_LABEL : 'En rupture'),
   isUnavailable: isMenuItemUnavailable,
   // Ajouts pour la peau v2 : photos des fiches (les mêmes JPG de public/ que
   // le site historique), prix d'un exemplaire garniture/légumes/extras
@@ -945,6 +968,7 @@ const CHAUD_PHOTOS = {
   "6": "/chaud-kaifan.jpg",
   "7": "/chaud-omelette.jpg",
   "8": "/chaud-boeuf.jpg",
+  "26": "/chaud-chaomen.jpg", // Offre du midi
 };
 const CHAUD_PHOTO_POS = {
   "5": "center 60%",
@@ -1518,6 +1542,12 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
       return "Code postal hors zone de livraison. Choisissez 'À emporter' ou un autre NPA.";
     }
 
+    // Garde-fou front : offre du midi hors créneau (le Cash/Twint ne passe
+    // pas par le serveur ; la carte est re-vérifiée dans create-checkout).
+    if (hasLunchItem(items) && !isLunchWindow()) {
+      return `L'offre du midi n'est plus disponible (${LUNCH_LABEL.toLowerCase()}). Retirez-la du panier pour continuer.`;
+    }
+
     const orderItems = items
       .filter(it => it.qty > 0)
       .map(it => ({
@@ -1619,6 +1649,9 @@ export default function KaiKaiApp({ skin = 'legacy' }) {
           }),
         });
         const checkout = await res.json();
+        // Refus métier du serveur (409 : offre du midi hors créneau, code
+        // promo refusé…) : on montre son message tel quel au client.
+        if (res.status === 409 && checkout.message) return checkout.message;
         if (!res.ok || !checkout.checkout_url) throw new Error(checkout.error || 'Erreur SumUp');
         window.location.href = checkout.checkout_url;
         return null;
@@ -3462,7 +3495,7 @@ const HALAL_PROTEIN_IDS = new Set(['poulet', 'boeuf']);
 function ProteinModal({ item, stockList = [], onSelect, onClose }) {
   const protEmojis = { porc: '🍖', poulet: '🍗', 'porc-poulet': '🍽️', veggie: '🥦' };
   return (
-    <BottomSheet title={item.name} subtitle="Choisissez votre protéine" photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
+    <BottomSheet title={item.name} subtitle={item.lunchOnly ? "Choisissez votre plat et votre viande" : "Choisissez votre protéine"} photo={getPhoto(item.id)} photoPos={getPhotoPos(item.id)} onClose={onClose}>
       {item.proteinVariants.map((v, i) => {
         const out = isOptionOut(stockList, item.id, v.id);
         return (

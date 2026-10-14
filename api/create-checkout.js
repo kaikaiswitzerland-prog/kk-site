@@ -21,6 +21,7 @@ import { getRestaurantStatus, formatStatusLabel } from './_lib/restaurantHours.j
 import { getZoneByNpa } from './_lib/deliveryZones.js';
 import { getServerPrice, getServerUnitPrice } from './_lib/menuPrices.js';
 import { MENU_ITEMS_BY_ID, isVariantUnavailable } from '../src/data/menuMeta.js';
+import { hasLunchItem, isLunchWindow, LUNCH_LABEL } from '../src/lib/lunchOffer.js';
 import { isItemUnavailable } from '../src/lib/stockRules.js';
 
 // Recompute du total côté serveur — miroir de la logique du front
@@ -206,6 +207,15 @@ export default async function handler(req, res) {
       }
     } catch (stockErr) {
       console.warn('[KaïKaï create-checkout] lecture out_of_stock échec (fail-open)', stockErr);
+    }
+
+    // 2.6. Offre du midi : refusée hors 11h30–16h00 (heure de Genève).
+    if (hasLunchItem(order.items) && !isLunchWindow()) {
+      console.warn('[KaïKaï create-checkout] refus : offre du midi hors créneau', order.id);
+      return res.status(409).json({
+        error: 'lunch_closed',
+        message: `L'offre du midi n'est plus disponible (${LUNCH_LABEL.toLowerCase()}). Retirez-la du panier pour continuer.`,
+      });
     }
 
     // 3. Recompute serveur (anti price-tampering + anti zone-tampering)

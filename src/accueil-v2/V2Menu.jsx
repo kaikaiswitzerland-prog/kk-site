@@ -61,7 +61,7 @@ function AllergenLine({ item, isFormula, onShow }) {
   );
 }
 
-function Card({ item, qty, out, isFormula, onAdd, onRemove, onShowAllergens }) {
+function Card({ item, qty, out, outLabel = 'En rupture', isFormula, onAdd, onRemove, onShowAllergens }) {
   const meta = getProductMeta(item.id);
   const { current, onError } = useImageFallback(meta);
   const badges = badgesFor(item.id);
@@ -116,7 +116,7 @@ function Card({ item, qty, out, isFormula, onAdd, onRemove, onShowAllergens }) {
             </div>
           ) : (
             <button type="button" className="add" onClick={add} disabled={out}>
-              {out ? 'En rupture' : 'Commander'}
+              {out ? outLabel : 'Commander'}
             </button>
           )}
         </div>
@@ -125,7 +125,7 @@ function Card({ item, qty, out, isFormula, onAdd, onRemove, onShowAllergens }) {
   );
 }
 
-function Section({ id, title, note = null, items, cart, isUnavailable, isFormula = false, onAdd, onRemove, onShowAllergens, extraClass = '' }) {
+function Section({ id, title, note = null, items, cart, isUnavailable, outLabelFor = () => 'En rupture', isFormula = false, onAdd, onRemove, onShowAllergens, extraClass = '' }) {
   return (
     <section className={`cat${extraClass}`} id={id}>
       <div className="wrap">
@@ -138,6 +138,7 @@ function Section({ id, title, note = null, items, cart, isUnavailable, isFormula
               item={item}
               qty={cart[item.id] || 0}
               out={isUnavailable(item)}
+              outLabel={outLabelFor(item)}
               isFormula={isFormula}
               onAdd={onAdd}
               onRemove={onRemove}
@@ -195,6 +196,7 @@ export default function V2Menu({
             items={sections[s.key] || []}
             cart={cart}
             isUnavailable={isUnavailable}
+            outLabelFor={catalog?.outLabel}
             // Les formules affichent « selon votre composition », comme sur
             // /classique (prop isFormula de MenuItem).
             isFormula={s.key === 'formules'}

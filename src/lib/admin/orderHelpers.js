@@ -166,6 +166,7 @@ export const ITEM_CATEGORY_MAP = {
   '22': 'chaud',     // Riz sauté curry
   '23': 'chaud',     // Riz sauté
   '24': 'chaud',     // Riz blanc jasmin
+  '26': 'chaud',     // Offre du midi (compté avec les plats chauds)
 };
 
 export const CATEGORY_LABELS = {

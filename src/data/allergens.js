@@ -56,6 +56,8 @@ export const ITEM_ALLERGENS = {
     fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
     traces: []
   },
+  // Offre du midi : Chao men ou Kai fan, même base d'allergènes que les plats 5/6.
+  "26": { contains: ['GLUTEN', 'EGGS', 'SOY', 'SESAME', 'SULPHITES', 'MOLLUSCS'], traces: [] },
   "7":  {  // Omelette Fu Young AVEC salade — soja + gluten aussi dans le plat
     contains: ['GLUTEN', 'EGGS', 'SOY', 'SESAME', 'MOLLUSCS'],
     fromSalad: ['MUSTARD', 'SOY', 'GLUTEN'],
